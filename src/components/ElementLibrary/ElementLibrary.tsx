@@ -16,7 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 /**
  * Type for element category
  */
-type ElementCategory = 'images' | 'text' | 'shapes' | 'stickers' | 'media';
+type ElementCategory = 'stickers' | 'shapes' | 'text' | 'media' | 'images';
 
 /**
  * Interface for library element
@@ -38,8 +38,8 @@ function ElementLibrary(): JSX.Element {
   // Get canvas context
   const { addElement } = useCanvas();
   
-  // State for active category
-  const [activeCategory, setActiveCategory] = useState<ElementCategory>('shapes');
+  // State for active category - default to stickers as requested
+  const [activeCategory, setActiveCategory] = useState<ElementCategory>('stickers');
   
   // State for search query
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -163,22 +163,8 @@ function ElementLibrary(): JSX.Element {
   
   // Mock library elements for each category
   const libraryElements: Record<ElementCategory, LibraryElement[]> = {
-    images: [
-      {
-        id: 'img-1',
-        type: 'image',
-        name: 'Sample Image 1',
-        thumbnail: 'placeholder',
-        properties: { src: '/images/sample_image_1.jpg', alt: 'Sample Image 1' },
-      },
-      {
-        id: 'img-2',
-        type: 'image',
-        name: 'Sample Image 2',
-        thumbnail: 'placeholder',
-        properties: { src: '/images/sample_image_2.jpg', alt: 'Sample Image 2' },
-      },
-    ],
+    stickers: [], // Will be replaced by TravelStickers
+    shapes: [], // Will be replaced by ToolsPalette
     text: [
       {
         id: 'text-1',
@@ -195,8 +181,6 @@ function ElementLibrary(): JSX.Element {
         properties: { content: 'Lorem ipsum dolor sit amet', fontSize: '16px', fontWeight: 'normal', color: '#000' },
       },
     ],
-    shapes: [], // Will be replaced by ToolsPalette
-    stickers: [], // Will be replaced by TravelStickers
     media: [
       {
         id: 'media-1',
@@ -211,6 +195,22 @@ function ElementLibrary(): JSX.Element {
         name: 'Map',
         thumbnail: 'placeholder',
         properties: { media: 'map', location: 'New York' },
+      },
+    ],
+    images: [
+      {
+        id: 'img-1',
+        type: 'image',
+        name: 'Sample Image 1',
+        thumbnail: 'placeholder',
+        properties: { src: '/images/sample_image_1.jpg', alt: 'Sample Image 1' },
+      },
+      {
+        id: 'img-2',
+        type: 'image',
+        name: 'Sample Image 2',
+        thumbnail: 'placeholder',
+        properties: { src: '/images/sample_image_2.jpg', alt: 'Sample Image 2' },
       },
     ],
   };
@@ -235,9 +235,9 @@ function ElementLibrary(): JSX.Element {
         />
       </div>
       
-      {/* Category tabs */}
+      {/* Category tabs - reordered as requested */}
       <div className="flex border-b border-gray-200">
-        {(['images', 'text', 'shapes', 'stickers', 'media'] as ElementCategory[]).map(category => (
+        {(['stickers', 'shapes', 'text', 'media', 'images'] as ElementCategory[]).map(category => (
           <button
             key={category}
             className={`flex-1 py-2 text-sm font-medium ${
