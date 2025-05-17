@@ -7,8 +7,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Canvas from '../../src/components/Canvas/Canvas';
-import { CanvasProvider } from '../../src/context/CanvasContext';
-import { TimelineProvider } from '../../src/context/TimelineContext';
+import { AllProviders } from '../../src/test-utils/test-providers';
 
 // Mock the useCanvas hook
 jest.mock('../../src/context/CanvasContext', () => {
@@ -20,6 +19,7 @@ jest.mock('../../src/context/CanvasContext', () => {
       canvas: {
         width: 1920,
         height: 1080,
+        viewBox: { x: 0, y: 0, width: 1000, height: 1000 },
         background: { type: 'color', value: '#ffffff' },
         elements: [
           {
@@ -42,12 +42,13 @@ jest.mock('../../src/context/CanvasContext', () => {
           },
         ],
       },
+      selectedElement: 'test-element-1',
       selectedElements: ['test-element-1'],
       selectElement: jest.fn(),
       clearSelection: jest.fn(),
-      moveElement: jest.fn(),
-      resizeElement: jest.fn(),
-      rotateElement: jest.fn(),
+      updateElementPosition: jest.fn(),
+      updateElementSize: jest.fn(),
+      updateElementRotation: jest.fn(),
     }),
   };
 });
@@ -67,13 +68,7 @@ jest.mock('../../src/context/TimelineContext', () => {
 
 describe('Canvas', () => {
   test('should render canvas with correct dimensions', () => {
-    render(
-      <CanvasProvider>
-        <TimelineProvider>
-          <Canvas />
-        </TimelineProvider>
-      </CanvasProvider>
-    );
+    render(<Canvas viewMode="editor" />, { wrapper: AllProviders });
 
     const canvas = screen.getByTestId('canvas-container');
     expect(canvas).toBeInTheDocument();
@@ -82,26 +77,14 @@ describe('Canvas', () => {
   });
 
   test('should render canvas elements', () => {
-    render(
-      <CanvasProvider>
-        <TimelineProvider>
-          <Canvas />
-        </TimelineProvider>
-      </CanvasProvider>
-    );
+    render(<Canvas viewMode="editor" />, { wrapper: AllProviders });
 
     expect(screen.getByText('Test Element 1')).toBeInTheDocument();
     expect(screen.getByAltText('Test Image')).toBeInTheDocument();
   });
 
   test('should highlight selected elements', () => {
-    render(
-      <CanvasProvider>
-        <TimelineProvider>
-          <Canvas />
-        </TimelineProvider>
-      </CanvasProvider>
-    );
+    render(<Canvas viewMode="editor" />, { wrapper: AllProviders });
 
     const selectedElement = screen.getByText('Test Element 1').closest('[data-element-id="test-element-1"]');
     expect(selectedElement).toHaveClass('selected');
@@ -111,13 +94,7 @@ describe('Canvas', () => {
     const { useCanvas } = jest.requireMock('../../src/context/CanvasContext');
     const selectElementMock = useCanvas().selectElement;
     
-    render(
-      <CanvasProvider>
-        <TimelineProvider>
-          <Canvas />
-        </TimelineProvider>
-      </CanvasProvider>
-    );
+    render(<Canvas viewMode="editor" />, { wrapper: AllProviders });
 
     fireEvent.click(screen.getByText('Test Element 1'));
     expect(selectElementMock).toHaveBeenCalledWith('test-element-1', expect.anything());
@@ -127,13 +104,7 @@ describe('Canvas', () => {
     const { useCanvas } = jest.requireMock('../../src/context/CanvasContext');
     const clearSelectionMock = useCanvas().clearSelection;
     
-    render(
-      <CanvasProvider>
-        <TimelineProvider>
-          <Canvas />
-        </TimelineProvider>
-      </CanvasProvider>
-    );
+    render(<Canvas viewMode="editor" />, { wrapper: AllProviders });
 
     fireEvent.click(screen.getByTestId('canvas-container'));
     expect(clearSelectionMock).toHaveBeenCalled();
@@ -141,15 +112,9 @@ describe('Canvas', () => {
 
   test('should handle element dragging', () => {
     const { useCanvas } = jest.requireMock('../../src/context/CanvasContext');
-    const moveElementMock = useCanvas().moveElement;
+    const updateElementPositionMock = useCanvas().updateElementPosition;
     
-    render(
-      <CanvasProvider>
-        <TimelineProvider>
-          <Canvas />
-        </TimelineProvider>
-      </CanvasProvider>
-    );
+    render(<Canvas viewMode="editor" />, { wrapper: AllProviders });
 
     const element = screen.getByText('Test Element 1');
     
@@ -162,6 +127,6 @@ describe('Canvas', () => {
     // End drag
     fireEvent.mouseUp(document);
     
-    expect(moveElementMock).toHaveBeenCalled();
+    expect(updateElementPositionMock).toHaveBeenCalled();
   });
 });
