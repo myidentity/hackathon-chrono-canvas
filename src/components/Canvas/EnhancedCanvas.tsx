@@ -10,6 +10,7 @@ import { useCanvas } from '../../context/CanvasContext';
 import { useTimeline } from '../../context/TimelineContext';
 import ElementRenderer from './ElementRenderer';
 import ImageUploader from '../UI/ImageUploader';
+import PopulateCanvas from './PopulateCanvas';
 import { motion } from 'framer-motion';
 
 // Type definitions
@@ -321,6 +322,13 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
           {Math.round(transform.scale * 100)}%
         </div>
       </div>
+      
+      {/* Populate Canvas button (only in editor mode) */}
+      {viewMode === 'editor' && (
+        <div className="absolute top-4 left-4">
+          <PopulateCanvas />
+        </div>
+      )}
       
       {/* View mode indicator */}
       <div 
