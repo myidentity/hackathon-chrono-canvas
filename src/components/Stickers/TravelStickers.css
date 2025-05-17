@@ -1,0 +1,80 @@
+/* Styles for Travel Stickers component */
+.travel-stickers-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sticker-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+}
+
+.category-button {
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  background-color: white;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.category-button.active {
+  background-color: #4a90e2;
+  color: white;
+  border-color: #2a70c2;
+}
+
+.stickers-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  padding: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.sticker-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  aspect-ratio: 1;
+}
+
+.sticker-item:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.sticker-emoji {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .stickers-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .stickers-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .sticker-emoji {
+    font-size: 20px;
+  }
+}

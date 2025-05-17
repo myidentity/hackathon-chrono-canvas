@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 import ToolsPalette from '../UI/ToolsPalette';
+import TravelStickers from '../Stickers/TravelStickers';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -113,6 +114,52 @@ function ElementLibrary(): JSX.Element {
     // Add the element to the canvas
     addElement(newElement);
   };
+
+  /**
+   * Handle adding sticker to canvas
+   * 
+   * @param {any} stickerData - The sticker data to add
+   */
+  const handleAddSticker = (stickerData: any) => {
+    // Create a new sticker element
+    const newSticker = {
+      id: `sticker-${uuidv4().substring(0, 8)}`,
+      type: 'sticker',
+      position: { x: stickerData.x, y: stickerData.y },
+      size: { width: stickerData.width, height: stickerData.height },
+      rotation: stickerData.rotation,
+      opacity: stickerData.opacity,
+      zIndex: stickerData.zIndex,
+      emoji: stickerData.emoji,
+      name: stickerData.name,
+      color: stickerData.color,
+      stickerType: stickerData.stickerType,
+      timelineData: {
+        entryPoint: 0,
+        exitPoint: null,
+        persist: true,
+        keyframes: [
+          {
+            time: 0,
+            properties: {
+              opacity: 0,
+              scale: 0.8,
+            },
+          },
+          {
+            time: 1,
+            properties: {
+              opacity: 1,
+              scale: 1,
+            },
+          },
+        ],
+      },
+    };
+    
+    // Add the sticker to the canvas
+    addElement(newSticker);
+  };
   
   // Mock library elements for each category
   const libraryElements: Record<ElementCategory, LibraryElement[]> = {
@@ -149,22 +196,7 @@ function ElementLibrary(): JSX.Element {
       },
     ],
     shapes: [], // Will be replaced by ToolsPalette
-    stickers: [
-      {
-        id: 'sticker-1',
-        type: 'shape',
-        name: 'Star',
-        thumbnail: 'placeholder',
-        properties: { shape: 'star', backgroundColor: '#f59e0b' },
-      },
-      {
-        id: 'sticker-2',
-        type: 'shape',
-        name: 'Heart',
-        thumbnail: 'placeholder',
-        properties: { shape: 'heart', backgroundColor: '#ef4444' },
-      },
-    ],
+    stickers: [], // Will be replaced by TravelStickers
     media: [
       {
         id: 'media-1',
@@ -184,7 +216,7 @@ function ElementLibrary(): JSX.Element {
   };
   
   // Filter elements based on search query
-  const filteredElements = searchQuery && activeCategory !== 'shapes'
+  const filteredElements = searchQuery && activeCategory !== 'shapes' && activeCategory !== 'stickers'
     ? libraryElements[activeCategory].filter(element => 
         element.name.toLowerCase().includes(searchQuery.toLowerCase())
       )
@@ -220,10 +252,14 @@ function ElementLibrary(): JSX.Element {
         ))}
       </div>
       
-      {/* Element grid or ToolsPalette */}
+      {/* Element grid, ToolsPalette, or TravelStickers */}
       {activeCategory === 'shapes' ? (
         <div className="flex-1 overflow-y-auto">
           <ToolsPalette className="m-3" />
+        </div>
+      ) : activeCategory === 'stickers' ? (
+        <div className="flex-1 overflow-y-auto">
+          <TravelStickers onSelectSticker={handleAddSticker} />
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto p-3 grid grid-cols-2 gap-3">
