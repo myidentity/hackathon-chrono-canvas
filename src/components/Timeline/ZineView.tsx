@@ -8,7 +8,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 import { useTimeline } from '../../context/TimelineContext';
-import ElementRenderer from '../Canvas/ElementRenderer';
 
 interface ZineViewProps {
   className?: string;
@@ -58,22 +57,8 @@ const ZineView: React.FC<ZineViewProps> = ({ className = '' }) => {
     const visible: string[] = [];
     
     canvas.elements.forEach(element => {
-      if (!element.timelineData) {
-        // If no timeline data, always show in zine view
-        visible.push(element.id);
-        return;
-      }
-      
-      const { entryPoint, exitPoint, persist } = element.timelineData;
-      
-      // Check if element should be visible at this time position
-      const isVisible = 
-        (entryPoint === undefined || timePosition >= entryPoint) && 
-        (exitPoint === undefined || exitPoint === null || timePosition <= exitPoint || persist);
-      
-      if (isVisible) {
-        visible.push(element.id);
-      }
+      // Always show all elements for debugging
+      visible.push(element.id);
     });
     
     setVisibleElements(visible);
@@ -106,8 +91,12 @@ const ZineView: React.FC<ZineViewProps> = ({ className = '' }) => {
     console.log('Canvas elements:', canvas.elements);
   }, [canvas.elements]);
   
-  // Force initial render of all elements for debugging
-  const forceShowAll = true;
+  // Create sample elements for testing if none exist
+  useEffect(() => {
+    if (canvas.elements.length === 0) {
+      console.log('No elements found, creating samples for testing');
+    }
+  }, [canvas.elements]);
   
   return (
     <div 
@@ -122,46 +111,27 @@ const ZineView: React.FC<ZineViewProps> = ({ className = '' }) => {
         style={{ height: `${totalHeight}px` }}
         data-testid="zine-scrollable-content"
       >
-        {/* Render elements */}
+        {/* Sample elements for testing */}
+        <div className="absolute top-0 left-0 w-full">
+          <div className="bg-blue-500 text-white p-4 m-4 rounded shadow">
+            Sample Element at Top (0s)
+          </div>
+        </div>
+        
+        <div className="absolute top-[1000px] left-0 w-full">
+          <div className="bg-green-500 text-white p-4 m-4 rounded shadow">
+            Sample Element at 10s
+          </div>
+        </div>
+        
+        <div className="absolute top-[2000px] left-0 w-full">
+          <div className="bg-red-500 text-white p-4 m-4 rounded shadow">
+            Sample Element at 20s
+          </div>
+        </div>
+        
+        {/* Render actual elements */}
         {canvas.elements.map(element => {
-          // For debugging, show all elements
-          const isVisible = forceShowAll || visibleElements.includes(element.id);
-          
-          // Calculate animation progress for the element
-          let animationProgress = 0;
-          
-          if (element.timelineData) {
-            const { entryPoint, exitPoint, keyframes } = element.timelineData;
-            
-            if (keyframes && keyframes.length > 0) {
-              // Find the keyframes that surround the current time
-              const sortedKeyframes = [...keyframes].sort((a, b) => a.time - b.time);
-              
-              // Find the previous and next keyframes
-              const prevKeyframe = sortedKeyframes.filter(kf => kf.time <= mappedTimePosition).pop();
-              const nextKeyframe = sortedKeyframes.filter(kf => kf.time > mappedTimePosition)[0];
-              
-              if (prevKeyframe && nextKeyframe) {
-                // Interpolate between keyframes
-                animationProgress = (mappedTimePosition - prevKeyframe.time) / (nextKeyframe.time - prevKeyframe.time);
-              } else if (prevKeyframe) {
-                // At or after last keyframe
-                animationProgress = 1;
-              } else if (nextKeyframe) {
-                // Before first keyframe
-                animationProgress = 0;
-              }
-            } else if (entryPoint !== undefined) {
-              // Simple entry animation (over 1 second)
-              const entryDuration = 1; // 1 second entry animation
-              if (mappedTimePosition >= entryPoint && mappedTimePosition <= entryPoint + entryDuration) {
-                animationProgress = (mappedTimePosition - entryPoint) / entryDuration;
-              } else if (mappedTimePosition > entryPoint + entryDuration) {
-                animationProgress = 1;
-              }
-            }
-          }
-          
           // Position elements at different scroll positions
           const verticalOffset = element.timelineData?.entryPoint 
             ? element.timelineData.entryPoint * 100 
@@ -170,8 +140,10 @@ const ZineView: React.FC<ZineViewProps> = ({ className = '' }) => {
           const style = {
             position: 'absolute' as const,
             top: `${verticalOffset}px`,
-            left: element.position?.x || '50%',
+            left: element.position?.x ? `${element.position.x}px` : '50%',
             transform: element.position?.x ? 'none' : 'translateX(-50%)',
+            width: element.size?.width ? `${element.size.width}px` : 'auto',
+            height: element.size?.height ? `${element.size.height}px` : 'auto',
             zIndex: element.zIndex || 0,
           };
           
@@ -179,16 +151,41 @@ const ZineView: React.FC<ZineViewProps> = ({ className = '' }) => {
             <div 
               key={element.id} 
               style={style}
-              className={isVisible ? '' : 'opacity-0'}
+              className="border-2 border-purple-500 bg-purple-200 p-2"
               data-element-id={element.id}
             >
-              <ElementRenderer
-                element={element}
-                isSelected={false}
-                viewMode="zine"
-                currentPosition={mappedTimePosition}
-                scrollPosition={scrollPosition}
-              />
+              {element.type === 'image' && (
+                <img 
+                  src={element.src || `/images/sample_image_${element.id.includes('1') ? '1' : '2'}.jpg`} 
+                  alt={element.alt || 'Image'} 
+                  className="max-w-full max-h-full object-contain"
+                />
+              )}
+              {element.type === 'shape' && (
+                <div 
+                  className="w-full h-full" 
+                  style={{ 
+                    backgroundColor: element.backgroundColor || '#6366F1',
+                    borderRadius: element.shape === 'circle' ? '50%' : (element.borderRadius || '0'),
+                    transform: `rotate(${element.rotation || 0}deg)`,
+                  }}
+                />
+              )}
+              {element.type === 'text' && (
+                <div className="w-full h-full flex items-center justify-center">
+                  <p style={{ 
+                    fontSize: element.fontSize || '16px',
+                    fontWeight: element.fontWeight || 'normal',
+                    color: element.color || '#000',
+                    textAlign: element.textAlign || 'center',
+                  }}>
+                    {element.content || 'Text Element'}
+                  </p>
+                </div>
+              )}
+              <div className="absolute top-0 right-0 bg-white text-xs p-1">
+                ID: {element.id.substring(0, 4)}
+              </div>
             </div>
           );
         })}
