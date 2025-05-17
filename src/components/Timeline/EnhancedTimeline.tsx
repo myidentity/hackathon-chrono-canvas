@@ -290,9 +290,9 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
               data-testid="playback-toggle"
             >
               {isPlaying ? (
-                <span className="material-icons">pause</span>
+                <i className="material-icons">pause</i>
               ) : (
-                <span className="material-icons">play_arrow</span>
+                <i className="material-icons">play_arrow</i>
               )}
             </button>
             
@@ -301,7 +301,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
               onClick={() => setPosition(0)}
               aria-label="Go to start"
             >
-              <span className="material-icons">first_page</span>
+              <i className="material-icons">first_page</i>
             </button>
             
             <button 
@@ -309,7 +309,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
               onClick={() => setPosition(duration)}
               aria-label="Go to end"
             >
-              <span className="material-icons">last_page</span>
+              <i className="material-icons">last_page</i>
             </button>
           </div>
           
@@ -336,7 +336,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
             onClick={() => handleZoom(1.2)}
             aria-label="Zoom in"
           >
-            <span className="material-icons">zoom_in</span>
+            <i className="material-icons">zoom_in</i>
           </button>
           
           <button 
@@ -344,7 +344,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
             onClick={() => handleZoom(0.8)}
             aria-label="Zoom out"
           >
-            <span className="material-icons">zoom_out</span>
+            <i className="material-icons">zoom_out</i>
           </button>
           
           {/* Pan controls */}
@@ -353,7 +353,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
             onClick={() => handlePan(-1)}
             aria-label="Pan left"
           >
-            <span className="material-icons">chevron_left</span>
+            <i className="material-icons">chevron_left</i>
           </button>
           
           <button 
@@ -361,7 +361,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
             onClick={() => handlePan(1)}
             aria-label="Pan right"
           >
-            <span className="material-icons">chevron_right</span>
+            <i className="material-icons">chevron_right</i>
           </button>
         </div>
       </div>
@@ -454,7 +454,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
           onClick={() => setShowMarkerForm(true)}
           data-testid="add-marker-button"
         >
-          <span className="material-icons mr-1">bookmark_add</span>
+          <i className="material-icons mr-1">bookmark_add</i>
           Add Marker
         </button>
         
@@ -469,9 +469,9 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
           disabled={!selectedElement}
           data-testid="add-keyframe-button"
         >
-          <span className="material-icons mr-1">add_circle</span>
+          <i className="material-icons mr-1">add_circle</i>
           Add Keyframe
-        </button>       
+        </button>
         
         {/* Duration control */}
         <div className="flex items-center space-x-2">
