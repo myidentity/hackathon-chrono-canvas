@@ -118,15 +118,27 @@ const ZineView: React.FC<ZineViewProps> = ({ className = '' }) => {
           </div>
         </div>
         
-        <div className="absolute top-[1000px] left-0 w-full">
+        <div 
+          className="absolute top-[1000px] left-0 w-full transition-all duration-500"
+          style={{
+            transform: `translateY(${Math.min(Math.max(0, scrollPosition - 900), 100)}px) scale(${1 + Math.min(Math.max(0, scrollPosition - 900), 100) / 200})`,
+            opacity: Math.min(1, Math.max(0.3, scrollPosition / 1000))
+          }}
+        >
           <div className="bg-green-500 text-white p-4 m-4 rounded shadow">
-            Sample Element at 10s
+            Sample Element at 10s (Animating on Scroll)
           </div>
         </div>
         
-        <div className="absolute top-[2000px] left-0 w-full">
+        <div 
+          className="absolute top-[2000px] left-0 w-full transition-all duration-500"
+          style={{
+            transform: `translateY(${Math.min(Math.max(0, scrollPosition - 1900), 100)}px) rotate(${Math.min(Math.max(0, scrollPosition - 1900), 100) / 2}deg)`,
+            opacity: Math.min(1, Math.max(0.3, (scrollPosition - 1000) / 1000))
+          }}
+        >
           <div className="bg-red-500 text-white p-4 m-4 rounded shadow">
-            Sample Element at 20s
+            Sample Element at 20s (Rotating on Scroll)
           </div>
         </div>
         
@@ -137,13 +149,60 @@ const ZineView: React.FC<ZineViewProps> = ({ className = '' }) => {
             ? element.timelineData.entryPoint * 100 
             : 0;
           
+          // Calculate animation progress based on scroll position
+          const entryPoint = element.timelineData?.entryPoint || 0;
+          const scrollEntryPoint = entryPoint * 100;
+          const animationDuration = 300; // pixels of scrolling for animation
+          
+          // Calculate animation progress (0 to 1)
+          const animationProgress = Math.min(
+            1, 
+            Math.max(0, (scrollPosition - scrollEntryPoint) / animationDuration)
+          );
+          
+          // Apply different animations based on element type
+          let transformStyle = '';
+          let opacityValue = 1;
+          
+          if (scrollPosition >= scrollEntryPoint) {
+            // Element is in view, apply animations
+            if (element.type === 'image') {
+              // Scale and fade in for images
+              const scale = 0.8 + (0.2 * animationProgress);
+              transformStyle = `scale(${scale})`;
+              opacityValue = 0.5 + (0.5 * animationProgress);
+            } else if (element.type === 'shape') {
+              // Rotate for shapes
+              const rotation = 360 * animationProgress;
+              transformStyle = `rotate(${rotation}deg)`;
+              opacityValue = 0.5 + (0.5 * animationProgress);
+            } else {
+              // Default animation for other elements
+              const yOffset = 50 * (1 - animationProgress);
+              transformStyle = `translateY(${yOffset}px)`;
+              opacityValue = animationProgress;
+            }
+          } else {
+            // Element not yet in view
+            opacityValue = 0.3;
+            if (element.type === 'image') {
+              transformStyle = 'scale(0.8)';
+            } else if (element.type === 'shape') {
+              transformStyle = 'rotate(0deg)';
+            } else {
+              transformStyle = 'translateY(50px)';
+            }
+          }
+          
           const style = {
             position: 'absolute' as const,
             top: `${verticalOffset}px`,
             left: element.position?.x ? `${element.position.x}px` : '50%',
-            transform: element.position?.x ? 'none' : 'translateX(-50%)',
+            transform: `${element.position?.x ? '' : 'translateX(-50%) '}${transformStyle}`,
             width: element.size?.width ? `${element.size.width}px` : 'auto',
             height: element.size?.height ? `${element.size.height}px` : 'auto',
+            opacity: opacityValue,
+            transition: 'transform 0.5s ease, opacity 0.5s ease',
             zIndex: element.zIndex || 0,
           };
           
