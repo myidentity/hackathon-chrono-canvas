@@ -332,36 +332,36 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
         <div className="flex items-center space-x-2">
           {/* Zoom controls */}
           <button 
-            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm"
+            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm flex items-center justify-center"
             onClick={() => handleZoom(1.2)}
             aria-label="Zoom in"
           >
-            <span className="material-icons text-sm">zoom_in</span>
+            <span className="material-icons">zoom_in</span>
           </button>
           
           <button 
-            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm"
+            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm flex items-center justify-center"
             onClick={() => handleZoom(0.8)}
             aria-label="Zoom out"
           >
-            <span className="material-icons text-sm">zoom_out</span>
+            <span className="material-icons">zoom_out</span>
           </button>
           
           {/* Pan controls */}
           <button 
-            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm"
+            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm flex items-center justify-center"
             onClick={() => handlePan(-1)}
             aria-label="Pan left"
           >
-            <span className="material-icons text-sm">chevron_left</span>
+            <span className="material-icons">chevron_left</span>
           </button>
           
           <button 
-            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm"
+            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm flex items-center justify-center"
             onClick={() => handlePan(1)}
             aria-label="Pan right"
           >
-            <span className="material-icons text-sm">chevron_right</span>
+            <span className="material-icons">chevron_right</span>
           </button>
         </div>
       </div>
@@ -445,35 +445,31 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
           }
           return null;
         })}
-      </div>
-      
-      {/* Action buttons */}
-      <div className="flex items-center space-x-4">
-        {/* Add marker button */}
-        <button 
-          className="bg-indigo-600 hover:bg-indigo-700 rounded px-3 py-1 text-sm flex items-center"
-          onClick={() => setShowMarkerForm(true)}
-          data-testid="add-marker-button"
-        >
-          <span className="material-icons text-sm mr-1">bookmark_add</span>
-          Add Marker
-        </button>
-        
-        {/* Add keyframe button (only enabled when an element is selected) */}
-        <button 
-          className={`${
-            selectedElement 
-              ? 'bg-green-600 hover:bg-green-700' 
-              : 'bg-gray-600 cursor-not-allowed'
-          } rounded px-3 py-1 text-sm flex items-center`}
-          onClick={handleAddKeyframe}
-          disabled={!selectedElement}
-          data-testid="add-keyframe-button"
-        >
-          <span className="material-icons text-sm mr-1">add_circle</span>
-          Add Keyframe
-        </button>
-        
+         <div className="flex items-center space-x-4">
+          {/* Add marker button */}
+          <button 
+            className="bg-indigo-600 hover:bg-indigo-700 rounded px-3 py-1 text-sm flex items-center"
+            onClick={() => setShowMarkerForm(true)}
+            data-testid="add-marker-button"
+          >
+            <span className="material-icons mr-1">bookmark_add</span>
+            Add Marker
+          </button>
+          
+          {/* Add keyframe button (only enabled when an element is selected) */}
+          <button 
+            className={`${
+              selectedElement 
+                ? 'bg-green-600 hover:bg-green-700' 
+                : 'bg-gray-600 cursor-not-allowed'
+            } rounded px-3 py-1 text-sm flex items-center`}
+            onClick={handleAddKeyframe}
+            disabled={!selectedElement}
+            data-testid="add-keyframe-button"
+          >
+            <span className="material-icons mr-1">add_circle</span>
+            Add Keyframe
+          </button>       
         {/* Duration control */}
         <div className="flex items-center space-x-2">
           <span className="text-sm">Duration:</span>
