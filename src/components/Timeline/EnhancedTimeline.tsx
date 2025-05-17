@@ -445,31 +445,34 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
           }
           return null;
         })}
-         <div className="flex items-center space-x-4">
-          {/* Add marker button */}
-          <button 
-            className="bg-indigo-600 hover:bg-indigo-700 rounded px-3 py-1 text-sm flex items-center"
-            onClick={() => setShowMarkerForm(true)}
-            data-testid="add-marker-button"
-          >
-            <span className="material-icons mr-1">bookmark_add</span>
-            Add Marker
-          </button>
-          
-          {/* Add keyframe button (only enabled when an element is selected) */}
-          <button 
-            className={`${
-              selectedElement 
-                ? 'bg-green-600 hover:bg-green-700' 
-                : 'bg-gray-600 cursor-not-allowed'
-            } rounded px-3 py-1 text-sm flex items-center`}
-            onClick={handleAddKeyframe}
-            disabled={!selectedElement}
-            data-testid="add-keyframe-button"
-          >
-            <span className="material-icons mr-1">add_circle</span>
-            Add Keyframe
-          </button>       
+      </div>
+      
+      <div className="flex items-center space-x-4 mt-4">
+        {/* Add marker button */}
+        <button 
+          className="bg-indigo-600 hover:bg-indigo-700 rounded px-3 py-1 text-sm flex items-center"
+          onClick={() => setShowMarkerForm(true)}
+          data-testid="add-marker-button"
+        >
+          <span className="material-icons mr-1">bookmark_add</span>
+          Add Marker
+        </button>
+        
+        {/* Add keyframe button (only enabled when an element is selected) */}
+        <button 
+          className={`${
+            selectedElement 
+              ? 'bg-green-600 hover:bg-green-700' 
+              : 'bg-gray-600 cursor-not-allowed'
+          } rounded px-3 py-1 text-sm flex items-center`}
+          onClick={handleAddKeyframe}
+          disabled={!selectedElement}
+          data-testid="add-keyframe-button"
+        >
+          <span className="material-icons mr-1">add_circle</span>
+          Add Keyframe
+        </button>       
+        
         {/* Duration control */}
         <div className="flex items-center space-x-2">
           <span className="text-sm">Duration:</span>
