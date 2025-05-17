@@ -1,14 +1,15 @@
 /**
- * Enhanced Canvas component for ChronoCanvas
+ * Integration of ImageUploader component into the EnhancedCanvas
  * 
- * This component provides a rich canvas interface with zoom, pan, and grid functionality.
- * It renders elements based on the current view mode and timeline position.
+ * This update adds the image upload functionality to the canvas controls
+ * allowing users to upload their own images.
  */
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 import { useTimeline } from '../../context/TimelineContext';
 import ElementRenderer from './ElementRenderer';
+import ImageUploader from '../UI/ImageUploader';
 import { motion } from 'framer-motion';
 
 // Type definitions
@@ -26,7 +27,7 @@ interface Transform {
  * Enhanced Canvas component with zoom, pan, and grid functionality
  */
 const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
-  const { canvas, selectedElement, selectElement } = useCanvas();
+  const { canvas, selectedElement, selectElement, addElement } = useCanvas();
   const { currentPosition } = useTimeline();
   
   // Create a clearSelection function since it doesn't exist in the context
@@ -44,6 +45,9 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
   
   // State for grid visibility
   const [showGrid, setShowGrid] = useState(true);
+  
+  // State for image uploader visibility
+  const [showUploader, setShowUploader] = useState(false);
   
   // State for scroll position (for zine mode)
   const [scrollPosition, setScrollPosition] = useState(0);
@@ -108,6 +112,57 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
       translateX: 0,
       translateY: 0,
     });
+  };
+  
+  // Handle image upload
+  const handleImageUploaded = (imageUrl: string) => {
+    // Create a new image element
+    const newElement = {
+      id: `image-${Date.now()}`,
+      type: 'image',
+      src: imageUrl,
+      alt: 'User uploaded image',
+      position: {
+        x: 100,
+        y: 100,
+      },
+      size: {
+        width: 200,
+        height: 200,
+      },
+      rotation: 0,
+      opacity: 1,
+      zIndex: canvas.elements.length + 1,
+      timelineData: {
+        entryPoint: 0,
+        exitPoint: null,
+        persist: true,
+        keyframes: [
+          {
+            time: 0,
+            properties: {
+              opacity: 0,
+              scale: 0.8,
+            },
+          },
+          {
+            time: 1,
+            properties: {
+              opacity: 1,
+              scale: 1,
+            },
+          },
+        ],
+      },
+    };
+    
+    // Add the new element to the canvas
+    if (addElement) {
+      addElement(newElement);
+    }
+    
+    // Hide the uploader
+    setShowUploader(false);
   };
   
   // Handle scroll for zine mode
@@ -197,8 +252,35 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
         ))}
       </motion.div>
       
+      {/* Image uploader modal */}
+      {showUploader && viewMode === 'editor' && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl">
+            <h3 className="text-lg font-medium mb-4">Upload Image</h3>
+            <ImageUploader onImageUploaded={handleImageUploaded} />
+            <button 
+              onClick={() => setShowUploader(false)}
+              className="mt-4 px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* Controls overlay */}
       <div className="absolute top-4 right-4 flex flex-col space-y-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2">
+        {/* Image upload button (only in editor mode) */}
+        {viewMode === 'editor' && (
+          <button
+            onClick={() => setShowUploader(true)}
+            className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+            title="Upload Image"
+          >
+            <span className="material-icons">image</span>
+          </button>
+        )}
+        
         {/* Zoom controls */}
         <button
           onClick={handleZoomIn}
@@ -206,27 +288,21 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
           title="Zoom In"
           data-testid="zoom-in-button"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-          </svg>
+          <span className="material-icons">zoom_in</span>
         </button>
         <button
           onClick={handleZoomOut}
           className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
           title="Zoom Out"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
-          </svg>
+          <span className="material-icons">zoom_out</span>
         </button>
         <button
           onClick={handleZoomReset}
           className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
           title="Reset Zoom"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-          </svg>
+          <span className="material-icons">restart_alt</span>
         </button>
         
         {/* Grid toggle (only in editor mode) */}
@@ -236,9 +312,7 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
             className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
             title={showGrid ? 'Hide Grid' : 'Show Grid'}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h4v4H5V5zm0 6h4v4H5v-4zm6-6h4v4h-4V5zm0 6h4v4h-4v-4z" clipRule="evenodd" />
-            </svg>
+            <span className="material-icons">grid_on</span>
           </button>
         )}
         
