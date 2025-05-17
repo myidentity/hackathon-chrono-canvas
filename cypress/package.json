@@ -1,0 +1,13 @@
+{
+  "name": "cypress",
+  "version": "1.0.0",
+  "description": "Cypress configuration for ChronoCanvas",
+  "main": "index.js",
+  "scripts": {
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run"
+  },
+  "dependencies": {
+    "cypress": "^12.0.0"
+  }
+}
