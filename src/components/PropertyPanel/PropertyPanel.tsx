@@ -1,40 +1,66 @@
 /**
- * PropertyPanel component for ChronoCanvas.
+ * PropertyPanel component for ChronoCanvas
  * 
- * This component provides a panel for editing properties of selected elements
- * on the canvas, including position, size, appearance, and timeline data.
- * 
- * @module PropertyPanel
+ * This component provides an interface for editing properties of selected elements.
  */
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 import { useTimeline } from '../../context/TimelineContext';
+import { motion } from 'framer-motion';
+
+// Type definitions
+interface PropertyPanelProps {
+  viewMode: 'editor' | 'timeline' | 'zine' | 'presentation';
+}
+
+interface ElementProperty {
+  name: string;
+  type: 'text' | 'number' | 'color' | 'select' | 'image' | 'boolean';
+  label: string;
+  options?: string[];
+}
 
 /**
- * PropertyPanel component that provides controls for editing element properties
- * 
- * @returns {JSX.Element} The rendered PropertyPanel component
+ * PropertyPanel component for editing element properties
  */
-function PropertyPanel(): JSX.Element {
-  // Get canvas and timeline context
-  const { canvas, selectedElements, updateElement, removeElement } = useCanvas();
-  const { duration, currentPosition } = useTimeline();
+const PropertyPanel: React.FC<PropertyPanelProps> = ({ viewMode }) => {
+  const { canvas, selectedElements, updateElement } = useCanvas();
+  const { currentPosition, addMarker } = useTimeline();
   
-  // State for active tab
-  const [activeTab, setActiveTab] = useState<'style' | 'animation' | 'timeline'>('style');
+  // State for the currently selected element
+  const [selectedElement, setSelectedElement] = useState<any>(null);
   
-  // Get the selected element (currently only supporting single selection)
-  const selectedElement = selectedElements.length > 0
-    ? canvas.elements.find(element => element.id === selectedElements[0])
-    : null;
+  // Update selected element when selection changes
+  useEffect(() => {
+    if (selectedElements.length === 1) {
+      const element = canvas.elements.find(el => el.id === selectedElements[0]);
+      setSelectedElement(element);
+    } else {
+      setSelectedElement(null);
+    }
+  }, [selectedElements, canvas.elements]);
   
-  /**
-   * Handle position change
-   * 
-   * @param {string} axis - The axis to change (x, y, z)
-   * @param {number} value - The new value
-   */
+  // Handle property change
+  const handlePropertyChange = (property: string, value: any) => {
+    if (selectedElement) {
+      updateElement(selectedElement.id, { [property]: value });
+    }
+  };
+  
+  // Handle text property change
+  const handleTextPropertyChange = (property: string, value: any) => {
+    if (selectedElement && selectedElement.properties) {
+      updateElement(selectedElement.id, {
+        properties: {
+          ...selectedElement.properties,
+          [property]: value,
+        },
+      });
+    }
+  };
+  
+  // Handle position change
   const handlePositionChange = (axis: 'x' | 'y' | 'z', value: number) => {
     if (selectedElement) {
       updateElement(selectedElement.id, {
@@ -46,12 +72,7 @@ function PropertyPanel(): JSX.Element {
     }
   };
   
-  /**
-   * Handle size change
-   * 
-   * @param {string} dimension - The dimension to change (width, height)
-   * @param {number} value - The new value
-   */
+  // Handle size change
   const handleSizeChange = (dimension: 'width' | 'height', value: number) => {
     if (selectedElement) {
       updateElement(selectedElement.id, {
@@ -63,335 +84,335 @@ function PropertyPanel(): JSX.Element {
     }
   };
   
-  /**
-   * Handle rotation change
-   * 
-   * @param {number} value - The new rotation value
-   */
-  const handleRotationChange = (value: number) => {
-    if (selectedElement) {
-      updateElement(selectedElement.id, {
-        rotation: value,
-      });
-    }
-  };
-  
-  /**
-   * Handle opacity change
-   * 
-   * @param {number} value - The new opacity value
-   */
-  const handleOpacityChange = (value: number) => {
-    if (selectedElement) {
-      updateElement(selectedElement.id, {
-        opacity: value,
-      });
-    }
-  };
-  
-  /**
-   * Handle timeline entry point change
-   * 
-   * @param {number} value - The new entry point value
-   */
-  const handleEntryPointChange = (value: number) => {
+  // Handle timeline data change
+  const handleTimelineDataChange = (property: string, value: any) => {
     if (selectedElement) {
       updateElement(selectedElement.id, {
         timelineData: {
           ...selectedElement.timelineData,
-          entryPoint: value,
+          [property]: value,
         },
       });
     }
   };
   
-  /**
-   * Handle timeline exit point change
-   * 
-   * @param {number | null} value - The new exit point value
-   */
-  const handleExitPointChange = (value: number | null) => {
+  // Handle adding a keyframe
+  const handleAddKeyframe = () => {
     if (selectedElement) {
+      const newKeyframe = {
+        id: `keyframe-${Date.now()}`,
+        time: currentPosition,
+        properties: {
+          position: { ...selectedElement.position },
+          size: { ...selectedElement.size },
+          rotation: selectedElement.rotation,
+          opacity: selectedElement.opacity,
+        },
+      };
+      
       updateElement(selectedElement.id, {
         timelineData: {
           ...selectedElement.timelineData,
-          exitPoint: value,
+          keyframes: [...(selectedElement.timelineData.keyframes || []), newKeyframe],
         },
       });
+      
+      // Add a marker for this keyframe
+      addMarker(`${selectedElement.type} Keyframe`, currentPosition, '#3b82f6');
     }
   };
   
-  /**
-   * Handle persist toggle
-   * 
-   * @param {boolean} value - The new persist value
-   */
-  const handlePersistChange = (value: boolean) => {
-    if (selectedElement) {
-      updateElement(selectedElement.id, {
-        timelineData: {
-          ...selectedElement.timelineData,
-          persist: value,
-        },
-      });
+  // Get element properties based on type
+  const getElementProperties = (type: string): ElementProperty[] => {
+    switch (type) {
+      case 'text':
+        return [
+          { name: 'text', type: 'text', label: 'Text Content' },
+          { name: 'fontFamily', type: 'select', label: 'Font Family', options: ['Arial', 'Helvetica', 'Times New Roman', 'Courier New', 'Georgia'] },
+          { name: 'fontSize', type: 'number', label: 'Font Size' },
+          { name: 'fontWeight', type: 'select', label: 'Font Weight', options: ['normal', 'bold', 'lighter', 'bolder'] },
+          { name: 'color', type: 'color', label: 'Text Color' },
+          { name: 'textAlign', type: 'select', label: 'Text Align', options: ['left', 'center', 'right', 'justify'] },
+        ];
+      case 'image':
+        return [
+          { name: 'src', type: 'image', label: 'Image Source' },
+          { name: 'alt', type: 'text', label: 'Alt Text' },
+          { name: 'objectFit', type: 'select', label: 'Object Fit', options: ['contain', 'cover', 'fill', 'none', 'scale-down'] },
+        ];
+      case 'shape':
+        return [
+          { name: 'shapeType', type: 'select', label: 'Shape Type', options: ['rectangle', 'circle', 'triangle', 'polygon'] },
+          { name: 'fillColor', type: 'color', label: 'Fill Color' },
+          { name: 'strokeColor', type: 'color', label: 'Stroke Color' },
+          { name: 'strokeWidth', type: 'number', label: 'Stroke Width' },
+        ];
+      case 'sticker':
+        return [
+          { name: 'stickerType', type: 'select', label: 'Sticker Type', options: ['travel', 'nature', 'abstract', 'emoji'] },
+          { name: 'stickerName', type: 'select', label: 'Sticker', options: ['airplane', 'camera', 'mountain', 'beach', 'heart', 'star'] },
+        ];
+      default:
+        return [];
     }
   };
   
-  /**
-   * Handle element deletion
-   */
-  const handleDeleteElement = () => {
-    if (selectedElement) {
-      removeElement(selectedElement.id);
+  // Render property inputs based on type
+  const renderPropertyInput = (property: ElementProperty) => {
+    if (!selectedElement || !selectedElement.properties) return null;
+    
+    const value = selectedElement.properties[property.name];
+    
+    switch (property.type) {
+      case 'text':
+        return (
+          <input
+            type="text"
+            value={value || ''}
+            onChange={(e) => handleTextPropertyChange(property.name, e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+            data-testid={`${property.name}-input`}
+          />
+        );
+      case 'number':
+        return (
+          <input
+            type="number"
+            value={value || 0}
+            onChange={(e) => handleTextPropertyChange(property.name, e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+          />
+        );
+      case 'color':
+        return (
+          <div className="flex items-center">
+            <input
+              type="color"
+              value={value || '#000000'}
+              onChange={(e) => handleTextPropertyChange(property.name, e.target.value)}
+              className="w-10 h-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            <input
+              type="text"
+              value={value || '#000000'}
+              onChange={(e) => handleTextPropertyChange(property.name, e.target.value)}
+              className="ml-2 flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+            />
+          </div>
+        );
+      case 'select':
+        return (
+          <select
+            value={value || ''}
+            onChange={(e) => handleTextPropertyChange(property.name, e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+          >
+            {property.options?.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        );
+      case 'image':
+        return (
+          <div className="flex flex-col">
+            <input
+              type="text"
+              value={value || ''}
+              onChange={(e) => handleTextPropertyChange(property.name, e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+              placeholder="Enter image URL"
+            />
+            <button
+              className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              onClick={() => {/* Open file picker or media library */}}
+            >
+              Browse Images
+            </button>
+          </div>
+        );
+      case 'boolean':
+        return (
+          <input
+            type="checkbox"
+            checked={value || false}
+            onChange={(e) => handleTextPropertyChange(property.name, e.target.checked ? 'true' : 'false')}
+            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+          />
+        );
+      default:
+        return null;
     }
   };
   
-  // If no element is selected, show empty state
-  if (!selectedElement) {
+  // If no element is selected or not in editor mode
+  if (!selectedElement || viewMode !== 'editor') {
     return (
-      <div className="h-full flex flex-col items-center justify-center text-gray-500 p-6 text-center">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 6h16M4 12h16m-7 6h7" />
-        </svg>
-        <h3 className="text-lg font-medium mb-2">No Element Selected</h3>
-        <p className="text-sm">Select an element on the canvas to edit its properties.</p>
+      <div className="w-64 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 p-4 overflow-y-auto">
+        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Properties</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+          {viewMode !== 'editor' 
+            ? 'Properties are only available in editor mode.' 
+            : 'Select an element to edit its properties.'}
+        </p>
       </div>
     );
   }
   
   return (
-    <div className="h-full flex flex-col">
-      {/* Element type header */}
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <div>
-          <h3 className="font-medium">
-            {selectedElement.type.charAt(0).toUpperCase() + selectedElement.type.slice(1)} Element
-          </h3>
-          <p className="text-xs text-gray-500">ID: {selectedElement.id.substring(0, 8)}...</p>
+    <motion.div 
+      className="w-64 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 p-4 overflow-y-auto"
+      initial={{ x: 100, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      data-testid="property-panel"
+    >
+      <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+        {selectedElement.type.charAt(0).toUpperCase() + selectedElement.type.slice(1)} Element
+      </h2>
+      
+      {/* Common properties */}
+      <div className="mt-4">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Position</h3>
+        <div className="grid grid-cols-3 gap-2 mt-1">
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400">X</label>
+            <input
+              type="number"
+              value={selectedElement.position.x}
+              onChange={(e) => handlePositionChange('x', Number(e.target.value))}
+              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400">Y</label>
+            <input
+              type="number"
+              value={selectedElement.position.y}
+              onChange={(e) => handlePositionChange('y', Number(e.target.value))}
+              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400">Z</label>
+            <input
+              type="number"
+              value={selectedElement.position.z}
+              onChange={(e) => handlePositionChange('z', Number(e.target.value))}
+              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+            />
+          </div>
         </div>
-        <button
-          className="text-red-500 hover:text-red-700"
-          onClick={handleDeleteElement}
-          title="Delete Element"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-        </button>
       </div>
       
-      {/* Property tabs */}
-      <div className="flex border-b border-gray-200">
-        <button
-          className={`flex-1 py-2 text-sm font-medium ${
-            activeTab === 'style'
-              ? 'text-primary-600 border-b-2 border-primary-500'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('style')}
-        >
-          Style
-        </button>
-        <button
-          className={`flex-1 py-2 text-sm font-medium ${
-            activeTab === 'animation'
-              ? 'text-primary-600 border-b-2 border-primary-500'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('animation')}
-        >
-          Animation
-        </button>
-        <button
-          className={`flex-1 py-2 text-sm font-medium ${
-            activeTab === 'timeline'
-              ? 'text-primary-600 border-b-2 border-primary-500'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('timeline')}
-        >
-          Timeline
-        </button>
+      <div className="mt-4">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Size</h3>
+        <div className="grid grid-cols-2 gap-2 mt-1">
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400">Width</label>
+            <input
+              type="number"
+              value={selectedElement.size.width}
+              onChange={(e) => handleSizeChange('width', Number(e.target.value))}
+              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400">Height</label>
+            <input
+              type="number"
+              value={selectedElement.size.height}
+              onChange={(e) => handleSizeChange('height', Number(e.target.value))}
+              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+            />
+          </div>
+        </div>
       </div>
       
-      {/* Property content */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {/* Style tab */}
-        {activeTab === 'style' && (
-          <div className="space-y-4">
-            {/* Position controls */}
-            <div>
-              <h4 className="text-sm font-medium mb-2">Position</h4>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">X</label>
-                  <input
-                    type="number"
-                    className="input"
-                    value={selectedElement.position.x}
-                    onChange={(e) => handlePositionChange('x', Number(e.target.value))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Y</label>
-                  <input
-                    type="number"
-                    className="input"
-                    value={selectedElement.position.y}
-                    onChange={(e) => handlePositionChange('y', Number(e.target.value))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Z</label>
-                  <input
-                    type="number"
-                    className="input"
-                    value={selectedElement.position.z}
-                    onChange={(e) => handlePositionChange('z', Number(e.target.value))}
-                  />
-                </div>
-              </div>
-            </div>
-            
-            {/* Size controls */}
-            <div>
-              <h4 className="text-sm font-medium mb-2">Size</h4>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Width</label>
-                  <input
-                    type="number"
-                    className="input"
-                    value={selectedElement.size.width}
-                    onChange={(e) => handleSizeChange('width', Number(e.target.value))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Height</label>
-                  <input
-                    type="number"
-                    className="input"
-                    value={selectedElement.size.height}
-                    onChange={(e) => handleSizeChange('height', Number(e.target.value))}
-                  />
-                </div>
-              </div>
-            </div>
-            
-            {/* Appearance controls */}
-            <div>
-              <h4 className="text-sm font-medium mb-2">Appearance</h4>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Rotation</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="360"
-                    className="w-full"
-                    value={selectedElement.rotation}
-                    onChange={(e) => handleRotationChange(Number(e.target.value))}
-                  />
-                  <div className="text-xs text-right">{selectedElement.rotation}°</div>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Opacity</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    className="w-full"
-                    value={selectedElement.opacity}
-                    onChange={(e) => handleOpacityChange(Number(e.target.value))}
-                  />
-                  <div className="text-xs text-right">{Math.round(selectedElement.opacity * 100)}%</div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Element-specific properties would go here */}
+      <div className="mt-4">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Appearance</h3>
+        <div className="grid grid-cols-2 gap-2 mt-1">
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400">Rotation</label>
+            <input
+              type="number"
+              value={selectedElement.rotation}
+              onChange={(e) => handlePropertyChange('rotation', Number(e.target.value))}
+              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+            />
           </div>
-        )}
-        
-        {/* Animation tab */}
-        {activeTab === 'animation' && (
-          <div className="space-y-4">
-            <p className="text-sm text-gray-500">Animation properties will be implemented in the next phase.</p>
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400">Opacity</label>
+            <input
+              type="number"
+              min="0"
+              max="1"
+              step="0.1"
+              value={selectedElement.opacity}
+              onChange={(e) => handlePropertyChange('opacity', Number(e.target.value))}
+              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+            />
           </div>
-        )}
-        
-        {/* Timeline tab */}
-        {activeTab === 'timeline' && (
-          <div className="space-y-4">
-            {/* Timeline entry/exit controls */}
-            <div>
-              <h4 className="text-sm font-medium mb-2">Timeline Points</h4>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Entry Point (seconds)</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max={duration}
-                    step="0.1"
-                    className="w-full"
-                    value={selectedElement.timelineData.entryPoint}
-                    onChange={(e) => handleEntryPointChange(Number(e.target.value))}
-                  />
-                  <div className="text-xs text-right">{selectedElement.timelineData.entryPoint.toFixed(1)}s</div>
-                </div>
-                
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Exit Point (seconds)</label>
-                  <div className="flex items-center mb-1">
-                    <input
-                      type="checkbox"
-                      className="mr-2"
-                      checked={selectedElement.timelineData.exitPoint !== null}
-                      onChange={(e) => handleExitPointChange(e.target.checked ? duration : null)}
-                    />
-                    <span className="text-xs">Enable exit point</span>
-                  </div>
-                  
-                  {selectedElement.timelineData.exitPoint !== null && (
-                    <>
-                      <input
-                        type="range"
-                        min={selectedElement.timelineData.entryPoint}
-                        max={duration}
-                        step="0.1"
-                        className="w-full"
-                        value={selectedElement.timelineData.exitPoint}
-                        onChange={(e) => handleExitPointChange(Number(e.target.value))}
-                      />
-                      <div className="text-xs text-right">{selectedElement.timelineData.exitPoint.toFixed(1)}s</div>
-                    </>
-                  )}
-                </div>
-                
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="mr-2"
-                    checked={selectedElement.timelineData.persist}
-                    onChange={(e) => handlePersistChange(e.target.checked)}
-                  />
-                  <span className="text-xs">Persist after timeline point</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Current timeline position indicator */}
-            <div className="bg-gray-100 p-3 rounded-md">
-              <div className="text-xs text-gray-500 mb-1">Current Timeline Position</div>
-              <div className="text-sm font-medium">{currentPosition.toFixed(1)}s</div>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
-    </div>
+      
+      {/* Timeline properties */}
+      <div className="mt-4">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Timeline</h3>
+        <div className="grid grid-cols-2 gap-2 mt-1">
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400">Entry Point</label>
+            <input
+              type="number"
+              value={selectedElement.timelineData.entryPoint}
+              onChange={(e) => handleTimelineDataChange('entryPoint', Number(e.target.value))}
+              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400">Exit Point</label>
+            <input
+              type="number"
+              value={selectedElement.timelineData.exitPoint || ''}
+              onChange={(e) => handleTimelineDataChange('exitPoint', e.target.value ? Number(e.target.value) : null)}
+              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+            />
+          </div>
+        </div>
+        <div className="mt-2">
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={selectedElement.timelineData.persist}
+              onChange={(e) => handleTimelineDataChange('persist', e.target.checked)}
+              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+            />
+            <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Persist after exit</span>
+          </label>
+        </div>
+        <div className="mt-2">
+          <button
+            onClick={handleAddKeyframe}
+            className="w-full px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Add Keyframe at Current Position
+          </button>
+        </div>
+      </div>
+      
+      {/* Element-specific properties */}
+      <div className="mt-4">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Element Properties</h3>
+        {getElementProperties(selectedElement.type).map((property) => (
+          <div key={property.name} className="mt-2">
+            <label className="block text-xs text-gray-500 dark:text-gray-400">{property.label}</label>
+            {renderPropertyInput(property)}
+          </div>
+        ))}
+      </div>
+    </motion.div>
   );
-}
+};
 
 export default PropertyPanel;

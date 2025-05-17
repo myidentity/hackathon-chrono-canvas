@@ -1,153 +1,232 @@
 /**
- * ZineView component for ChronoCanvas.
+ * ZineView component for ChronoCanvas
  * 
- * This component provides a scroll-triggered zine-like viewing experience
- * for the canvas content, with parallax effects and animations.
- * 
- * @module ZineView
+ * This component provides a scroll-triggered viewing experience for the canvas content,
+ * with parallax effects and animations.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
-import { useTimeline } from '../../context/TimelineContext';
-import AnimatedElement from '../Animation/AnimatedElement';
+import { motion } from 'framer-motion';
 import { calculateParallax } from '../Animation/AnimationUtils';
 
-/**
- * Props for the ZineView component
- */
+// Type definitions
 interface ZineViewProps {
-  /**
-   * Optional class name for styling
-   */
   className?: string;
 }
 
 /**
- * ZineView component that renders a scroll-triggered view of the canvas
- * 
- * @param {ZineViewProps} props - The component props
- * @returns {JSX.Element} The rendered ZineView component
+ * ZineView component for scroll-triggered viewing
  */
-function ZineView({ className }: ZineViewProps): JSX.Element {
-  // Get canvas and timeline context
+const ZineView: React.FC<ZineViewProps> = ({ className = '' }) => {
   const { canvas } = useCanvas();
-  const { duration, setCurrentPosition } = useTimeline();
   
   // State for scroll position
-  const [scrollPosition, setScrollPosition] = useState<number>(0);
+  const [scrollPosition, setScrollPosition] = useState(0);
   
-  // Reference to the container element
+  // Ref for container
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // Calculate the total scroll height based on timeline duration
-  // This creates a relationship between scroll position and timeline position
-  const totalScrollHeight = duration * 100; // 100px per second of timeline
+  // Calculate total scroll height based on content
+  const totalScrollHeight = Math.max(
+    2000,
+    canvas.elements.reduce((max, element) => {
+      return Math.max(max, element.position.y + element.size.height + 500);
+    }, 0)
+  );
   
-  /**
-   * Handle scroll events
-   */
-  const handleScroll = () => {
-    if (containerRef.current) {
-      const scrollTop = containerRef.current.scrollTop;
-      setScrollPosition(scrollTop);
-      
-      // Map scroll position to timeline position
-      const timelinePosition = (scrollTop / totalScrollHeight) * duration;
-      setCurrentPosition(Math.min(timelinePosition, duration));
-    }
-  };
-  
-  // Add scroll event listener
+  // Handle scroll
   useEffect(() => {
-    const container = containerRef.current;
+    const handleScroll = () => {
+      setScrollPosition(window.scrollY);
+    };
     
-    if (container) {
-      container.addEventListener('scroll', handleScroll);
-      
-      return () => {
-        container.removeEventListener('scroll', handleScroll);
-      };
-    }
-  }, [duration]);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
   
-  // Sort elements by z-index for proper layering
-  const sortedElements = [...canvas.elements].sort((a, b) => a.position.z - b.position.z);
+  // Render element with parallax effect
+  const renderElement = (element: any) => {
+    // Skip elements that don't have timeline data
+    if (!element.timelineData) return null;
+    
+    // Calculate parallax factor (default to 0 if not specified)
+    const parallaxFactor = element.parallaxFactor || 0;
+    
+    // Calculate visibility based on scroll position
+    const isVisible = scrollPosition >= element.timelineData.entryPoint &&
+      (element.timelineData.exitPoint === undefined || 
+       element.timelineData.exitPoint === null || 
+       scrollPosition <= element.timelineData.exitPoint || 
+       element.timelineData.persist);
+    
+    if (!isVisible) return null;
+    
+    // Calculate opacity based on entry/exit points
+    let opacity = 1;
+    const entryTransitionRange = 200;
+    const exitTransitionRange = 200;
+    
+    // Fade in near entry point
+    if (scrollPosition < element.timelineData.entryPoint + entryTransitionRange) {
+      const progress = (scrollPosition - element.timelineData.entryPoint) / entryTransitionRange;
+      opacity = Math.max(0, Math.min(1, progress));
+    }
+    
+    // Fade out near exit point (if not persistent)
+    if (element.timelineData.exitPoint !== undefined && 
+        element.timelineData.exitPoint !== null && 
+        !element.timelineData.persist && 
+        scrollPosition > element.timelineData.exitPoint - exitTransitionRange) {
+      const progress = 1 - (scrollPosition - (element.timelineData.exitPoint - exitTransitionRange)) / exitTransitionRange;
+      opacity = Math.max(0, Math.min(opacity, progress));
+    }
+    
+    // Element style with parallax effect
+    const style = {
+      position: 'absolute' as const,
+      left: `${element.position.x}px`,
+      top: `${element.position.y + calculateParallax(scrollPosition, parallaxFactor)}px`,
+      width: `${element.size.width}px`,
+      height: `${element.size.height}px`,
+      opacity,
+      zIndex: element.position.z,
+      transform: `rotate(${element.rotation}deg)`,
+      transition: 'opacity 0.3s ease-out',
+    };
+    
+    // Render element content based on type
+    const renderElementContent = () => {
+      switch (element.type) {
+        case 'text':
+          return (
+            <div 
+              className="w-full h-full flex items-center justify-center overflow-hidden"
+              style={{
+                color: element.properties.color || '#000000',
+                fontFamily: element.properties.fontFamily || 'Arial',
+                fontSize: `${element.properties.fontSize || 16}px`,
+                fontWeight: element.properties.fontWeight || 'normal',
+                textAlign: element.properties.textAlign || 'center',
+              }}
+            >
+              {element.properties.text || 'Text Element'}
+            </div>
+          );
+        
+        case 'image':
+          return (
+            <img
+              src={element.properties.src || 'https://via.placeholder.com/150'}
+              alt={element.properties.alt || 'Image Element'}
+              className="w-full h-full"
+              style={{
+                objectFit: element.properties.objectFit || 'cover',
+              }}
+            />
+          );
+        
+        case 'shape':
+          return (
+            <div 
+              className="w-full h-full"
+              style={{
+                backgroundColor: element.properties.fillColor || '#3b82f6',
+                border: element.properties.strokeWidth 
+                  ? `${element.properties.strokeWidth}px solid ${element.properties.strokeColor || '#000000'}`
+                  : 'none',
+                borderRadius: element.properties.shapeType === 'circle' ? '50%' : '0',
+              }}
+            />
+          );
+        
+        case 'sticker':
+          return (
+            <div className="w-full h-full flex items-center justify-center">
+              <img
+                src={`/stickers/${element.properties.stickerType}/${element.properties.stickerName}.svg`}
+                alt={element.properties.stickerName || 'Sticker'}
+                className="w-full h-full"
+              />
+            </div>
+          );
+        
+        default:
+          return (
+            <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
+              Unknown Element Type
+            </div>
+          );
+      }
+    };
+    
+    return (
+      <motion.div
+        key={element.id}
+        className="absolute"
+        style={style}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity, y: 0 }}
+        transition={{ duration: 0.5 }}
+        data-element-id={element.id}
+        data-element-type={element.type}
+      >
+        {renderElementContent()}
+      </motion.div>
+    );
+  };
   
   return (
     <div 
       ref={containerRef}
-      className={`w-full h-full overflow-y-auto ${className || ''}`}
-      style={{ perspective: '1000px' }}
+      className={`relative w-full ${className}`}
+      style={{ height: `${totalScrollHeight}px` }}
+      data-testid="zine-view"
     >
-      {/* Scrollable content container */}
+      {/* Canvas background */}
       <div 
-        style={{ 
-          height: `${totalScrollHeight}px`,
-          position: 'relative',
-          overflow: 'hidden',
+        className="fixed inset-0 w-full h-screen"
+        style={{
+          backgroundColor: canvas.background.type === 'color' 
+            ? canvas.background.value 
+            : 'transparent',
+          backgroundImage: canvas.background.type === 'image'
+            ? `url(${canvas.background.value})`
+            : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          zIndex: -1,
         }}
+      />
+      
+      {/* Render elements */}
+      <div className="fixed inset-0 w-full h-screen overflow-hidden">
+        {canvas.elements.map(renderElement)}
+      </div>
+      
+      {/* Scroll indicator (only visible at the top) */}
+      <motion.div
+        className="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 rounded-full shadow-lg p-3"
+        initial={{ opacity: 1 }}
+        animate={{ opacity: scrollPosition > 100 ? 0 : 1 }}
+        transition={{ duration: 0.3 }}
       >
-        {/* Background */}
-        <div 
-          className="fixed inset-0 w-full h-full"
-          style={{ 
-            backgroundColor: canvas.background.type === 'color' ? canvas.background.value : 'transparent',
-            backgroundImage: canvas.background.type === 'gradient' ? canvas.background.value : 'none',
-          }}
-        />
-        
-        {/* Canvas elements */}
-        {sortedElements.map(element => {
-          // Calculate parallax factor based on z position
-          // Elements with higher z values move slower (less parallax)
-          const parallaxFactor = 1 - (element.position.z / 10);
-          
-          // Render the element with animation
-          return (
-            <AnimatedElement
-              key={element.id}
-              id={element.id}
-              entryPoint={element.timelineData.entryPoint}
-              exitPoint={element.timelineData.exitPoint}
-              persist={element.timelineData.persist}
-              viewMode="zine"
-              scrollPosition={scrollPosition}
-              parallaxFactor={parallaxFactor}
-              style={{
-                position: 'absolute',
-                left: `${element.position.x}px`,
-                top: `${element.position.y + calculateParallax(scrollPosition, parallaxFactor, totalScrollHeight)}px`,
-                width: `${element.size.width}px`,
-                height: `${element.size.height}px`,
-                transform: `rotate(${element.rotation}deg)`,
-                opacity: element.opacity,
-                zIndex: element.position.z,
-              }}
-            >
-              {/* Placeholder for element content - will be replaced with actual element renderer */}
-              <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-600">
-                {element.type}
-              </div>
-            </AnimatedElement>
-          );
-        })}
-        
-        {/* Section markers for visual guidance */}
-        <div className="fixed right-4 top-1/2 transform -translate-y-1/2 flex flex-col space-y-2">
-          {Array.from({ length: Math.ceil(duration / 10) }).map((_, index) => (
-            <div 
-              key={index}
-              className={`w-2 h-2 rounded-full ${
-                scrollPosition > index * 1000 ? 'bg-primary-500' : 'bg-gray-300'
-              }`}
-              title={`Section ${index + 1}`}
-            />
-          ))}
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+        </svg>
+      </motion.div>
+      
+      {/* Progress indicator */}
+      <div className="fixed top-4 right-4 bg-white dark:bg-gray-800 rounded-full shadow-lg p-2">
+        <div className="h-1 w-16 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-indigo-600 dark:bg-indigo-500"
+            style={{ width: `${(scrollPosition / totalScrollHeight) * 100}%` }}
+          />
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default ZineView;

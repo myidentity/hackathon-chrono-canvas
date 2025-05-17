@@ -1,348 +1,264 @@
 /**
- * Enhanced Canvas component for ChronoCanvas.
+ * Enhanced Canvas component for ChronoCanvas
  * 
- * This component extends the basic Canvas with improved visual design,
- * animations, and interactive features.
- * 
- * @module EnhancedCanvas
+ * This component provides a rich canvas interface with zoom, pan, and grid functionality.
+ * It renders elements based on the current view mode and timeline position.
  */
 
-import { useRef, useEffect, useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 import { useTimeline } from '../../context/TimelineContext';
-import AnimatedElement from '../Animation/AnimatedElement';
 import ElementRenderer from './ElementRenderer';
-import { generateTransform } from '../Animation/AnimationUtils';
+import { motion } from 'framer-motion';
 
-/**
- * Props for the EnhancedCanvas component
- */
+// Type definitions
 interface EnhancedCanvasProps {
-  /**
-   * The current view mode of the application
-   */
-  viewMode: 'editor' | 'timeline' | 'presentation' | 'zine';
-  
-  /**
-   * Optional class name for styling
-   */
-  className?: string;
+  viewMode: 'editor' | 'timeline' | 'zine' | 'presentation';
+}
+
+interface Transform {
+  scale: number;
+  translateX: number;
+  translateY: number;
 }
 
 /**
- * EnhancedCanvas component that provides a visually polished canvas experience
- * 
- * @param {EnhancedCanvasProps} props - The component props
- * @returns {JSX.Element} The rendered EnhancedCanvas component
+ * Enhanced Canvas component with zoom, pan, and grid functionality
  */
-function EnhancedCanvas({ viewMode, className }: EnhancedCanvasProps): JSX.Element {
-  // Get canvas and timeline context
+const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
   const { canvas, selectedElements, selectElement, clearSelection } = useCanvas();
   const { currentPosition } = useTimeline();
   
-  // Reference to the canvas container element
-  const canvasRef = useRef<HTMLDivElement>(null);
-  
-  // State for tracking canvas pan and zoom
-  const [scale, setScale] = useState<number>(1);
-  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  
-  // State for tracking if the canvas is being dragged
-  const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  // State for canvas transform (zoom and pan)
+  const [transform, setTransform] = useState<Transform>({
+    scale: 1,
+    translateX: 0,
+    translateY: 0,
+  });
   
   // State for grid visibility
-  const [showGrid, setShowGrid] = useState<boolean>(true);
+  const [showGrid, setShowGrid] = useState(true);
   
-  // State for animation when changing view modes
-  const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
-  const prevViewModeRef = useRef<string>(viewMode);
+  // State for scroll position (for zine mode)
+  const [scrollPosition, setScrollPosition] = useState(0);
   
-  /**
-   * Handle mouse down event on the canvas
-   * 
-   * @param {React.MouseEvent} e - The mouse event
-   */
+  // Refs for canvas container and content
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  
+  // State for tracking mouse position and drag
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  
+  // Handle mouse down for panning
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Only enable dragging in editor mode and when not clicking on an element
-    if (viewMode === 'editor' && e.target === canvasRef.current) {
+    if (e.button === 0 && viewMode === 'editor') {
       setIsDragging(true);
       setDragStart({ x: e.clientX, y: e.clientY });
-      
-      // Clear selection when clicking on empty canvas area
-      clearSelection();
     }
   };
-
-  /**
-   * Handle mouse move event on the canvas
-   * 
-   * @param {React.MouseEvent} e - The mouse event
-   */
+  
+  // Handle mouse move for panning
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging && dragStart) {
+    if (isDragging && viewMode === 'editor') {
       const deltaX = e.clientX - dragStart.x;
       const deltaY = e.clientY - dragStart.y;
       
-      setPan(prev => ({
-        x: prev.x + deltaX,
-        y: prev.y + deltaY
+      setTransform(prev => ({
+        ...prev,
+        translateX: prev.translateX + deltaX,
+        translateY: prev.translateY + deltaY,
       }));
       
       setDragStart({ x: e.clientX, y: e.clientY });
     }
   };
-
-  /**
-   * Handle mouse up event on the canvas
-   */
+  
+  // Handle mouse up to end panning
   const handleMouseUp = () => {
     setIsDragging(false);
-    setDragStart(null);
   };
-
-  /**
-   * Handle wheel event for zooming
-   * 
-   * @param {React.WheelEvent} e - The wheel event
-   */
-  const handleWheel = (e: React.WheelEvent) => {
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      
-      // Calculate zoom center point (mouse position)
-      const rect = canvasRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-      
-      // Calculate point on content under mouse
-      const pointX = (mouseX - pan.x) / scale;
-      const pointY = (mouseY - pan.y) / scale;
-      
-      // Calculate new scale with limits
-      const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      const newScale = Math.min(Math.max(scale * delta, 0.1), 5);
-      
-      // Calculate new pan position to zoom into mouse position
-      const newPanX = mouseX - pointX * newScale;
-      const newPanY = mouseY - pointY * newScale;
-      
-      setScale(newScale);
-      setPan({ x: newPanX, y: newPanY });
-    }
+  
+  // Handle zoom in
+  const handleZoomIn = () => {
+    setTransform(prev => ({
+      ...prev,
+      scale: Math.min(prev.scale * 1.2, 5),
+    }));
   };
-
-  /**
-   * Filter visible elements based on timeline position
-   * 
-   * @returns {Array} Array of visible elements at the current timeline position
-   */
-  const getVisibleElements = () => {
-    return canvas.elements.filter(element => {
-      // In editor mode, show all elements
-      if (viewMode === 'editor') return true;
-      
-      const { entryPoint, exitPoint, persist } = element.timelineData;
-      
-      // Element is visible if:
-      // 1. Current position is after entry point AND
-      // 2. Either:
-      //    a. Current position is before exit point, OR
-      //    b. Element persists and has been shown (current position > entry point)
-      return (
-        currentPosition >= entryPoint && 
-        (exitPoint === null || currentPosition <= exitPoint || persist)
-      );
+  
+  // Handle zoom out
+  const handleZoomOut = () => {
+    setTransform(prev => ({
+      ...prev,
+      scale: Math.max(prev.scale / 1.2, 0.1),
+    }));
+  };
+  
+  // Handle zoom reset
+  const handleZoomReset = () => {
+    setTransform({
+      scale: 1,
+      translateX: 0,
+      translateY: 0,
     });
   };
   
-  // Handle view mode transitions
+  // Handle scroll for zine mode
   useEffect(() => {
-    if (prevViewModeRef.current !== viewMode) {
-      setIsTransitioning(true);
+    if (viewMode === 'zine') {
+      const handleScroll = () => {
+        setScrollPosition(window.scrollY);
+      };
       
-      // Reset transition state after animation completes
-      const timer = setTimeout(() => {
-        setIsTransitioning(false);
-      }, 500);
-      
-      prevViewModeRef.current = viewMode;
-      
-      return () => clearTimeout(timer);
+      window.addEventListener('scroll', handleScroll);
+      return () => window.removeEventListener('scroll', handleScroll);
     }
   }, [viewMode]);
   
-  // Effect to add wheel event listener with passive: false
-  useEffect(() => {
-    const canvasElement = canvasRef.current;
-    
-    if (canvasElement) {
-      const handleWheelEvent = (e: WheelEvent) => {
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault();
-        }
-      };
-      
-      canvasElement.addEventListener('wheel', handleWheelEvent, { passive: false });
-      
-      return () => {
-        canvasElement.removeEventListener('wheel', handleWheelEvent);
-      };
+  // Handle canvas click for selection
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    if (viewMode === 'editor' && e.target === contentRef.current) {
+      clearSelection();
     }
-  }, []);
-
-  // Get visible elements based on current timeline position
-  const visibleElements = getVisibleElements();
+  };
   
-  // Sort elements by z-index for proper layering
-  const sortedElements = [...visibleElements].sort((a, b) => a.position.z - b.position.z);
-
+  // Generate grid pattern
+  const gridPattern = () => {
+    const gridSize = 20;
+    const majorGridSize = 100;
+    
+    return (
+      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0 pointer-events-none">
+        <defs>
+          <pattern id="smallGrid" width={gridSize} height={gridSize} patternUnits="userSpaceOnUse">
+            <path d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`} fill="none" stroke="rgba(100, 100, 100, 0.1)" strokeWidth="0.5" />
+          </pattern>
+          <pattern id="grid" width={majorGridSize} height={majorGridSize} patternUnits="userSpaceOnUse">
+            <rect width={majorGridSize} height={majorGridSize} fill="url(#smallGrid)" />
+            <path d={`M ${majorGridSize} 0 L 0 0 0 ${majorGridSize}`} fill="none" stroke="rgba(100, 100, 100, 0.3)" strokeWidth="1" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+      </svg>
+    );
+  };
+  
   return (
     <div 
-      ref={canvasRef}
-      className={`w-full h-full relative overflow-hidden bg-white shadow-lg ${className || ''} ${
-        isTransitioning ? 'transition-all duration-500 ease-in-out' : ''
-      }`}
+      ref={containerRef}
+      className="relative w-full h-full overflow-hidden bg-gray-50 dark:bg-gray-900"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      onWheel={handleWheel}
-      style={{ 
-        cursor: isDragging ? 'grabbing' : 'default',
-        transition: isTransitioning ? 'all 0.5s ease-in-out' : 'none',
-      }}
+      onClick={handleCanvasClick}
+      data-testid="canvas-container"
     >
       {/* Canvas background */}
       <div 
-        className="absolute inset-0 transition-all duration-300 ease-in-out"
-        style={{ 
-          backgroundColor: canvas.background.type === 'color' ? canvas.background.value : 'transparent',
-          backgroundImage: canvas.background.type === 'gradient' ? canvas.background.value : 'none',
+        className="absolute inset-0"
+        style={{
+          backgroundColor: canvas.background.type === 'color' 
+            ? canvas.background.value 
+            : 'transparent',
+          backgroundImage: canvas.background.type === 'image'
+            ? `url(${canvas.background.value})`
+            : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
         }}
       />
       
       {/* Grid (only in editor mode) */}
-      {viewMode === 'editor' && showGrid && (
-        <div 
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px)
-            `,
-            backgroundSize: `${20 * scale}px ${20 * scale}px`,
-            backgroundPosition: `${pan.x % (20 * scale)}px ${pan.y % (20 * scale)}px`,
-            opacity: scale < 0.5 ? 0 : 1,
-            transition: 'opacity 0.3s ease-out',
-          }}
-        />
-      )}
+      {viewMode === 'editor' && showGrid && gridPattern()}
       
-      {/* Canvas content container with transform for pan and zoom */}
-      <div 
-        className={`absolute transition-transform ${isTransitioning ? 'duration-500 ease-in-out' : 'duration-0'}`}
+      {/* Canvas content */}
+      <motion.div
+        ref={contentRef}
+        className="absolute inset-0 origin-center"
         style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
-          transformOrigin: '0 0',
-          width: `${canvas.width}px`,
-          height: `${canvas.height}px`,
+          transform: `scale(${transform.scale}) translate(${transform.translateX}px, ${transform.translateY}px)`,
         }}
+        data-testid="canvas-content"
       >
-        {/* Render canvas elements */}
-        {sortedElements.map(element => (
-          <AnimatedElement
+        {/* Render elements */}
+        {canvas.elements.map(element => (
+          <ElementRenderer
             key={element.id}
-            id={element.id}
-            entryPoint={element.timelineData.entryPoint}
-            exitPoint={element.timelineData.exitPoint}
-            persist={element.timelineData.persist}
-            entryAnimation={element.animations[0]?.type === 'fade' ? 'fade' : 
-                           element.animations[0]?.type === 'slide' ? 'slide' : 
-                           element.animations[0]?.type === 'scale' ? 'scale' : 
-                           element.animations[0]?.type === 'bounce' ? 'bounce' : 
-                           element.animations[0]?.type === 'flip' ? 'flip' : 'fade'}
+            element={element}
+            isSelected={selectedElements.includes(element.id)}
+            onSelect={() => selectElement(element.id)}
             viewMode={viewMode}
-            style={{
-              position: 'absolute',
-              left: `${element.position.x}px`,
-              top: `${element.position.y}px`,
-              width: `${element.size.width}px`,
-              height: `${element.size.height}px`,
-              transform: `rotate(${element.rotation}deg)`,
-              opacity: element.opacity,
-              zIndex: element.position.z,
-              transition: viewMode === 'editor' ? 'none' : 'all 0.3s ease-out',
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              selectElement(element.id);
-            }}
-          >
-            <ElementRenderer 
-              element={element}
-              isSelected={selectedElements.includes(element.id)}
-            />
-          </AnimatedElement>
+            currentPosition={currentPosition}
+            scrollPosition={scrollPosition}
+          />
         ))}
-      </div>
+      </motion.div>
       
-      {/* Canvas controls overlay */}
-      <div className="absolute bottom-4 right-4 flex items-center space-x-2">
+      {/* Controls overlay */}
+      <div className="absolute top-4 right-4 flex flex-col space-y-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2">
         {/* Zoom controls */}
-        <div className="bg-white bg-opacity-90 rounded-full shadow-md flex items-center p-1">
-          <button
-            className="p-1 text-gray-600 hover:text-gray-900 focus:outline-none"
-            onClick={() => setScale(prev => Math.max(prev * 0.8, 0.1))}
-            title="Zoom Out"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
-            </svg>
-          </button>
-          
-          <div className="px-2 text-xs font-medium text-gray-700">
-            {Math.round(scale * 100)}%
-          </div>
-          
-          <button
-            className="p-1 text-gray-600 hover:text-gray-900 focus:outline-none"
-            onClick={() => setScale(prev => Math.min(prev * 1.2, 5))}
-            title="Zoom In"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-          </button>
-        </div>
+        <button
+          onClick={handleZoomIn}
+          className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+          title="Zoom In"
+          data-testid="zoom-in-button"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+          </svg>
+        </button>
+        <button
+          onClick={handleZoomOut}
+          className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+          title="Zoom Out"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
+          </svg>
+        </button>
+        <button
+          onClick={handleZoomReset}
+          className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+          title="Reset Zoom"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+          </svg>
+        </button>
         
         {/* Grid toggle (only in editor mode) */}
         {viewMode === 'editor' && (
           <button
-            className={`p-2 rounded-full focus:outline-none ${
-              showGrid ? 'bg-primary-100 text-primary-600' : 'bg-white bg-opacity-90 text-gray-600 hover:text-gray-900'
-            }`}
-            onClick={() => setShowGrid(prev => !prev)}
+            onClick={() => setShowGrid(!showGrid)}
+            className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
             title={showGrid ? 'Hide Grid' : 'Show Grid'}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h4v4H5V5zm0 6h4v4H5v-4zm6-6h4v4h-4V5zm0 6h4v4h-4v-4z" clipRule="evenodd" />
             </svg>
           </button>
         )}
+        
+        {/* Zoom percentage indicator */}
+        <div className="text-center text-sm font-medium">
+          {Math.round(transform.scale * 100)}%
+        </div>
       </div>
       
       {/* View mode indicator */}
-      <div className="absolute bottom-4 left-4 bg-white bg-opacity-90 px-3 py-1 rounded-full text-sm font-medium text-gray-700 shadow-sm">
+      <div 
+        className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 text-sm font-medium"
+        data-testid="view-mode-indicator"
+      >
         {viewMode === 'editor' && 'Editor Mode'}
         {viewMode === 'timeline' && 'Timeline Mode'}
-        {viewMode === 'presentation' && 'Presentation Mode'}
         {viewMode === 'zine' && 'Zine Mode'}
+        {viewMode === 'presentation' && 'Presentation Mode'}
       </div>
     </div>
   );
-}
+};
 
 export default EnhancedCanvas;

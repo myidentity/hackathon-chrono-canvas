@@ -15,13 +15,17 @@ configure({
 
 // Mock IntersectionObserver
 class MockIntersectionObserver {
-  constructor(callback) {
+  callback: IntersectionObserverCallback;
+  elements: Set<Element>;
+  mockEntries: Array<{isIntersecting: boolean; target: Element; intersectionRatio: number}>;
+
+  constructor(callback: IntersectionObserverCallback) {
     this.callback = callback;
     this.elements = new Set();
     this.mockEntries = [];
   }
 
-  observe(element) {
+  observe(element: Element): void {
     this.elements.add(element);
     this.mockEntries.push({
       isIntersecting: false,
@@ -30,44 +34,47 @@ class MockIntersectionObserver {
     });
   }
 
-  unobserve(element) {
+  unobserve(element: Element): void {
     this.elements.delete(element);
     this.mockEntries = this.mockEntries.filter(entry => entry.target !== element);
   }
 
-  disconnect() {
+  disconnect(): void {
     this.elements.clear();
     this.mockEntries = [];
   }
 
   // Helper to trigger intersection
-  triggerIntersection(entries) {
-    this.callback(entries, this);
+  triggerIntersection(entries: IntersectionObserverEntry[]): void {
+    this.callback(entries, this as unknown as IntersectionObserver);
   }
 }
 
 // Set up global mocks
-global.IntersectionObserver = MockIntersectionObserver;
+global.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
-  constructor(callback) {
+  callback: ResizeObserverCallback;
+  elements: Set<Element>;
+
+  constructor(callback: ResizeObserverCallback) {
     this.callback = callback;
     this.elements = new Set();
   }
 
-  observe(element) {
+  observe(element: Element): void {
     this.elements.add(element);
   }
 
-  unobserve(element) {
+  unobserve(element: Element): void {
     this.elements.delete(element);
   }
 
-  disconnect() {
+  disconnect(): void {
     this.elements.clear();
   }
-};
+} as unknown as typeof ResizeObserver;
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -85,5 +92,5 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock requestAnimationFrame
-global.requestAnimationFrame = callback => setTimeout(callback, 0);
-global.cancelAnimationFrame = id => clearTimeout(id);
+global.requestAnimationFrame = (callback: FrameRequestCallback): number => setTimeout(callback, 0) as unknown as number;
+global.cancelAnimationFrame = (id: number): void => clearTimeout(id);

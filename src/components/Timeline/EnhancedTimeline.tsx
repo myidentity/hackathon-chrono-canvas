@@ -1,127 +1,116 @@
 /**
- * Enhanced Timeline component for ChronoCanvas.
+ * Enhanced Timeline component for ChronoCanvas
  * 
- * This component extends the basic Timeline with improved visual design,
- * animations, and interactive features.
- * 
- * @module EnhancedTimeline
+ * This component provides a rich timeline interface with scrubbing, markers,
+ * and playback controls for time-based element manipulation.
  */
 
-import { useRef, useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTimeline } from '../../context/TimelineContext';
-import { ButtonEffect } from '../UI/MicroInteractions';
-import { generateTransform } from '../Animation/AnimationUtils';
+import { motion, AnimatePresence } from 'framer-motion';
 
-/**
- * Props for the EnhancedTimeline component
- */
+// Type definitions
 interface EnhancedTimelineProps {
-  /**
-   * Optional class name for styling
-   */
   className?: string;
 }
 
+interface MarkerFormState {
+  name: string;
+  color: string;
+  isOpen: boolean;
+}
+
 /**
- * EnhancedTimeline component that provides a visually polished timeline experience
- * 
- * @param {EnhancedTimelineProps} props - The component props
- * @returns {JSX.Element} The rendered EnhancedTimeline component
+ * Enhanced Timeline component with scrubbing, markers, and playback controls
  */
-function EnhancedTimeline({ className }: EnhancedTimelineProps): JSX.Element {
-  // Get timeline context
+const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ className = '' }) => {
   const { 
-    duration, 
-    currentPosition, 
-    markers, 
+    duration,
+    currentPosition,
+    markers,
     isPlaying,
     playbackSpeed,
-    setCurrentPosition, 
-    play, 
+    setCurrentPosition,
+    play,
     pause,
     setPlaybackSpeed,
-    seekToMarker,
     addMarker,
-    removeMarker
+    removeMarker,
+    seekToMarker
   } = useTimeline();
   
-  // Reference to the timeline container element
-  const timelineRef = useRef<HTMLDivElement>(null);
+  // State for timeline zoom
+  const [zoom, setZoom] = useState(1);
+  
+  // State for marker form
+  const [markerForm, setMarkerForm] = useState<MarkerFormState>({
+    name: '',
+    color: '#ff0000',
+    isOpen: false,
+  });
+  
+  // Refs for timeline track and scrubber
+  const trackRef = useRef<HTMLDivElement>(null);
   const scrubberRef = useRef<HTMLDivElement>(null);
   
-  // State for tracking if the scrubber is being dragged
-  const [isDragging, setIsDragging] = useState<boolean>(false);
+  // State for tracking mouse position and drag
+  const [isDragging, setIsDragging] = useState(false);
   
-  // State for timeline zoom
-  const [zoomLevel, setZoomLevel] = useState<number>(1);
-  const [visibleRange, setVisibleRange] = useState<[number, number]>([0, duration]);
-  
-  // State for hover effects
-  const [hoveredPosition, setHoveredPosition] = useState<number | null>(null);
-  
-  // State for marker creation
-  const [isAddingMarker, setIsAddingMarker] = useState<boolean>(false);
-  const [newMarkerName, setNewMarkerName] = useState<string>('');
-  const [newMarkerPosition, setNewMarkerPosition] = useState<number>(0);
-  const [newMarkerColor, setNewMarkerColor] = useState<string>('#3b82f6');
-  
-  // Calculate the percentage position for the scrubber
-  const scrubberPosition = ((currentPosition - visibleRange[0]) / (visibleRange[1] - visibleRange[0])) * 100;
-  
-  /**
-   * Handle mouse down event on the scrubber
-   * 
-   * @param {React.MouseEvent} e - The mouse event
-   */
-  const handleScrubberMouseDown = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsDragging(true);
+  // Format time as MM:SS
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
-  /**
-   * Handle mouse down event on the timeline
-   * 
-   * @param {React.MouseEvent} e - The mouse event
-   */
+  // Handle timeline click for seeking
   const handleTimelineClick = (e: React.MouseEvent) => {
-    if (timelineRef.current) {
-      const rect = timelineRef.current.getBoundingClientRect();
-      const clickPosition = e.clientX - rect.left;
-      const percentage = clickPosition / rect.width;
-      const rangeSize = visibleRange[1] - visibleRange[0];
-      const newPosition = visibleRange[0] + percentage * rangeSize;
-      
+    if (trackRef.current) {
+      const rect = trackRef.current.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const percentage = clickX / rect.width;
+      const newPosition = percentage * duration * zoom;
       setCurrentPosition(Math.max(0, Math.min(newPosition, duration)));
     }
   };
   
-  /**
-   * Handle mouse move over the timeline
-   * 
-   * @param {React.MouseEvent} e - The mouse event
-   */
-  const handleTimelineMouseMove = (e: React.MouseEvent) => {
-    if (timelineRef.current) {
-      const rect = timelineRef.current.getBoundingClientRect();
-      const mousePosition = e.clientX - rect.left;
-      const percentage = mousePosition / rect.width;
-      const rangeSize = visibleRange[1] - visibleRange[0];
-      const hoverPosition = visibleRange[0] + percentage * rangeSize;
-      
-      setHoveredPosition(Math.max(0, Math.min(hoverPosition, duration)));
+  // Handle mouse down for scrubbing
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    e.preventDefault();
+  };
+  
+  // Handle mouse move for scrubbing
+  const handleMouseMove = (e: MouseEvent) => {
+    if (isDragging && trackRef.current) {
+      const rect = trackRef.current.getBoundingClientRect();
+      const moveX = e.clientX - rect.left;
+      const percentage = moveX / rect.width;
+      const newPosition = percentage * duration * zoom;
+      setCurrentPosition(Math.max(0, Math.min(newPosition, duration)));
     }
   };
   
-  /**
-   * Handle mouse leave from the timeline
-   */
-  const handleTimelineMouseLeave = () => {
-    setHoveredPosition(null);
+  // Handle mouse up to end scrubbing
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
   };
   
-  /**
-   * Handle play/pause button click
-   */
+  // Handle zoom in
+  const handleZoomIn = () => {
+    setZoom(prev => Math.min(prev * 2, 8));
+  };
+  
+  // Handle zoom out
+  const handleZoomOut = () => {
+    setZoom(prev => Math.max(prev / 2, 0.5));
+  };
+  
+  // Handle play/pause toggle
   const handlePlayPause = () => {
     if (isPlaying) {
       pause();
@@ -130,138 +119,146 @@ function EnhancedTimeline({ className }: EnhancedTimelineProps): JSX.Element {
     }
   };
   
-  /**
-   * Handle speed change
-   * 
-   * @param {number} speed - The new playback speed
-   */
+  // Handle speed change
   const handleSpeedChange = (speed: number) => {
     setPlaybackSpeed(speed);
   };
   
-  /**
-   * Handle zoom level change
-   * 
-   * @param {number} level - The new zoom level
-   */
-  const handleZoomChange = (level: number) => {
-    const newZoomLevel = Math.max(1, Math.min(10, level));
-    setZoomLevel(newZoomLevel);
-    
-    // Adjust visible range based on zoom level
-    const rangeSize = duration / newZoomLevel;
-    const rangeCenter = currentPosition;
-    const rangeStart = Math.max(0, rangeCenter - rangeSize / 2);
-    const rangeEnd = Math.min(duration, rangeStart + rangeSize);
-    
-    setVisibleRange([rangeStart, rangeEnd]);
+  // Handle marker form open
+  const handleMarkerFormOpen = () => {
+    setMarkerForm(prev => ({ ...prev, isOpen: true }));
   };
   
-  /**
-   * Handle adding a new marker
-   */
-  const handleAddMarker = () => {
-    if (isAddingMarker) {
-      if (newMarkerName.trim()) {
-        addMarker(newMarkerName, newMarkerPosition, newMarkerColor);
-        setNewMarkerName('');
-        setIsAddingMarker(false);
-      }
-    } else {
-      setNewMarkerPosition(currentPosition);
-      setIsAddingMarker(true);
+  // Handle marker form close
+  const handleMarkerFormClose = () => {
+    setMarkerForm(prev => ({ ...prev, isOpen: false, name: '', color: '#ff0000' }));
+  };
+  
+  // Handle marker form submit
+  const handleMarkerFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (markerForm.name.trim()) {
+      addMarker(markerForm.name.trim(), currentPosition, markerForm.color);
+      handleMarkerFormClose();
     }
   };
   
-  /**
-   * Handle canceling marker creation
-   */
-  const handleCancelMarker = () => {
-    setIsAddingMarker(false);
-    setNewMarkerName('');
+  // Handle marker form input change
+  const handleMarkerFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setMarkerForm(prev => ({ ...prev, [name]: value }));
   };
   
-  /**
-   * Format time in seconds to MM:SS format
-   * 
-   * @param {number} timeInSeconds - The time in seconds
-   * @returns {string} Formatted time string
-   */
-  const formatTime = (timeInSeconds: number): string => {
-    const minutes = Math.floor(timeInSeconds / 60);
-    const seconds = Math.floor(timeInSeconds % 60);
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-  
-  // Effect to handle global mouse events for scrubber dragging
+  // Clean up event listeners on unmount
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging && timelineRef.current) {
-        const rect = timelineRef.current.getBoundingClientRect();
-        const mousePosition = e.clientX - rect.left;
-        const percentage = mousePosition / rect.width;
-        const rangeSize = visibleRange[1] - visibleRange[0];
-        const newPosition = visibleRange[0] + percentage * rangeSize;
-        
-        setCurrentPosition(Math.max(0, Math.min(newPosition, duration)));
-      }
-    };
-    
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-    
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
-    
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, duration, setCurrentPosition, visibleRange]);
-  
-  // Effect to update visible range when duration changes
-  useEffect(() => {
-    const rangeSize = duration / zoomLevel;
-    const rangeStart = Math.max(0, currentPosition - rangeSize / 2);
-    const rangeEnd = Math.min(duration, rangeStart + rangeSize);
-    
-    setVisibleRange([rangeStart, rangeEnd]);
-  }, [duration, zoomLevel, currentPosition]);
-  
-  // Effect to scroll timeline when current position goes out of visible range
-  useEffect(() => {
-    if (currentPosition < visibleRange[0] || currentPosition > visibleRange[1]) {
-      const rangeSize = visibleRange[1] - visibleRange[0];
-      const rangeStart = Math.max(0, currentPosition - rangeSize / 2);
-      const rangeEnd = Math.min(duration, rangeStart + rangeSize);
-      
-      setVisibleRange([rangeStart, rangeEnd]);
-    }
-  }, [currentPosition, visibleRange, duration]);
-  
-  // Effect to add smooth animation to scrubber
-  useEffect(() => {
-    if (scrubberRef.current && !isDragging) {
-      scrubberRef.current.style.transition = 'left 0.1s linear';
-    } else if (scrubberRef.current) {
-      scrubberRef.current.style.transition = 'none';
-    }
-  }, [isDragging, currentPosition]);
+  }, []);
   
   return (
-    <div className={`h-full flex flex-col p-4 ${className || ''}`}>
+    <div className={`bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 ${className}`} data-testid="timeline-container">
+      {/* Timeline track */}
+      <div 
+        ref={trackRef}
+        className="relative h-8 bg-gray-200 dark:bg-gray-700 rounded-md cursor-pointer"
+        onClick={handleTimelineClick}
+        data-testid="timeline-track"
+      >
+        {/* Visible timeline section based on zoom */}
+        <div 
+          className="absolute top-0 left-0 h-full bg-gray-300 dark:bg-gray-600 rounded-md"
+          style={{ 
+            width: `${Math.min(100, (duration / (duration * zoom)) * 100)}%`,
+            transform: `translateX(${(currentPosition / duration) * 100 * zoom}%)`,
+          }}
+        />
+        
+        {/* Timeline markers */}
+        {markers.map(marker => (
+          <div
+            key={marker.id}
+            className="absolute top-0 w-1 h-full cursor-pointer group"
+            style={{ 
+              left: `${(marker.position / (duration * zoom)) * 100}%`,
+              backgroundColor: marker.color,
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              seekToMarker(marker.id);
+            }}
+            data-testid="timeline-marker"
+          >
+            {/* Marker label */}
+            <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 text-xs font-medium px-2 py-1 rounded shadow opacity-0 group-hover:opacity-100 transition-opacity">
+              {marker.name}
+              
+              {/* Delete button */}
+              <button
+                className="ml-2 text-red-500 hover:text-red-700"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeMarker(marker.id);
+                }}
+                title="Delete Marker"
+              >
+                &times;
+              </button>
+            </div>
+          </div>
+        ))}
+        
+        {/* Timeline scrubber */}
+        <div
+          ref={scrubberRef}
+          className="absolute top-0 w-4 h-full bg-indigo-600 rounded-md cursor-move transform -translate-x-1/2 flex items-center justify-center"
+          style={{ left: `${(currentPosition / (duration * zoom)) * 100}%` }}
+          onMouseDown={handleMouseDown}
+          data-testid="timeline-scrubber"
+        >
+          <div className="w-1 h-4 bg-white rounded-full" />
+        </div>
+      </div>
+      
       {/* Timeline controls */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mt-4">
+        {/* Left controls: time display */}
+        <div className="flex items-center space-x-4">
+          <div className="text-sm font-medium" data-testid="current-position">
+            {formatTime(currentPosition)} / {formatTime(duration)}
+          </div>
+          
+          {/* Zoom controls */}
+          <div className="flex items-center space-x-2">
+            <button
+              className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={handleZoomOut}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <span className="text-xs font-medium">{zoom}x</span>
+            <button
+              className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={handleZoomIn}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        {/* Center controls: playback */}
         <div className="flex items-center space-x-2">
           {/* Play/Pause button */}
-          <ButtonEffect 
-            effect="scale"
-            className="p-2 rounded-full bg-white shadow-sm text-gray-700 hover:text-primary-600 focus:outline-none"
+          <button
+            className="p-2 rounded-full bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             onClick={handlePlayPause}
             aria-label={isPlaying ? 'Pause' : 'Play'}
+            data-testid="play-button"
           >
             {isPlaying ? (
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -272,239 +269,131 @@ function EnhancedTimeline({ className }: EnhancedTimelineProps): JSX.Element {
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
               </svg>
             )}
-          </ButtonEffect>
+          </button>
           
-          {/* Current time display */}
-          <div className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
-            {formatTime(currentPosition)} / {formatTime(duration)}
-          </div>
-        </div>
-        
-        {/* Playback speed controls */}
-        <div className="flex items-center space-x-1">
-          <span className="text-xs text-gray-600">Speed:</span>
-          {[0.5, 1, 1.5, 2].map(speed => (
-            <ButtonEffect
-              key={speed}
-              effect="glow"
-              className={`px-2 py-1 text-xs rounded ${
-                playbackSpeed === speed 
-                  ? 'bg-primary-500 text-white' 
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-              onClick={() => handleSpeedChange(speed)}
-            >
-              {speed}x
-            </ButtonEffect>
-          ))}
-        </div>
-        
-        {/* Zoom controls */}
-        <div className="flex items-center space-x-1">
-          <span className="text-xs text-gray-600">Zoom:</span>
-          <ButtonEffect
-            effect="scale"
-            className="p-1 text-gray-600 hover:text-gray-900 bg-gray-200 rounded"
-            onClick={() => handleZoomChange(zoomLevel - 1)}
-            disabled={zoomLevel <= 1}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
-            </svg>
-          </ButtonEffect>
-          
-          <span className="text-xs font-medium w-5 text-center">{zoomLevel}x</span>
-          
-          <ButtonEffect
-            effect="scale"
-            className="p-1 text-gray-600 hover:text-gray-900 bg-gray-200 rounded"
-            onClick={() => handleZoomChange(zoomLevel + 1)}
-            disabled={zoomLevel >= 10}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-          </ButtonEffect>
-        </div>
-        
-        {/* Marker controls */}
-        <ButtonEffect
-          effect="glow"
-          className={`px-3 py-1 text-xs rounded-full ${
-            isAddingMarker 
-              ? 'bg-primary-500 text-white' 
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-          onClick={handleAddMarker}
-        >
-          {isAddingMarker ? 'Save Marker' : 'Add Marker'}
-        </ButtonEffect>
-      </div>
-      
-      {/* Marker creation form */}
-      {isAddingMarker && (
-        <div className="mb-4 p-3 bg-gray-100 rounded-md flex items-center space-x-3">
-          <input
-            type="text"
-            className="flex-1 px-3 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            placeholder="Marker name"
-            value={newMarkerName}
-            onChange={(e) => setNewMarkerName(e.target.value)}
-            autoFocus
-          />
-          
-          <input
-            type="color"
-            className="w-8 h-8 rounded-md border border-gray-300 cursor-pointer"
-            value={newMarkerColor}
-            onChange={(e) => setNewMarkerColor(e.target.value)}
-          />
-          
-          <input
-            type="number"
-            className="w-20 px-3 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            min="0"
-            max={duration}
-            step="0.1"
-            value={newMarkerPosition}
-            onChange={(e) => setNewMarkerPosition(Number(e.target.value))}
-          />
-          
-          <ButtonEffect
-            effect="scale"
-            className="p-1 text-red-500 hover:text-red-700 bg-white rounded-full"
-            onClick={handleCancelMarker}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-          </ButtonEffect>
-        </div>
-      )}
-      
-      {/* Timeline track */}
-      <div 
-        ref={timelineRef}
-        className="relative h-12 bg-gray-200 rounded-md cursor-pointer overflow-hidden"
-        onClick={handleTimelineClick}
-        onMouseMove={handleTimelineMouseMove}
-        onMouseLeave={handleTimelineMouseLeave}
-      >
-        {/* Timeline background with time indicators */}
-        <div className="absolute inset-0 flex items-end">
-          {Array.from({ length: Math.ceil(duration) + 1 }).map((_, i) => {
-            // Only show time indicators within visible range
-            if (i < visibleRange[0] || i > visibleRange[1]) return null;
-            
-            const position = ((i - visibleRange[0]) / (visibleRange[1] - visibleRange[0])) * 100;
-            
-            return (
-              <div 
-                key={i} 
-                className="absolute bottom-0 flex flex-col items-center"
-                style={{ left: `${position}%` }}
-              >
-                <div className="h-2 w-px bg-gray-400" />
-                {i % 5 === 0 && (
-                  <div className="text-xs text-gray-500 mb-1">
-                    {formatTime(i)}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        
-        {/* Timeline progress */}
-        <div 
-          className="absolute top-0 left-0 h-full bg-primary-100 rounded-l-md"
-          style={{ width: `${scrubberPosition}%` }}
-        />
-        
-        {/* Timeline markers */}
-        {markers.map(marker => {
-          // Only show markers within visible range
-          if (marker.position < visibleRange[0] || marker.position > visibleRange[1]) return null;
-          
-          const position = ((marker.position - visibleRange[0]) / (visibleRange[1] - visibleRange[0])) * 100;
-          
-          return (
-            <div
-              key={marker.id}
-              className="absolute top-0 flex flex-col items-center cursor-pointer group"
-              style={{ 
-                left: `${position}%`,
-                zIndex: 10,
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                seekToMarker(marker.id);
-              }}
-              title={marker.name}
-            >
-              <div 
-                className="w-1 h-full bg-opacity-80 group-hover:w-2 transition-all duration-200"
-                style={{ backgroundColor: marker.color }}
-              />
-              <div className="absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white shadow-md rounded px-2 py-1 text-xs transform -translate-x-1/2 -translate-y-full">
-                <div className="font-medium">{marker.name}</div>
-                <div className="text-gray-500">{formatTime(marker.position)}</div>
-              </div>
-              
-              {/* Delete button */}
+          {/* Playback speed buttons */}
+          <div className="flex items-center space-x-1">
+            {[0.5, 1, 1.5, 2].map(speed => (
               <button
-                className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white rounded-full p-0.5 shadow-sm transform translate-x-full -translate-y-1/2 text-red-500 hover:text-red-700"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeMarker(marker.id);
-                }}
+                key={speed}
+                className={`px-2 py-1 text-xs font-medium rounded-md ${
+                  playbackSpeed === speed
+                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200'
+                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                }`}
+                onClick={() => handleSpeedChange(speed)}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
+                {speed}x
               </button>
-            </div>
-          );
-        })}
-        
-        {/* Hover indicator */}
-        {hoveredPosition !== null && (
-          <div
-            className="absolute top-0 h-full w-px bg-gray-500 pointer-events-none"
-            style={{ 
-              left: `${((hoveredPosition - visibleRange[0]) / (visibleRange[1] - visibleRange[0])) * 100}%`,
-              zIndex: 5,
-            }}
-          >
-            <div className="absolute top-0 transform -translate-x-1/2 -translate-y-full bg-gray-800 text-white text-xs px-2 py-1 rounded">
-              {formatTime(hoveredPosition)}
-            </div>
+            ))}
           </div>
-        )}
+        </div>
         
-        {/* Timeline scrubber */}
-        <div
-          ref={scrubberRef}
-          className="absolute top-0 w-1 h-full bg-primary-500 cursor-ew-resize"
-          style={{ left: `${scrubberPosition}%` }}
-          onMouseDown={handleScrubberMouseDown}
-        >
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-primary-500 rounded-full shadow-md" />
+        {/* Right controls: markers */}
+        <div className="flex items-center space-x-2">
+          {/* Add marker button */}
+          <button
+            className="px-3 py-1 text-sm font-medium rounded-md bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-200 dark:hover:bg-indigo-800"
+            onClick={handleMarkerFormOpen}
+            data-testid="add-marker-button"
+          >
+            Add Marker
+          </button>
         </div>
       </div>
       
-      {/* Visible range indicator */}
-      <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-        <div>{formatTime(visibleRange[0])}</div>
-        <div className="text-center">
-          {zoomLevel > 1 && (
-            <span>Showing {formatTime(visibleRange[1] - visibleRange[0])} of {formatTime(duration)}</span>
-          )}
-        </div>
-        <div>{formatTime(visibleRange[1])}</div>
-      </div>
+      {/* Marker form modal */}
+      <AnimatePresence>
+        {markerForm.isOpen && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-96"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+            >
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+                Add Timeline Marker
+              </h3>
+              
+              <form onSubmit={handleMarkerFormSubmit}>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Marker Name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={markerForm.name}
+                    onChange={handleMarkerFormChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+                    placeholder="Marker name"
+                    data-testid="marker-name-input"
+                    required
+                  />
+                </div>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Marker Color
+                  </label>
+                  <div className="flex items-center">
+                    <input
+                      type="color"
+                      name="color"
+                      value={markerForm.color}
+                      onChange={handleMarkerFormChange}
+                      className="w-10 h-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                    <input
+                      type="text"
+                      name="color"
+                      value={markerForm.color}
+                      onChange={handleMarkerFormChange}
+                      className="ml-2 flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
+                      pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
+                      placeholder="#RRGGBB"
+                    />
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Position
+                  </label>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {formatTime(currentPosition)}
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    className="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
+                    onClick={handleMarkerFormClose}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm font-medium rounded-md border border-transparent text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    data-testid="save-marker-button"
+                  >
+                    Save Marker
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
-}
+};
 
 export default EnhancedTimeline;

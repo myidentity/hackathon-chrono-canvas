@@ -1,101 +1,79 @@
 /**
- * Main application component for ChronoCanvas.
+ * Main application component for ChronoCanvas
  * 
- * This component serves as the root of the application and manages the overall layout,
- * routing, and global state providers.
- * 
- * @module App
+ * This component serves as the root of the application, managing the overall layout
+ * and coordinating between different components.
  */
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { CanvasProvider } from './context/CanvasContext';
 import { TimelineProvider } from './context/TimelineContext';
-import Canvas from './components/Canvas/Canvas';
-import Timeline from './components/Timeline/Timeline';
+import Header from './components/UI/Header';
+import EnhancedCanvas from './components/Canvas/EnhancedCanvas';
+import EnhancedTimeline from './components/Timeline/EnhancedTimeline';
 import ElementLibrary from './components/ElementLibrary/ElementLibrary';
 import PropertyPanel from './components/PropertyPanel/PropertyPanel';
-import Header from './components/UI/Header';
+import ZineView from './components/ZineView/ZineView';
+import MicroInteractions from './components/UI/MicroInteractions';
 
 /**
- * App component that serves as the entry point for the ChronoCanvas application.
- * 
- * @returns {JSX.Element} The rendered App component
+ * Main App component
  */
-function App(): JSX.Element {
-  // State to track the currently selected view mode
-  const [viewMode, setViewMode] = useState<'editor' | 'timeline' | 'presentation' | 'zine'>('editor');
+const App: React.FC = () => {
+  // State for current view mode
+  const [viewMode] = useState<'editor' | 'timeline' | 'zine' | 'presentation'>('editor');
   
-  // State to track if the element library panel is open
-  const [isLibraryOpen, setIsLibraryOpen] = useState(true);
-  
-  // State to track if the property panel is open
-  const [isPropertyPanelOpen, setIsPropertyPanelOpen] = useState(true);
-
-  /**
-   * Toggles the element library panel open/closed state
-   */
-  const toggleLibrary = () => {
-    setIsLibraryOpen(prev => !prev);
-  };
-
-  /**
-   * Toggles the property panel open/closed state
-   */
-  const togglePropertyPanel = () => {
-    setIsPropertyPanelOpen(prev => !prev);
-  };
-
-  /**
-   * Changes the current view mode
-   * 
-   * @param {('editor' | 'timeline' | 'presentation' | 'zine')} mode - The view mode to switch to
-   */
-  const changeViewMode = (mode: 'editor' | 'timeline' | 'presentation' | 'zine') => {
-    setViewMode(mode);
-  };
-
   return (
     <CanvasProvider>
       <TimelineProvider>
-        <div className="flex flex-col h-screen bg-gray-50">
-          <Header 
-            viewMode={viewMode} 
-            onChangeViewMode={changeViewMode} 
-            onToggleLibrary={toggleLibrary}
-            onTogglePropertyPanel={togglePropertyPanel}
-          />
-          
-          <div className="flex flex-1 overflow-hidden">
-            {/* Element Library Panel - conditionally rendered based on isLibraryOpen */}
-            {isLibraryOpen && viewMode === 'editor' && (
-              <div className="w-64 element-library">
-                <ElementLibrary />
-              </div>
-            )}
+        <MicroInteractions.ToastProvider>
+          <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+            {/* Header */}
+            <Header 
+              viewMode={viewMode} 
+              data-testid="app-header"
+            />
             
-            {/* Main Canvas Area */}
-            <div className="flex-1 canvas-container">
-              <Canvas viewMode={viewMode} />
+            {/* Main content */}
+            <div className="flex-1 flex overflow-hidden">
+              {/* Left sidebar (only in editor mode) */}
+              {viewMode === 'editor' && (
+                <div className="w-64 border-r border-gray-200 dark:border-gray-700 overflow-y-auto" data-testid="element-library">
+                  <ElementLibrary />
+                </div>
+              )}
+              
+              {/* Main canvas area */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Canvas */}
+                <div className="flex-1 overflow-hidden" data-testid="canvas-container">
+                  {viewMode === 'zine' ? (
+                    <ZineView />
+                  ) : (
+                    <EnhancedCanvas viewMode={viewMode} />
+                  )}
+                </div>
+                
+                {/* Timeline (not in zine mode) */}
+                {viewMode !== 'zine' && (
+                  <div className="h-48 border-t border-gray-200 dark:border-gray-700" data-testid="timeline-container">
+                    <EnhancedTimeline />
+                  </div>
+                )}
+              </div>
+              
+              {/* Right sidebar (only in editor mode) */}
+              {viewMode === 'editor' && (
+                <div className="w-64 border-l border-gray-200 dark:border-gray-700 overflow-y-auto" data-testid="property-panel">
+                  <PropertyPanel viewMode={viewMode} />
+                </div>
+              )}
             </div>
-            
-            {/* Property Panel - conditionally rendered based on isPropertyPanelOpen */}
-            {isPropertyPanelOpen && viewMode === 'editor' && (
-              <div className="w-80 property-panel">
-                <PropertyPanel />
-              </div>
-            )}
           </div>
-          
-          {/* Timeline - shown in editor and timeline modes */}
-          {(viewMode === 'editor' || viewMode === 'timeline') && (
-            <div className="h-32 timeline-container">
-              <Timeline />
-            </div>
-          )}
-        </div>
+        </MicroInteractions.ToastProvider>
       </TimelineProvider>
     </CanvasProvider>
   );
-}
+};
 
 export default App;

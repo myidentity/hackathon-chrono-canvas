@@ -1,51 +1,30 @@
 /**
- * Animation utilities for ChronoCanvas.
+ * Animation utilities for ChronoCanvas
  * 
- * This module provides utility functions and constants for creating
- * smooth, sophisticated animations throughout the application.
- * 
- * @module AnimationUtils
+ * This file contains utility functions and constants for animations
+ * throughout the application.
  */
 
-/**
- * Standard easing functions for animations
- */
+// Easing functions for animations
 export const Easing = {
-  /**
-   * Linear easing (no acceleration or deceleration)
-   * 
-   * @param {number} t - Current time (0-1)
-   * @returns {number} Output value
-   */
+  // Linear easing (no acceleration or deceleration)
   linear: (t: number): number => t,
   
-  /**
-   * Ease-in-out cubic easing
-   * 
-   * @param {number} t - Current time (0-1)
-   * @returns {number} Output value
-   */
+  // Cubic easing in/out - acceleration until halfway, then deceleration
   easeInOutCubic: (t: number): number => 
     t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
   
-  /**
-   * Ease-out back easing (slight overshoot)
-   * 
-   * @param {number} t - Current time (0-1)
-   * @returns {number} Output value
-   */
+  // Quadratic easing out - deceleration until stop
+  easeOutQuad: (t: number): number => 1 - (1 - t) * (1 - t),
+  
+  // Back easing out - slight overshoot
   easeOutBack: (t: number): number => {
     const c1 = 1.70158;
     const c3 = c1 + 1;
     return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
   },
   
-  /**
-   * Elastic ease-out
-   * 
-   * @param {number} t - Current time (0-1)
-   * @returns {number} Output value
-   */
+  // Elastic easing out - exponentially decaying sine wave
   easeOutElastic: (t: number): number => {
     const c4 = (2 * Math.PI) / 3;
     return t === 0
@@ -55,12 +34,7 @@ export const Easing = {
       : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
   },
   
-  /**
-   * Bounce ease-out
-   * 
-   * @param {number} t - Current time (0-1)
-   * @returns {number} Output value
-   */
+  // Bounce easing out - exponentially decaying parabolic bounce
   easeOutBounce: (t: number): number => {
     const n1 = 7.5625;
     const d1 = 2.75;
@@ -77,13 +51,8 @@ export const Easing = {
   }
 };
 
-/**
- * Animation presets for element transitions
- */
+// Animation presets for common animations
 export const AnimationPresets = {
-  /**
-   * Fade in animation
-   */
   fadeIn: {
     type: 'fade',
     duration: 0.5,
@@ -92,10 +61,14 @@ export const AnimationPresets = {
       opacity: { from: 0, to: 1 }
     }
   },
-  
-  /**
-   * Slide up animation
-   */
+  fadeOut: {
+    type: 'fade',
+    duration: 0.5,
+    easing: 'easeInOutCubic',
+    properties: {
+      opacity: { from: 1, to: 0 }
+    }
+  },
   slideUp: {
     type: 'transform',
     duration: 0.6,
@@ -105,119 +78,144 @@ export const AnimationPresets = {
       translateY: { from: 20, to: 0 }
     }
   },
-  
-  /**
-   * Scale in animation
-   */
-  scaleIn: {
+  slideDown: {
+    type: 'transform',
+    duration: 0.6,
+    easing: 'easeOutBack',
+    properties: {
+      opacity: { from: 0, to: 1 },
+      translateY: { from: -20, to: 0 }
+    }
+  },
+  slideLeft: {
+    type: 'transform',
+    duration: 0.6,
+    easing: 'easeOutBack',
+    properties: {
+      opacity: { from: 0, to: 1 },
+      translateX: { from: 20, to: 0 }
+    }
+  },
+  slideRight: {
+    type: 'transform',
+    duration: 0.6,
+    easing: 'easeOutBack',
+    properties: {
+      opacity: { from: 0, to: 1 },
+      translateX: { from: -20, to: 0 }
+    }
+  },
+  zoomIn: {
     type: 'transform',
     duration: 0.5,
-    easing: 'easeOutElastic',
+    easing: 'easeOutQuad',
     properties: {
       opacity: { from: 0, to: 1 },
       scale: { from: 0.8, to: 1 }
     }
   },
-  
-  /**
-   * Bounce in animation
-   */
-  bounceIn: {
+  zoomOut: {
+    type: 'transform',
+    duration: 0.5,
+    easing: 'easeOutQuad',
+    properties: {
+      opacity: { from: 1, to: 0 },
+      scale: { from: 1, to: 0.8 }
+    }
+  },
+  bounce: {
     type: 'transform',
     duration: 0.8,
     easing: 'easeOutBounce',
     properties: {
-      opacity: { from: 0, to: 1 },
-      scale: { from: 0.3, to: 1 }
+      translateY: { from: -20, to: 0 }
     }
   },
-  
-  /**
-   * Flip in animation
-   */
-  flipIn: {
+  pulse: {
     type: 'transform',
-    duration: 0.7,
-    easing: 'easeOutBack',
+    duration: 0.4,
+    easing: 'easeOutElastic',
     properties: {
-      opacity: { from: 0, to: 1 },
-      rotateY: { from: 90, to: 0 }
+      scale: { from: 1, to: 1.05 }
     }
   }
 };
 
+// Type definitions for animation properties
+export type EasingType = keyof typeof Easing;
+export type AnimationProperty = { from: number; to: number };
+export type AnimationProperties = Record<string, AnimationProperty>;
+
 /**
- * Calculate the interpolated value between start and end based on progress and easing
+ * Interpolate between two values based on progress and easing function
  * 
- * @param {number} start - Start value
- * @param {number} end - End value
- * @param {number} progress - Current progress (0-1)
- * @param {string} easingName - Name of the easing function to use
- * @returns {number} Interpolated value
+ * @param from - Starting value
+ * @param to - Ending value
+ * @param progress - Progress value between 0 and 1
+ * @param easingName - Name of easing function to use
+ * @returns Interpolated value
  */
-export function interpolate(
-  start: number,
-  end: number,
+export const interpolate = (
+  from: number,
+  to: number,
   progress: number,
-  easingName: keyof typeof Easing = 'linear'
-): number {
-  const easingFunction = Easing[easingName] || Easing.linear;
-  const easedProgress = easingFunction(Math.max(0, Math.min(1, progress)));
-  return start + (end - start) * easedProgress;
-}
+  easingName: EasingType | string = 'linear'
+): number => {
+  // Clamp progress between 0 and 1
+  const clampedProgress = Math.max(0, Math.min(1, progress));
+  
+  // Get easing function (default to linear if not found)
+  const easingFn = Easing[easingName as EasingType] || Easing.linear;
+  
+  // Apply easing to progress
+  const easedProgress = easingFn(clampedProgress);
+  
+  // Interpolate between values
+  return from + (to - from) * easedProgress;
+};
 
 /**
- * Generate a CSS transform string from transform properties
+ * Generate CSS transform string from transform properties
  * 
- * @param {object} transforms - Transform properties
- * @returns {string} CSS transform string
+ * @param transforms - Object containing transform properties
+ * @returns CSS transform string
  */
-export function generateTransform(transforms: {
-  translateX?: number;
-  translateY?: number;
-  translateZ?: number;
-  scale?: number;
-  scaleX?: number;
-  scaleY?: number;
-  rotate?: number;
-  rotateX?: number;
-  rotateY?: number;
-  rotateZ?: number;
-}): string {
-  const parts: string[] = [];
+export const generateTransform = (transforms: Record<string, number>): string => {
+  const transformParts: string[] = [];
   
-  if (transforms.translateX !== undefined) parts.push(`translateX(${transforms.translateX}px)`);
-  if (transforms.translateY !== undefined) parts.push(`translateY(${transforms.translateY}px)`);
-  if (transforms.translateZ !== undefined) parts.push(`translateZ(${transforms.translateZ}px)`);
+  if (transforms.translateX !== undefined) {
+    transformParts.push(`translateX(${transforms.translateX}px)`);
+  }
   
-  if (transforms.scale !== undefined) parts.push(`scale(${transforms.scale})`);
-  if (transforms.scaleX !== undefined) parts.push(`scaleX(${transforms.scaleX})`);
-  if (transforms.scaleY !== undefined) parts.push(`scaleY(${transforms.scaleY})`);
+  if (transforms.translateY !== undefined) {
+    transformParts.push(`translateY(${transforms.translateY}px)`);
+  }
   
-  if (transforms.rotate !== undefined) parts.push(`rotate(${transforms.rotate}deg)`);
-  if (transforms.rotateX !== undefined) parts.push(`rotateX(${transforms.rotateX}deg)`);
-  if (transforms.rotateY !== undefined) parts.push(`rotateY(${transforms.rotateY}deg)`);
-  if (transforms.rotateZ !== undefined) parts.push(`rotateZ(${transforms.rotateZ}deg)`);
+  if (transforms.scale !== undefined) {
+    transformParts.push(`scale(${transforms.scale})`);
+  }
   
-  return parts.join(' ');
-}
+  if (transforms.rotate !== undefined) {
+    transformParts.push(`rotate(${transforms.rotate}deg)`);
+  }
+  
+  return transformParts.join(' ');
+};
 
 /**
- * Calculate the parallax offset based on scroll position
+ * Calculate parallax offset based on scroll position and speed factor
  * 
- * @param {number} scrollPosition - Current scroll position
- * @param {number} speed - Parallax speed factor (0-1)
- * @param {number} containerHeight - Height of the container
- * @returns {number} Parallax offset
+ * @param scrollPosition - Current scroll position in pixels
+ * @param speedFactor - Speed factor (0-1, where 0 is no movement, 1 is full movement)
+ * @returns Parallax offset in pixels
  */
-export function calculateParallax(
+export const calculateParallax = (
   scrollPosition: number,
-  speed: number,
-  containerHeight: number
-): number {
-  // Limit speed to a reasonable range
-  const limitedSpeed = Math.max(0, Math.min(1, speed));
+  speedFactor: number
+): number => {
+  // Limit speed factor to reasonable range
+  const clampedSpeedFactor = Math.max(0, Math.min(1, speedFactor));
   
-  // Calculate the parallax offset
-  return scrollPosition * limitedSpeed * -0.5;
-}
+  // Calculate parallax offset
+  return -scrollPosition * clampedSpeedFactor * 0.5;
+};

@@ -1,463 +1,420 @@
 /**
- * MicroInteractions component for ChronoCanvas.
+ * MicroInteractions component for ChronoCanvas
  * 
- * This component provides subtle, polished micro-interactions for UI elements
- * to enhance the user experience and visual appeal.
- * 
- * @module MicroInteractions
+ * This component provides subtle animations and interactions for UI elements
+ * to enhance the user experience.
  */
 
-import { useState, useEffect, ReactNode } from 'react';
-import { generateTransform } from '../Animation/AnimationUtils';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-/**
- * Props for the ButtonEffect component
- */
-interface ButtonEffectProps {
-  /**
-   * The children to render inside the button
-   */
-  children: ReactNode;
-  
-  /**
-   * Optional class name for styling
-   */
-  className?: string;
-  
-  /**
-   * Optional click handler
-   */
-  onClick?: (e: React.MouseEvent) => void;
-  
-  /**
-   * The effect type
-   */
-  effect?: 'scale' | 'lift' | 'glow' | 'ripple';
-  
-  /**
-   * Whether the button is disabled
-   */
+// Type definitions
+interface ButtonProps {
+  children: React.ReactNode;
+  onClick?: () => void;
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
+  className?: string;
+  icon?: React.ReactNode;
+  iconPosition?: 'left' | 'right';
+  loading?: boolean;
+  tooltip?: string;
 }
 
+interface CardProps {
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+  hover?: boolean;
+  elevation?: 'none' | 'sm' | 'md' | 'lg';
+}
+
+interface TooltipProps {
+  children: React.ReactNode;
+  content: string;
+  position?: 'top' | 'right' | 'bottom' | 'left';
+  delay?: number;
+}
+
+interface ToastProps {
+  message: string;
+  type?: 'info' | 'success' | 'warning' | 'error';
+  duration?: number;
+  onClose?: () => void;
+}
+
+interface ToastState {
+  id: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  duration: number;
+}
+
+// Toast context
+const ToastContext = React.createContext<{
+  showToast: (message: string, type?: 'info' | 'success' | 'warning' | 'error', duration?: number) => void;
+}>({
+  showToast: () => {},
+});
+
 /**
- * ButtonEffect component that adds micro-interactions to buttons
- * 
- * @param {ButtonEffectProps} props - The component props
- * @returns {JSX.Element} The rendered ButtonEffect component
+ * Button component with micro-interactions
  */
-export function ButtonEffect({
+export const Button: React.FC<ButtonProps> = ({
   children,
-  className,
   onClick,
-  effect = 'scale',
+  variant = 'primary',
+  size = 'md',
   disabled = false,
-}: ButtonEffectProps): JSX.Element {
-  // State for hover and active states
-  const [isHovered, setIsHovered] = useState<boolean>(false);
-  const [isActive, setIsActive] = useState<boolean>(false);
+  className = '',
+  icon,
+  iconPosition = 'left',
+  loading = false,
+  tooltip,
+}) => {
+  // Base classes
+  const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium focus:outline-none transition-all';
   
-  // State for ripple effect
-  const [ripples, setRipples] = useState<Array<{
-    id: number;
-    x: number;
-    y: number;
-    size: number;
-  }>>([]);
-  
-  // Handle ripple cleanup
-  useEffect(() => {
-    if (ripples.length > 0) {
-      const timer = setTimeout(() => {
-        setRipples([]);
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [ripples]);
-  
-  /**
-   * Handle mouse down event
-   * 
-   * @param {React.MouseEvent} e - The mouse event
-   */
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (disabled) return;
-    
-    setIsActive(true);
-    
-    // Create ripple effect
-    if (effect === 'ripple') {
-      const button = e.currentTarget as HTMLButtonElement;
-      const rect = button.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const size = Math.max(rect.width, rect.height) * 2;
-      
-      setRipples([...ripples, { id: Date.now(), x, y, size }]);
-    }
+  // Size classes
+  const sizeClasses = {
+    sm: 'px-2.5 py-1.5 text-xs',
+    md: 'px-4 py-2 text-sm',
+    lg: 'px-6 py-3 text-base',
   };
   
-  /**
-   * Handle mouse up event
-   */
-  const handleMouseUp = () => {
-    if (disabled) return;
-    setIsActive(false);
+  // Variant classes
+  const variantClasses = {
+    primary: 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500',
+    secondary: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500',
+    outline: 'border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500',
+    ghost: 'text-gray-700 hover:bg-gray-100 focus:ring-2 focus:ring-gray-500',
   };
   
-  /**
-   * Handle mouse enter event
-   */
-  const handleMouseEnter = () => {
-    if (disabled) return;
-    setIsHovered(true);
+  // Disabled classes
+  const disabledClasses = 'opacity-50 cursor-not-allowed';
+  
+  // Combine classes
+  const buttonClasses = `
+    ${baseClasses}
+    ${sizeClasses[size]}
+    ${variantClasses[variant]}
+    ${disabled ? disabledClasses : ''}
+    ${className}
+  `;
+  
+  // Button content
+  const buttonContent = (
+    <>
+      {loading ? (
+        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      ) : icon && iconPosition === 'left' ? (
+        <span className="mr-2">{icon}</span>
+      ) : null}
+      
+      {children}
+      
+      {icon && iconPosition === 'right' && !loading ? (
+        <span className="ml-2">{icon}</span>
+      ) : null}
+    </>
+  );
+  
+  // If tooltip is provided, wrap button in Tooltip component
+  if (tooltip) {
+    return (
+      <Tooltip content={tooltip}>
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: disabled ? 1 : 1.05 }}
+          className={buttonClasses}
+          onClick={disabled ? undefined : onClick}
+          disabled={disabled || loading}
+        >
+          {buttonContent}
+        </motion.button>
+      </Tooltip>
+    );
+  }
+  
+  // Otherwise, return just the button
+  return (
+    <motion.button
+      whileTap={{ scale: 0.95 }}
+      whileHover={{ scale: disabled ? 1 : 1.05 }}
+      className={buttonClasses}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled || loading}
+    >
+      {buttonContent}
+    </motion.button>
+  );
+};
+
+/**
+ * Card component with micro-interactions
+ */
+export const Card: React.FC<CardProps> = ({
+  children,
+  onClick,
+  className = '',
+  hover = true,
+  elevation = 'md',
+}) => {
+  // Base classes
+  const baseClasses = 'rounded-lg bg-white dark:bg-gray-800 overflow-hidden';
+  
+  // Elevation classes
+  const elevationClasses = {
+    none: '',
+    sm: 'shadow-sm',
+    md: 'shadow',
+    lg: 'shadow-lg',
   };
   
-  /**
-   * Handle mouse leave event
-   */
-  const handleMouseLeave = () => {
-    if (disabled) return;
-    setIsHovered(false);
-    setIsActive(false);
-  };
+  // Hover classes
+  const hoverClasses = hover ? 'transition-all duration-300 hover:shadow-lg' : '';
   
-  /**
-   * Get styles based on effect type and state
-   */
-  const getEffectStyles = (): React.CSSProperties => {
-    if (disabled) {
-      return {
-        opacity: 0.6,
-        cursor: 'not-allowed',
-      };
-    }
-    
-    switch (effect) {
-      case 'scale':
-        return {
-          transform: generateTransform({
-            scale: isActive ? 0.95 : isHovered ? 1.05 : 1,
-          }),
-          transition: 'transform 0.2s ease-out',
-        };
-      
-      case 'lift':
-        return {
-          transform: generateTransform({
-            translateY: isActive ? 0 : isHovered ? -3 : 0,
-          }),
-          boxShadow: isActive
-            ? '0 2px 4px rgba(0,0,0,0.1)'
-            : isHovered
-            ? '0 8px 16px rgba(0,0,0,0.1)'
-            : '0 2px 4px rgba(0,0,0,0.05)',
-          transition: 'transform 0.2s ease-out, box-shadow 0.2s ease-out',
-        };
-      
-      case 'glow':
-        return {
-          boxShadow: isActive
-            ? '0 0 0 3px rgba(59, 130, 246, 0.3)'
-            : isHovered
-            ? '0 0 0 2px rgba(59, 130, 246, 0.2)'
-            : 'none',
-          transition: 'box-shadow 0.2s ease-out',
-        };
-      
-      case 'ripple':
-        return {
-          position: 'relative',
-          overflow: 'hidden',
-          transition: 'background-color 0.2s ease-out',
-        };
-      
-      default:
-        return {};
-    }
-  };
+  // Combine classes
+  const cardClasses = `
+    ${baseClasses}
+    ${elevationClasses[elevation]}
+    ${hoverClasses}
+    ${className}
+  `;
   
   return (
-    <button
-      className={className}
+    <motion.div
+      className={cardClasses}
       onClick={onClick}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      style={getEffectStyles()}
-      disabled={disabled}
+      whileHover={hover ? { y: -5 } : {}}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
     >
       {children}
-      
-      {/* Ripple effect */}
-      {effect === 'ripple' && ripples.map(ripple => (
-        <span
-          key={ripple.id}
-          style={{
-            position: 'absolute',
-            top: ripple.y - ripple.size / 2,
-            left: ripple.x - ripple.size / 2,
-            width: ripple.size,
-            height: ripple.size,
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255, 255, 255, 0.3)',
-            transform: 'scale(0)',
-            animation: 'ripple 0.6s linear',
-            pointerEvents: 'none',
-          }}
-        />
-      ))}
-    </button>
+    </motion.div>
   );
-}
+};
 
 /**
- * Props for the HoverCard component
+ * Tooltip component
  */
-interface HoverCardProps {
-  /**
-   * The children to render inside the card
-   */
-  children: ReactNode;
-  
-  /**
-   * Optional class name for styling
-   */
-  className?: string;
-}
-
-/**
- * HoverCard component that adds subtle hover effects to cards
- * 
- * @param {HoverCardProps} props - The component props
- * @returns {JSX.Element} The rendered HoverCard component
- */
-export function HoverCard({
+export const Tooltip: React.FC<TooltipProps> = ({
   children,
-  className,
-}: HoverCardProps): JSX.Element {
-  // State for hover
-  const [isHovered, setIsHovered] = useState<boolean>(false);
+  content,
+  position = 'top',
+  delay = 500,
+}) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
   
-  /**
-   * Handle mouse enter event
-   */
+  // Position classes
+  const positionClasses = {
+    top: 'bottom-full left-1/2 transform -translate-x-1/2 mb-2',
+    right: 'left-full top-1/2 transform -translate-y-1/2 ml-2',
+    bottom: 'top-full left-1/2 transform -translate-x-1/2 mt-2',
+    left: 'right-full top-1/2 transform -translate-y-1/2 mr-2',
+  };
+  
+  // Arrow classes
+  const arrowClasses = {
+    top: 'top-full left-1/2 transform -translate-x-1/2 border-t-gray-800 border-l-transparent border-r-transparent border-b-transparent',
+    right: 'right-full top-1/2 transform -translate-y-1/2 border-r-gray-800 border-t-transparent border-b-transparent border-l-transparent',
+    bottom: 'bottom-full left-1/2 transform -translate-x-1/2 border-b-gray-800 border-l-transparent border-r-transparent border-t-transparent',
+    left: 'left-full top-1/2 transform -translate-y-1/2 border-l-gray-800 border-t-transparent border-b-transparent border-r-transparent',
+  };
+  
   const handleMouseEnter = () => {
-    setIsHovered(true);
+    const id = setTimeout(() => {
+      setIsVisible(true);
+    }, delay);
+    setTimeoutId(id);
   };
   
-  /**
-   * Handle mouse leave event
-   */
   const handleMouseLeave = () => {
-    setIsHovered(false);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      setTimeoutId(null);
+    }
+    setIsVisible(false);
   };
   
   return (
     <div
-      className={className}
+      className="relative inline-block"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      style={{
-        transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
-        boxShadow: isHovered
-          ? '0 12px 20px rgba(0, 0, 0, 0.1)'
-          : '0 2px 4px rgba(0, 0, 0, 0.05)',
-        transition: 'transform 0.3s ease-out, box-shadow 0.3s ease-out',
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-/**
- * Props for the FocusHighlight component
- */
-interface FocusHighlightProps {
-  /**
-   * The children to render inside the component
-   */
-  children: ReactNode;
-  
-  /**
-   * Optional class name for styling
-   */
-  className?: string;
-}
-
-/**
- * FocusHighlight component that adds subtle focus effects to inputs
- * 
- * @param {FocusHighlightProps} props - The component props
- * @returns {JSX.Element} The rendered FocusHighlight component
- */
-export function FocusHighlight({
-  children,
-  className,
-}: FocusHighlightProps): JSX.Element {
-  // State for focus
-  const [isFocused, setIsFocused] = useState<boolean>(false);
-  
-  /**
-   * Handle focus event
-   */
-  const handleFocus = () => {
-    setIsFocused(true);
-  };
-  
-  /**
-   * Handle blur event
-   */
-  const handleBlur = () => {
-    setIsFocused(false);
-  };
-  
-  return (
-    <div
-      className={className}
-      style={{
-        position: 'relative',
-      }}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      tabIndex={-1}
     >
       {children}
       
-      <div
-        style={{
-          position: 'absolute',
-          inset: -3,
-          borderRadius: 'inherit',
-          padding: 3,
-          background: 'transparent',
-          transition: 'background 0.2s ease-out',
-          pointerEvents: 'none',
-          background: isFocused
-            ? 'linear-gradient(to right, rgba(59, 130, 246, 0.2), rgba(236, 72, 153, 0.2))'
-            : 'transparent',
-          opacity: isFocused ? 1 : 0,
-        }}
-      />
+      <AnimatePresence>
+        {isVisible && (
+          <motion.div
+            className={`absolute z-50 px-2 py-1 text-xs font-medium text-white bg-gray-800 rounded shadow-lg ${positionClasses[position]}`}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.2 }}
+          >
+            {content}
+            <div className={`absolute w-0 h-0 border-4 ${arrowClasses[position]}`} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
-}
+};
 
 /**
- * Props for the LoadingIndicator component
+ * Toast provider component
  */
-interface LoadingIndicatorProps {
-  /**
-   * Whether the indicator is active
-   */
-  active: boolean;
+export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [toasts, setToasts] = useState<ToastState[]>([]);
   
-  /**
-   * The type of indicator
-   */
-  type?: 'spinner' | 'dots' | 'progress';
+  const showToast = (
+    message: string,
+    type: 'info' | 'success' | 'warning' | 'error' = 'info',
+    duration = 3000
+  ) => {
+    const id = Date.now().toString();
+    setToasts(prev => [...prev, { id, message, type, duration }]);
+    
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    }, duration);
+  };
   
-  /**
-   * The size of the indicator
-   */
-  size?: 'small' | 'medium' | 'large';
-  
-  /**
-   * Optional class name for styling
-   */
-  className?: string;
-}
-
-/**
- * LoadingIndicator component that shows elegant loading states
- * 
- * @param {LoadingIndicatorProps} props - The component props
- * @returns {JSX.Element | null} The rendered LoadingIndicator component or null if not active
- */
-export function LoadingIndicator({
-  active,
-  type = 'spinner',
-  size = 'medium',
-  className,
-}: LoadingIndicatorProps): JSX.Element | null {
-  if (!active) return null;
-  
-  // Determine size in pixels
-  const sizeInPx = size === 'small' ? 16 : size === 'medium' ? 24 : 36;
-  
-  // Spinner indicator
-  if (type === 'spinner') {
-    return (
-      <div
-        className={className}
-        style={{
-          width: sizeInPx,
-          height: sizeInPx,
-          borderRadius: '50%',
-          border: `2px solid rgba(59, 130, 246, 0.2)`,
-          borderTopColor: 'rgba(59, 130, 246, 1)',
-          animation: 'spin 0.8s linear infinite',
-        }}
-      />
-    );
-  }
-  
-  // Dots indicator
-  if (type === 'dots') {
-    return (
-      <div
-        className={className}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 4,
-        }}
-      >
-        {[0, 1, 2].map(i => (
-          <div
-            key={i}
-            style={{
-              width: sizeInPx / 4,
-              height: sizeInPx / 4,
-              borderRadius: '50%',
-              backgroundColor: 'rgba(59, 130, 246, 1)',
-              animation: `pulse 1.4s ease-in-out ${i * 0.2}s infinite`,
-            }}
-          />
-        ))}
+  return (
+    <ToastContext.Provider value={{ showToast }}>
+      {children}
+      
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col space-y-2">
+        <AnimatePresence>
+          {toasts.map(toast => (
+            <Toast
+              key={toast.id}
+              message={toast.message}
+              type={toast.type}
+              duration={toast.duration}
+              onClose={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+            />
+          ))}
+        </AnimatePresence>
       </div>
-    );
+    </ToastContext.Provider>
+  );
+};
+
+/**
+ * Hook to use toast
+ */
+export const useToast = () => {
+  const context = React.useContext(ToastContext);
+  if (!context) {
+    throw new Error('useToast must be used within a ToastProvider');
   }
+  return context;
+};
+
+/**
+ * Toast component
+ */
+export const Toast: React.FC<ToastProps> = ({
+  message,
+  type = 'info',
+  duration = 3000,
+  onClose,
+}) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose?.();
+    }, duration);
+    
+    return () => clearTimeout(timer);
+  }, [duration, onClose]);
   
-  // Progress indicator
-  if (type === 'progress') {
-    return (
-      <div
-        className={className}
-        style={{
-          width: sizeInPx * 4,
-          height: sizeInPx / 4,
-          backgroundColor: 'rgba(59, 130, 246, 0.2)',
-          borderRadius: sizeInPx / 8,
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            width: '30%',
-            height: '100%',
-            backgroundColor: 'rgba(59, 130, 246, 1)',
-            borderRadius: sizeInPx / 8,
-            animation: 'progress 1.5s ease-in-out infinite',
-          }}
+  // Type classes
+  const typeClasses = {
+    info: 'bg-blue-500',
+    success: 'bg-green-500',
+    warning: 'bg-yellow-500',
+    error: 'bg-red-500',
+  };
+  
+  // Type icons
+  const typeIcons = {
+    info: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+      </svg>
+    ),
+    success: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+      </svg>
+    ),
+    warning: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+      </svg>
+    ),
+    error: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+      </svg>
+    ),
+  };
+  
+  return (
+    <motion.div
+      className={`max-w-sm w-full ${typeClasses[type]} text-white rounded-lg shadow-lg overflow-hidden`}
+      initial={{ opacity: 0, y: 50, scale: 0.3 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+    >
+      <div className="flex p-4">
+        <div className="flex-shrink-0">
+          {typeIcons[type]}
+        </div>
+        <div className="ml-3 w-0 flex-1">
+          <p className="text-sm font-medium">{message}</p>
+        </div>
+        <div className="ml-4 flex-shrink-0 flex">
+          <button
+            className="inline-flex text-white focus:outline-none focus:text-gray-200"
+            onClick={onClose}
+          >
+            <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div className="h-1 bg-white bg-opacity-20">
+        <motion.div
+          className="h-full bg-white bg-opacity-40"
+          initial={{ width: '100%' }}
+          animate={{ width: '0%' }}
+          transition={{ duration: duration / 1000, ease: 'linear' }}
         />
       </div>
-    );
-  }
-  
-  return null;
-}
+    </motion.div>
+  );
+};
+
+// Export all components
+const MicroInteractions = {
+  Button,
+  Card,
+  Tooltip,
+  Toast,
+  ToastProvider,
+  useToast,
+};
+
+export default MicroInteractions;
