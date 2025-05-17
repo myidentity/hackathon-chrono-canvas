@@ -152,7 +152,7 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
         return (
           <div className="w-full h-full flex items-center justify-center">
             <img 
-              src={element.src || 'https://via.placeholder.com/150'} 
+              src={element.src || `/images/sample_image_${element.id.includes('1') ? '1' : '2'}.jpg`} 
               alt={element.alt || 'Image'} 
               className="max-w-full max-h-full object-contain"
             />
