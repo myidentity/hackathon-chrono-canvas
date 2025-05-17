@@ -13,7 +13,7 @@ import EnhancedCanvas from './components/Canvas/EnhancedCanvas';
 import EnhancedTimeline from './components/Timeline/EnhancedTimeline';
 import ElementLibrary from './components/ElementLibrary/ElementLibrary';
 import PropertyPanel from './components/PropertyPanel/PropertyPanel';
-import ZineView from './components/ZineView/ZineView';
+import ZineView from './components/Timeline/ZineView';
 import MicroInteractions from './components/UI/MicroInteractions';
 
 /**
