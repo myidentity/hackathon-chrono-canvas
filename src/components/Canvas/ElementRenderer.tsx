@@ -69,6 +69,13 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
         const prevKeyframe = sortedKeyframes.filter(kf => kf.time <= currentPosition).pop();
         const nextKeyframe = sortedKeyframes.filter(kf => kf.time > currentPosition)[0];
         
+        // Debug log for keyframe calculation
+        console.log(`Element ${element.id} at time ${currentPosition}:`, { 
+          prevKeyframe, 
+          nextKeyframe,
+          visible
+        });
+        
         if (prevKeyframe && nextKeyframe) {
           // Interpolate between keyframes
           const progress = (currentPosition - prevKeyframe.time) / (nextKeyframe.time - prevKeyframe.time);
@@ -76,19 +83,32 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
           // Apply interpolated properties
           const interpolatedProps = interpolateProperties(prevKeyframe.properties, nextKeyframe.properties, progress);
           setAnimatedProps(interpolatedProps);
+          
+          // Debug log for interpolation
+          console.log(`Interpolating element ${element.id}:`, {
+            progress,
+            interpolatedProps
+          });
         } else if (prevKeyframe) {
           // Use properties from the last keyframe
           setAnimatedProps(prevKeyframe.properties);
+          console.log(`Using last keyframe for element ${element.id}:`, prevKeyframe.properties);
         } else if (nextKeyframe) {
           // Use properties from the first keyframe
           setAnimatedProps(nextKeyframe.properties);
+          console.log(`Using first keyframe for element ${element.id}:`, nextKeyframe.properties);
         }
+      } else if (visible) {
+        // No keyframes or not visible, reset animated props
+        console.log(`Element ${element.id} visible but no keyframes applied`);
+        setAnimatedProps({});
       }
       
       setIsVisible(visible);
     } else {
       // No timeline data, always visible
       setIsVisible(true);
+      setAnimatedProps({});
     }
   }, [element, currentPosition, viewMode, isPlaying]);
   
