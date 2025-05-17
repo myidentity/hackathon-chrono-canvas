@@ -26,8 +26,14 @@ interface Transform {
  * Enhanced Canvas component with zoom, pan, and grid functionality
  */
 const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
-  const { canvas, selectedElements, selectElement, clearSelection } = useCanvas();
+  const { canvas, selectedElement, selectElement } = useCanvas();
   const { currentPosition } = useTimeline();
+  
+  // Create a clearSelection function since it doesn't exist in the context
+  const clearSelection = () => selectElement(null);
+  
+  // Create an array for compatibility with the existing code
+  const selectedElements = selectedElement ? [selectedElement] : [];
   
   // State for canvas transform (zoom and pan)
   const [transform, setTransform] = useState<Transform>({
@@ -159,12 +165,7 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
       <div 
         className="absolute inset-0"
         style={{
-          backgroundColor: canvas.background.type === 'color' 
-            ? canvas.background.value 
-            : 'transparent',
-          backgroundImage: canvas.background.type === 'image'
-            ? `url(${canvas.background.value})`
-            : 'none',
+          backgroundColor: 'transparent',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
