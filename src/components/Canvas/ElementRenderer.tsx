@@ -12,8 +12,10 @@ import { useTimeline } from '../../context/TimelineContext';
 interface ElementRendererProps {
   element: any;
   isSelected: boolean;
-  mode: 'editor' | 'timeline' | 'zine' | 'presentation';
-  currentTime: number;
+  viewMode: 'editor' | 'timeline' | 'zine' | 'presentation';
+  currentPosition: number;
+  scrollPosition?: number;
+  onSelect?: () => void;
 }
 
 /**
@@ -23,8 +25,10 @@ interface ElementRendererProps {
 const ElementRenderer: React.FC<ElementRendererProps> = ({ 
   element, 
   isSelected, 
-  mode,
-  currentTime 
+  viewMode,
+  currentPosition,
+  scrollPosition = 0,
+  onSelect
 }) => {
   const { selectElement } = useCanvas();
   const { isPlaying } = useTimeline();
@@ -34,7 +38,7 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
   // Determine element visibility and properties based on timeline data
   useEffect(() => {
     // Always visible in editor mode
-    if (mode === 'editor') {
+    if (viewMode === 'editor') {
       setIsVisible(true);
       return;
     }
@@ -47,12 +51,12 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
       let visible = true;
       
       // Check if current time is before entry point
-      if (entryPoint !== undefined && entryPoint !== null && currentTime < entryPoint) {
+      if (entryPoint !== undefined && entryPoint !== null && currentPosition < entryPoint) {
         visible = false;
       }
       
       // Check if current time is after exit point and element doesn't persist
-      if (exitPoint !== undefined && exitPoint !== null && !persist && currentTime > exitPoint) {
+      if (exitPoint !== undefined && exitPoint !== null && !persist && currentPosition > exitPoint) {
         visible = false;
       }
       
@@ -62,12 +66,12 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
         const sortedKeyframes = [...keyframes].sort((a, b) => a.time - b.time);
         
         // Find the previous and next keyframes
-        const prevKeyframe = sortedKeyframes.filter(kf => kf.time <= currentTime).pop();
-        const nextKeyframe = sortedKeyframes.filter(kf => kf.time > currentTime)[0];
+        const prevKeyframe = sortedKeyframes.filter(kf => kf.time <= currentPosition).pop();
+        const nextKeyframe = sortedKeyframes.filter(kf => kf.time > currentPosition)[0];
         
         if (prevKeyframe && nextKeyframe) {
           // Interpolate between keyframes
-          const progress = (currentTime - prevKeyframe.time) / (nextKeyframe.time - prevKeyframe.time);
+          const progress = (currentPosition - prevKeyframe.time) / (nextKeyframe.time - prevKeyframe.time);
           
           // Apply interpolated properties
           const interpolatedProps = interpolateProperties(prevKeyframe.properties, nextKeyframe.properties, progress);
@@ -86,7 +90,7 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
       // No timeline data, always visible
       setIsVisible(true);
     }
-  }, [element, currentTime, mode, isPlaying]);
+  }, [element, currentPosition, viewMode, isPlaying]);
   
   /**
    * Interpolate between two sets of properties
@@ -106,14 +110,18 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
   
   // Handle element selection
   const handleClick = (e: React.MouseEvent) => {
-    if (mode === 'editor') {
+    if (viewMode === 'editor') {
       e.stopPropagation();
-      selectElement(element.id);
+      if (onSelect) {
+        onSelect();
+      } else {
+        selectElement(element.id);
+      }
     }
   };
   
   // Skip rendering if element is not visible in current mode
-  if (!isVisible && mode !== 'editor') {
+  if (!isVisible && viewMode !== 'editor') {
     return null;
   }
   
@@ -197,7 +205,10 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
     };
     
     // Apply animated properties for timeline and zine modes
-    if ((mode === 'timeline' || mode === 'zine' || mode === 'presentation') && Object.keys(animatedProps).length > 0) {
+    if ((viewMode === 'timeline' || viewMode === 'zine' || viewMode === 'presentation') && Object.keys(animatedProps).length > 0) {
+      // Debug log to verify animation props are being applied
+      console.log('Applying animated props for element:', element.id, animatedProps);
+      
       return {
         ...baseStyles,
         ...animatedProps,
@@ -206,7 +217,7 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
     }
     
     // Add animation for zine view mode
-    if (mode === 'zine') {
+    if (viewMode === 'zine') {
       return {
         ...baseStyles,
         transition: 'transform 0.5s ease-out, opacity 0.5s ease-out',
