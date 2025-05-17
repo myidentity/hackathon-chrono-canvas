@@ -1,152 +1,257 @@
 /**
  * Enhanced Timeline component for ChronoCanvas
  * 
- * This component provides a rich timeline interface with scrubbing, markers,
- * and playback controls for time-based element manipulation.
+ * This component extends the basic Timeline with additional features
+ * such as keyframe management, advanced marker controls, and visual enhancements.
+ * It provides a more sophisticated interface for timeline manipulation.
  */
 
-import React, { useState, useRef, useEffect } from 'react';
-import { useTimeline } from '../../context/TimelineContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { useTimeline, TimelineMarker } from '../../context/TimelineContext';
+import { useCanvas } from '../../context/CanvasContext';
 
-// Type definitions
 interface EnhancedTimelineProps {
-  className?: string;
-}
-
-interface MarkerFormState {
-  name: string;
-  color: string;
-  isOpen: boolean;
+  mode?: 'editor' | 'timeline' | 'zine' | 'presentation';
 }
 
 /**
- * Enhanced Timeline component with scrubbing, markers, and playback controls
+ * EnhancedTimeline component
+ * Provides advanced timeline controls with keyframe management and visual enhancements
+ * 
+ * @param {EnhancedTimelineProps} props - Component properties
+ * @returns {JSX.Element} Rendered component
  */
-const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ className = '' }) => {
+const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }) => {
+  // Get timeline and canvas context
   const { 
-    duration,
-    currentPosition,
+    currentPosition, 
+    isPlaying, 
+    playbackSpeed, 
+    duration, 
     markers,
-    isPlaying,
-    playbackSpeed,
-    setCurrentPosition,
-    play,
-    pause,
+    togglePlayback,
+    setPosition,
     setPlaybackSpeed,
     addMarker,
     removeMarker,
+    setCurrentPosition,
+    play,
+    pause,
     seekToMarker
   } = useTimeline();
   
-  // State for timeline zoom
+  const { canvas, selectedElement, updateElement } = useCanvas();
+  
+  // State for timeline interaction
+  const [isDragging, setIsDragging] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [visibleRange, setVisibleRange] = useState({ start: 0, end: duration });
+  const [showMarkerForm, setShowMarkerForm] = useState(false);
+  const [markerForm, setMarkerForm] = useState({ name: '', color: '#3b82f6' });
   
-  // State for marker form
-  const [markerForm, setMarkerForm] = useState<MarkerFormState>({
-    name: '',
-    color: '#ff0000',
-    isOpen: false,
-  });
-  
-  // Refs for timeline track and scrubber
-  const trackRef = useRef<HTMLDivElement>(null);
+  // Refs for DOM elements
+  const timelineRef = useRef<HTMLDivElement>(null);
   const scrubberRef = useRef<HTMLDivElement>(null);
   
-  // State for tracking mouse position and drag
-  const [isDragging, setIsDragging] = useState(false);
-  
-  // Format time as MM:SS
-  const formatTime = (seconds: number): string => {
+  /**
+   * Format time as MM:SS.ms
+   * 
+   * @param {number} seconds - Time in seconds
+   * @returns {string} Formatted time string
+   */
+  const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    const ms = Math.floor((seconds % 1) * 100);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
   };
   
-  // Handle timeline click for seeking
-  const handleTimelineClick = (e: React.MouseEvent) => {
-    if (trackRef.current) {
-      const rect = trackRef.current.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const percentage = clickX / rect.width;
-      const newPosition = percentage * duration * zoom;
-      setCurrentPosition(Math.max(0, Math.min(newPosition, duration)));
-    }
+  /**
+   * Handle timeline click for seeking
+   * 
+   * @param {React.MouseEvent<HTMLDivElement>} e - Mouse event
+   */
+  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isDragging) return;
+    
+    const timeline = e.currentTarget;
+    const rect = timeline.getBoundingClientRect();
+    const clickPosition = e.clientX - rect.left;
+    const percentage = clickPosition / rect.width;
+    const visibleDuration = visibleRange.end - visibleRange.start;
+    const newPosition = visibleRange.start + percentage * visibleDuration;
+    
+    setPosition(newPosition);
   };
   
-  // Handle mouse down for scrubbing
-  const handleMouseDown = (e: React.MouseEvent) => {
+  /**
+   * Handle mouse down on scrubber
+   * 
+   * @param {React.MouseEvent} e - Mouse event
+   */
+  const handleScrubberMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsDragging(true);
+    
+    // Add event listeners for dragging
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-    e.preventDefault();
   };
   
-  // Handle mouse move for scrubbing
+  /**
+   * Handle mouse move during scrubber drag
+   * 
+   * @param {MouseEvent} e - Mouse event
+   */
   const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging && trackRef.current) {
-      const rect = trackRef.current.getBoundingClientRect();
-      const moveX = e.clientX - rect.left;
-      const percentage = moveX / rect.width;
-      const newPosition = percentage * duration * zoom;
-      setCurrentPosition(Math.max(0, Math.min(newPosition, duration)));
-    }
+    if (!isDragging || !timelineRef.current) return;
+    
+    const timeline = timelineRef.current;
+    const rect = timeline.getBoundingClientRect();
+    const mousePosition = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, mousePosition / rect.width));
+    const visibleDuration = visibleRange.end - visibleRange.start;
+    const newPosition = visibleRange.start + percentage * visibleDuration;
+    
+    setPosition(newPosition);
   };
   
-  // Handle mouse up to end scrubbing
+  /**
+   * Handle mouse up to end scrubber drag
+   */
   const handleMouseUp = () => {
     setIsDragging(false);
+    
+    // Remove event listeners
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
   };
   
-  // Handle zoom in
-  const handleZoomIn = () => {
-    setZoom(prev => Math.min(prev * 2, 8));
-  };
-  
-  // Handle zoom out
-  const handleZoomOut = () => {
-    setZoom(prev => Math.max(prev / 2, 0.5));
-  };
-  
-  // Handle play/pause toggle
-  const handlePlayPause = () => {
-    if (isPlaying) {
-      pause();
-    } else {
-      play();
-    }
-  };
-  
-  // Handle speed change
-  const handleSpeedChange = (speed: number) => {
-    setPlaybackSpeed(speed);
-  };
-  
-  // Handle marker form open
-  const handleMarkerFormOpen = () => {
-    setMarkerForm(prev => ({ ...prev, isOpen: true }));
-  };
-  
-  // Handle marker form close
-  const handleMarkerFormClose = () => {
-    setMarkerForm(prev => ({ ...prev, isOpen: false, name: '', color: '#ff0000' }));
-  };
-  
-  // Handle marker form submit
-  const handleMarkerFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  /**
+   * Add a marker at the current position
+   */
+  const handleAddMarker = () => {
     if (markerForm.name.trim()) {
-      addMarker(markerForm.name.trim(), currentPosition, markerForm.color);
-      handleMarkerFormClose();
+      const newMarker: TimelineMarker = {
+        id: `marker-${Date.now()}`,
+        position: currentPosition,
+        name: markerForm.name.trim(),
+        color: markerForm.color
+      };
+      
+      addMarker(newMarker);
+      setMarkerForm({ name: '', color: '#3b82f6' });
+      setShowMarkerForm(false);
     }
   };
   
-  // Handle marker form input change
-  const handleMarkerFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setMarkerForm(prev => ({ ...prev, [name]: value }));
+  /**
+   * Add a keyframe for the selected element at the current position
+   */
+  const handleAddKeyframe = () => {
+    if (!selectedElement) return;
+    
+    // Find the selected element
+    const element = canvas.elements.find(el => el.id === selectedElement);
+    if (!element) return;
+    
+    // Get current properties for the keyframe
+    const keyframeProperties = {
+      position: { ...element.position },
+      size: { ...element.size },
+      rotation: element.rotation || 0,
+      opacity: element.opacity !== undefined ? element.opacity : 1,
+    };
+    
+    // Create or update timeline data with the new keyframe
+    const timelineData = element.timelineData || {
+      entryPoint: currentPosition,
+      exitPoint: currentPosition + 30,
+      persist: true,
+      keyframes: [],
+    };
+    
+    // Check if a keyframe already exists at this time
+    const existingKeyframeIndex = timelineData.keyframes?.findIndex(
+      kf => Math.abs(kf.time - currentPosition) < 0.1
+    );
+    
+    if (existingKeyframeIndex !== undefined && existingKeyframeIndex >= 0 && timelineData.keyframes) {
+      // Update existing keyframe
+      timelineData.keyframes[existingKeyframeIndex] = {
+        time: currentPosition,
+        properties: keyframeProperties,
+      };
+    } else {
+      // Add new keyframe
+      timelineData.keyframes = [
+        ...(timelineData.keyframes || []),
+        {
+          time: currentPosition,
+          properties: keyframeProperties,
+        },
+      ];
+    }
+    
+    // Sort keyframes by time
+    timelineData.keyframes.sort((a, b) => a.time - b.time);
+    
+    // Update the element
+    updateElement(selectedElement, { timelineData });
+    
+    // Add a marker for this keyframe
+    const marker: TimelineMarker = {
+      id: `keyframe-${selectedElement}-${Date.now()}`,
+      position: currentPosition,
+      name: `${element.type} Keyframe`,
+      color: '#3b82f6'
+    };
+    
+    addMarker(marker);
+  };
+  
+  /**
+   * Zoom the timeline in or out
+   * 
+   * @param {number} factor - Zoom factor
+   */
+  const handleZoom = (factor: number) => {
+    const newZoom = Math.max(0.5, Math.min(10, zoom * factor));
+    setZoom(newZoom);
+    
+    // Adjust visible range based on zoom
+    const visibleDuration = duration / newZoom;
+    const center = (visibleRange.start + visibleRange.end) / 2;
+    const halfDuration = visibleDuration / 2;
+    
+    setVisibleRange({
+      start: Math.max(0, center - halfDuration),
+      end: Math.min(duration, center + halfDuration),
+    });
+  };
+  
+  /**
+   * Pan the timeline left or right
+   * 
+   * @param {number} direction - Direction to pan (-1 for left, 1 for right)
+   */
+  const handlePan = (direction: number) => {
+    const visibleDuration = visibleRange.end - visibleRange.start;
+    const panAmount = visibleDuration * 0.2 * direction;
+    
+    let newStart = visibleRange.start + panAmount;
+    let newEnd = visibleRange.end + panAmount;
+    
+    // Ensure we don't go out of bounds
+    if (newStart < 0) {
+      newStart = 0;
+      newEnd = visibleDuration;
+    } else if (newEnd > duration) {
+      newEnd = duration;
+      newStart = Math.max(0, newEnd - visibleDuration);
+    }
+    
+    setVisibleRange({ start: newStart, end: newEnd });
   };
   
   // Clean up event listeners on unmount
@@ -155,243 +260,341 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ className = '' }) =
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, []);
+  }, [isDragging]);
+  
+  // Update visible range when duration changes
+  useEffect(() => {
+    const visibleDuration = duration / zoom;
+    setVisibleRange({
+      start: 0,
+      end: Math.min(duration, visibleDuration),
+    });
+  }, [duration, zoom]);
   
   return (
-    <div className={`bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 ${className}`} data-testid="timeline-container">
+    <div className="w-full bg-gray-800 border-t border-gray-700 p-4 text-white">
+      {/* Timeline header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-4">
+          {/* Current time display */}
+          <div className="text-lg font-mono">
+            {formatTime(currentPosition)}
+          </div>
+          
+          {/* Playback controls */}
+          <div className="flex items-center space-x-2">
+            <button 
+              className="bg-indigo-600 hover:bg-indigo-700 rounded-full w-10 h-10 flex items-center justify-center"
+              onClick={togglePlayback}
+              aria-label={isPlaying ? "Pause" : "Play"}
+              data-testid="playback-toggle"
+            >
+              {isPlaying ? (
+                <span className="material-icons">pause</span>
+              ) : (
+                <span className="material-icons">play_arrow</span>
+              )}
+            </button>
+            
+            <button 
+              className="bg-gray-700 hover:bg-gray-600 rounded-full w-8 h-8 flex items-center justify-center"
+              onClick={() => setPosition(0)}
+              aria-label="Go to start"
+            >
+              <span className="material-icons">first_page</span>
+            </button>
+            
+            <button 
+              className="bg-gray-700 hover:bg-gray-600 rounded-full w-8 h-8 flex items-center justify-center"
+              onClick={() => setPosition(duration)}
+              aria-label="Go to end"
+            >
+              <span className="material-icons">last_page</span>
+            </button>
+          </div>
+          
+          {/* Playback speed */}
+          <select 
+            className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm"
+            value={playbackSpeed}
+            onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
+            data-testid="playback-speed"
+          >
+            <option value="0.25">0.25x</option>
+            <option value="0.5">0.5x</option>
+            <option value="1">1x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+            <option value="4">4x</option>
+          </select>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          {/* Zoom controls */}
+          <button 
+            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm"
+            onClick={() => handleZoom(1.2)}
+            aria-label="Zoom in"
+          >
+            <span className="material-icons text-sm">zoom_in</span>
+          </button>
+          
+          <button 
+            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm"
+            onClick={() => handleZoom(0.8)}
+            aria-label="Zoom out"
+          >
+            <span className="material-icons text-sm">zoom_out</span>
+          </button>
+          
+          {/* Pan controls */}
+          <button 
+            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm"
+            onClick={() => handlePan(-1)}
+            aria-label="Pan left"
+          >
+            <span className="material-icons text-sm">chevron_left</span>
+          </button>
+          
+          <button 
+            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm"
+            onClick={() => handlePan(1)}
+            aria-label="Pan right"
+          >
+            <span className="material-icons text-sm">chevron_right</span>
+          </button>
+        </div>
+      </div>
+      
       {/* Timeline track */}
       <div 
-        ref={trackRef}
-        className="relative h-8 bg-gray-200 dark:bg-gray-700 rounded-md cursor-pointer"
+        ref={timelineRef}
+        className="w-full h-12 bg-gray-700 rounded-lg relative mb-4 cursor-pointer"
         onClick={handleTimelineClick}
         data-testid="timeline-track"
       >
-        {/* Visible timeline section based on zoom */}
+        {/* Time markers */}
+        {Array.from({ length: Math.ceil((visibleRange.end - visibleRange.start) / 5) + 1 }).map((_, i) => {
+          const time = visibleRange.start + i * 5;
+          const position = ((time - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100;
+          
+          if (time <= visibleRange.end) {
+            return (
+              <div 
+                key={`time-${i}`}
+                className="absolute top-0 h-full w-px bg-gray-600"
+                style={{ left: `${position}%` }}
+              >
+                <div className="absolute -top-5 left-0 transform -translate-x-1/2 text-xs text-gray-400">
+                  {formatTime(time)}
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })}
+        
+        {/* Timeline progress */}
         <div 
-          className="absolute top-0 left-0 h-full bg-gray-300 dark:bg-gray-600 rounded-md"
+          className="h-full bg-indigo-900 rounded-lg opacity-50"
           style={{ 
-            width: `${Math.min(100, (duration / (duration * zoom)) * 100)}%`,
-            transform: `translateX(${(currentPosition / duration) * 100 * zoom}%)`,
+            width: `${((currentPosition - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100}%`,
+            maxWidth: '100%'
           }}
         />
         
-        {/* Timeline markers */}
-        {markers.map(marker => (
-          <div
-            key={marker.id}
-            className="absolute top-0 w-1 h-full cursor-pointer group"
-            style={{ 
-              left: `${(marker.position / (duration * zoom)) * 100}%`,
-              backgroundColor: marker.color,
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              seekToMarker(marker.id);
-            }}
-            data-testid="timeline-marker"
-          >
-            {/* Marker label */}
-            <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 text-xs font-medium px-2 py-1 rounded shadow opacity-0 group-hover:opacity-100 transition-opacity">
-              {marker.name}
-              
-              {/* Delete button */}
-              <button
-                className="ml-2 text-red-500 hover:text-red-700"
+        {/* Current position indicator (scrubber) */}
+        <div 
+          ref={scrubberRef}
+          className="absolute top-0 w-4 h-12 bg-indigo-500 rounded-full -ml-2 cursor-grab"
+          style={{ 
+            left: `${((currentPosition - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100}%`,
+            zIndex: 10
+          }}
+          onMouseDown={handleScrubberMouseDown}
+          data-testid="timeline-scrubber"
+        />
+        
+        {/* Markers */}
+        {markers.map(marker => {
+          // Calculate position percentage
+          const position = ((marker.position - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100;
+          
+          // Only render markers in the visible range
+          if (position >= 0 && position <= 100) {
+            return (
+              <div 
+                key={marker.id}
+                className="absolute top-0 w-2 h-12 -ml-1 cursor-pointer"
+                style={{ 
+                  left: `${position}%`,
+                  backgroundColor: marker.color || '#3b82f6'
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  removeMarker(marker.id);
+                  seekToMarker(marker.id);
                 }}
-                title="Delete Marker"
+                title={marker.name}
+                data-testid={`marker-${marker.id}`}
               >
-                &times;
-              </button>
-            </div>
-          </div>
-        ))}
-        
-        {/* Timeline scrubber */}
-        <div
-          ref={scrubberRef}
-          className="absolute top-0 w-4 h-full bg-indigo-600 rounded-md cursor-move transform -translate-x-1/2 flex items-center justify-center"
-          style={{ left: `${(currentPosition / (duration * zoom)) * 100}%` }}
-          onMouseDown={handleMouseDown}
-          data-testid="timeline-scrubber"
+                <div className="absolute -bottom-5 left-0 transform -translate-x-1/2 text-xs text-gray-400 whitespace-nowrap">
+                  {marker.name}
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })}
+      </div>
+      
+      {/* Action buttons */}
+      <div className="flex items-center space-x-4">
+        {/* Add marker button */}
+        <button 
+          className="bg-indigo-600 hover:bg-indigo-700 rounded px-3 py-1 text-sm flex items-center"
+          onClick={() => setShowMarkerForm(true)}
+          data-testid="add-marker-button"
         >
-          <div className="w-1 h-4 bg-white rounded-full" />
+          <span className="material-icons text-sm mr-1">bookmark_add</span>
+          Add Marker
+        </button>
+        
+        {/* Add keyframe button (only enabled when an element is selected) */}
+        <button 
+          className={`${
+            selectedElement 
+              ? 'bg-green-600 hover:bg-green-700' 
+              : 'bg-gray-600 cursor-not-allowed'
+          } rounded px-3 py-1 text-sm flex items-center`}
+          onClick={handleAddKeyframe}
+          disabled={!selectedElement}
+          data-testid="add-keyframe-button"
+        >
+          <span className="material-icons text-sm mr-1">add_circle</span>
+          Add Keyframe
+        </button>
+        
+        {/* Duration control */}
+        <div className="flex items-center space-x-2">
+          <span className="text-sm">Duration:</span>
+          <input 
+            type="number"
+            className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm w-20"
+            value={duration}
+            onChange={(e) => {
+              const newDuration = Math.max(10, parseInt(e.target.value) || 60);
+              // TODO: Update duration in context
+            }}
+            min="10"
+            step="10"
+            data-testid="duration-input"
+          />
+          <span className="text-sm">seconds</span>
+        </div>
+        
+        {/* Debug info */}
+        <div className="ml-auto text-xs text-gray-400">
+          Zoom: {zoom.toFixed(1)}x | Range: {formatTime(visibleRange.start)} - {formatTime(visibleRange.end)}
         </div>
       </div>
       
-      {/* Timeline controls */}
-      <div className="flex items-center justify-between mt-4">
-        {/* Left controls: time display */}
-        <div className="flex items-center space-x-4">
-          <div className="text-sm font-medium" data-testid="current-position">
-            {formatTime(currentPosition)} / {formatTime(duration)}
-          </div>
-          
-          {/* Zoom controls */}
-          <div className="flex items-center space-x-2">
-            <button
-              className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-              onClick={handleZoomOut}
+      {/* Add marker form */}
+      {showMarkerForm && (
+        <div className="mt-4 p-4 bg-gray-700 border border-gray-600 rounded">
+          <div className="flex items-center space-x-4">
+            <input 
+              type="text"
+              className="flex-1 bg-gray-800 border border-gray-600 rounded px-3 py-2"
+              placeholder="Marker name"
+              value={markerForm.name}
+              onChange={(e) => setMarkerForm({ ...markerForm, name: e.target.value })}
+              data-testid="marker-name-input"
+            />
+            <input 
+              type="color"
+              className="w-10 h-10 border border-gray-600 rounded bg-transparent"
+              value={markerForm.color}
+              onChange={(e) => setMarkerForm({ ...markerForm, color: e.target.value })}
+              data-testid="marker-color-input"
+            />
+            <button 
+              className="bg-indigo-600 hover:bg-indigo-700 rounded px-4 py-2"
+              onClick={handleAddMarker}
+              data-testid="confirm-add-marker"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
-              </svg>
+              Add
             </button>
-            <span className="text-xs font-medium">{zoom}x</span>
-            <button
-              className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-              onClick={handleZoomIn}
+            <button 
+              className="bg-gray-600 hover:bg-gray-500 rounded px-4 py-2"
+              onClick={() => setShowMarkerForm(false)}
+              data-testid="cancel-add-marker"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-              </svg>
+              Cancel
             </button>
           </div>
         </div>
-        
-        {/* Center controls: playback */}
-        <div className="flex items-center space-x-2">
-          {/* Play/Pause button */}
-          <button
-            className="p-2 rounded-full bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            onClick={handlePlayPause}
-            aria-label={isPlaying ? 'Pause' : 'Play'}
-            data-testid="play-button"
-          >
-            {isPlaying ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-              </svg>
-            )}
-          </button>
-          
-          {/* Playback speed buttons */}
-          <div className="flex items-center space-x-1">
-            {[0.5, 1, 1.5, 2].map(speed => (
-              <button
-                key={speed}
-                className={`px-2 py-1 text-xs font-medium rounded-md ${
-                  playbackSpeed === speed
-                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200'
-                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-                }`}
-                onClick={() => handleSpeedChange(speed)}
-              >
-                {speed}x
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        {/* Right controls: markers */}
-        <div className="flex items-center space-x-2">
-          {/* Add marker button */}
-          <button
-            className="px-3 py-1 text-sm font-medium rounded-md bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-200 dark:hover:bg-indigo-800"
-            onClick={handleMarkerFormOpen}
-            data-testid="add-marker-button"
-          >
-            Add Marker
-          </button>
-        </div>
-      </div>
+      )}
       
-      {/* Marker form modal */}
-      <AnimatePresence>
-        {markerForm.isOpen && (
-          <motion.div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-96"
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-            >
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
-                Add Timeline Marker
-              </h3>
-              
-              <form onSubmit={handleMarkerFormSubmit}>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Marker Name
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={markerForm.name}
-                    onChange={handleMarkerFormChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
-                    placeholder="Marker name"
-                    data-testid="marker-name-input"
-                    required
-                  />
+      {/* Element keyframes list (when an element is selected) */}
+      {selectedElement && (
+        <div className="mt-4 p-4 bg-gray-700 border border-gray-600 rounded">
+          <h3 className="text-sm font-semibold mb-2">Element Keyframes</h3>
+          
+          {(() => {
+            const element = canvas.elements.find(el => el.id === selectedElement);
+            if (!element || !element.timelineData || !element.timelineData.keyframes || element.timelineData.keyframes.length === 0) {
+              return (
+                <div className="text-sm text-gray-400">
+                  No keyframes for this element. Add keyframes to animate properties over time.
                 </div>
-                
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Marker Color
-                  </label>
-                  <div className="flex items-center">
-                    <input
-                      type="color"
-                      name="color"
-                      value={markerForm.color}
-                      onChange={handleMarkerFormChange}
-                      className="w-10 h-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                    <input
-                      type="text"
-                      name="color"
-                      value={markerForm.color}
-                      onChange={handleMarkerFormChange}
-                      className="ml-2 flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600"
-                      pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
-                      placeholder="#RRGGBB"
-                    />
-                  </div>
-                </div>
-                
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Position
-                  </label>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {formatTime(currentPosition)}
-                  </div>
-                </div>
-                
-                <div className="flex justify-end space-x-2">
-                  <button
-                    type="button"
-                    className="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600"
-                    onClick={handleMarkerFormClose}
+              );
+            }
+            
+            return (
+              <div className="space-y-2">
+                {element.timelineData.keyframes.map((keyframe, index) => (
+                  <div 
+                    key={`keyframe-${index}`}
+                    className="flex items-center justify-between bg-gray-800 p-2 rounded"
+                    data-testid={`keyframe-${index}`}
                   >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 text-sm font-medium rounded-md border border-transparent text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    data-testid="save-marker-button"
-                  >
-                    Save Marker
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                    <div className="text-sm">
+                      Time: {formatTime(keyframe.time)}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        className="bg-blue-600 hover:bg-blue-700 rounded-full w-6 h-6 flex items-center justify-center"
+                        onClick={() => setPosition(keyframe.time)}
+                        title="Go to keyframe"
+                        data-testid={`goto-keyframe-${index}`}
+                      >
+                        <span className="material-icons text-xs">arrow_forward</span>
+                      </button>
+                      <button 
+                        className="bg-red-600 hover:bg-red-700 rounded-full w-6 h-6 flex items-center justify-center"
+                        onClick={() => {
+                          // Remove keyframe
+                          const updatedKeyframes = element.timelineData?.keyframes?.filter((_, i) => i !== index);
+                          updateElement(selectedElement, {
+                            timelineData: {
+                              ...element.timelineData,
+                              keyframes: updatedKeyframes,
+                            },
+                          });
+                        }}
+                        title="Delete keyframe"
+                        data-testid={`delete-keyframe-${index}`}
+                      >
+                        <span className="material-icons text-xs">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      )}
     </div>
   );
 };

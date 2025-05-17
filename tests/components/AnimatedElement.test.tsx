@@ -4,6 +4,7 @@
  * This file contains tests for the AnimatedElement component.
  */
 
+import React from 'react';
 import { render, screen } from '@testing-library/react';
 import AnimatedElement from '../../src/components/Animation/AnimatedElement';
 import { TimelineProvider } from '../../src/context/TimelineContext';
@@ -16,127 +17,167 @@ jest.mock('../../src/context/TimelineContext', () => {
     ...originalModule,
     useTimeline: () => ({
       currentPosition: 5,
-      duration: 60,
     }),
   };
 });
 
 describe('AnimatedElement', () => {
-  test('should render children when visible', () => {
+  const defaultElement = {
+    id: 'test-element',
+    type: 'text',
+    position: { x: 100, y: 100, z: 1 },
+    size: { width: 200, height: 100 },
+    rotation: 0,
+    opacity: 1,
+    properties: { text: 'Test Element' },
+    timelineData: {
+      entryPoint: 0,
+      exitPoint: 10,
+      persist: false,
+      keyframes: [
+        {
+          time: 0,
+          properties: {
+            opacity: 0,
+            position: { x: 100, y: 100 },
+            rotation: 0
+          }
+        },
+        {
+          time: 5,
+          properties: {
+            opacity: 1,
+            position: { x: 150, y: 150 },
+            rotation: 45
+          }
+        },
+        {
+          time: 10,
+          properties: {
+            opacity: 0,
+            position: { x: 200, y: 200 },
+            rotation: 90
+          }
+        }
+      ]
+    }
+  };
+
+  test('should render element with correct content', () => {
     render(
       <TimelineProvider>
-        <AnimatedElement
-          id="test-element"
-          entryPoint={0}
-          exitPoint={null}
-          persist={true}
-          viewMode="timeline"
-        >
-          <div data-testid="child-content">Test Content</div>
+        <AnimatedElement element={defaultElement}>
+          <div>Element Content</div>
         </AnimatedElement>
       </TimelineProvider>
     );
 
-    expect(screen.getByTestId('child-content')).toBeInTheDocument();
-    expect(screen.getByTestId('child-content')).toHaveTextContent('Test Content');
+    expect(screen.getByText('Element Content')).toBeInTheDocument();
   });
 
-  test('should not render children when not visible', () => {
+  test('should apply correct styles based on timeline position', () => {
     render(
       <TimelineProvider>
-        <AnimatedElement
-          id="test-element"
-          entryPoint={10} // Entry point is after current position (5)
-          exitPoint={null}
-          persist={true}
-          viewMode="timeline"
-        >
-          <div data-testid="child-content">Test Content</div>
+        <AnimatedElement element={defaultElement} data-testid="animated-element">
+          <div>Element Content</div>
         </AnimatedElement>
       </TimelineProvider>
     );
 
-    expect(screen.queryByTestId('child-content')).not.toBeInTheDocument();
+    const element = screen.getByTestId('animated-element');
+    
+    // At timeline position 5, element should have interpolated styles from keyframes
+    expect(element).toHaveStyle('opacity: 1');
+    expect(element).toHaveStyle('transform: translate(150px, 150px) rotate(45deg)');
   });
 
-  test('should always render in editor mode regardless of timeline position', () => {
-    render(
+  test('should not render element before entry point', () => {
+    // Override the mock to set timeline position before entry point
+    jest.spyOn(require('../../src/context/TimelineContext'), 'useTimeline').mockImplementation(() => ({
+      currentPosition: -1,
+    }));
+    
+    const { container } = render(
       <TimelineProvider>
-        <AnimatedElement
-          id="test-element"
-          entryPoint={10} // Entry point is after current position (5)
-          exitPoint={null}
-          persist={true}
-          viewMode="editor"
-        >
-          <div data-testid="child-content">Test Content</div>
+        <AnimatedElement element={defaultElement}>
+          <div>Element Content</div>
         </AnimatedElement>
       </TimelineProvider>
     );
 
-    expect(screen.getByTestId('child-content')).toBeInTheDocument();
+    // Element should not be rendered
+    expect(container.firstChild).toBeNull();
   });
 
-  test('should apply animation styles based on animation type', () => {
-    render(
+  test('should not render element after exit point if not persistent', () => {
+    // Override the mock to set timeline position after exit point
+    jest.spyOn(require('../../src/context/TimelineContext'), 'useTimeline').mockImplementation(() => ({
+      currentPosition: 15,
+    }));
+    
+    const { container } = render(
       <TimelineProvider>
-        <AnimatedElement
-          id="test-element"
-          entryPoint={4.5} // Just before current position (5) to trigger animation
-          exitPoint={null}
-          persist={true}
-          entryAnimation="fade"
-          entryDuration={1}
-          viewMode="timeline"
-        >
-          <div data-testid="child-content">Test Content</div>
+        <AnimatedElement element={defaultElement}>
+          <div>Element Content</div>
         </AnimatedElement>
       </TimelineProvider>
     );
 
-    const element = screen.getByTestId('child-content').parentElement;
-    expect(element).toHaveStyle('opacity: 0.5'); // Halfway through fade animation
+    // Element should not be rendered
+    expect(container.firstChild).toBeNull();
   });
 
-  test('should handle exit animations', () => {
+  test('should render element after exit point if persistent', () => {
+    // Create persistent element
+    const persistentElement = {
+      ...defaultElement,
+      timelineData: {
+        ...defaultElement.timelineData,
+        persist: true
+      }
+    };
+    
+    // Override the mock to set timeline position after exit point
+    jest.spyOn(require('../../src/context/TimelineContext'), 'useTimeline').mockImplementation(() => ({
+      currentPosition: 15,
+    }));
+    
     render(
       <TimelineProvider>
-        <AnimatedElement
-          id="test-element"
-          entryPoint={0}
-          exitPoint={5.5} // Just after current position (5) to trigger exit animation
-          exitDuration={1}
-          persist={false}
-          exitAnimation="fade"
-          viewMode="timeline"
-        >
-          <div data-testid="child-content">Test Content</div>
+        <AnimatedElement element={persistentElement}>
+          <div>Element Content</div>
         </AnimatedElement>
       </TimelineProvider>
     );
 
-    const element = screen.getByTestId('child-content').parentElement;
-    expect(element).toHaveStyle('opacity: 0.5'); // Halfway through fade exit animation
+    // Element should be rendered
+    expect(screen.getByText('Element Content')).toBeInTheDocument();
   });
 
-  test('should apply parallax effect in zine mode', () => {
+  test('should handle element without keyframes', () => {
+    // Create element without keyframes
+    const elementWithoutKeyframes = {
+      ...defaultElement,
+      timelineData: {
+        entryPoint: 0,
+        exitPoint: 10,
+        persist: false,
+        keyframes: []
+      }
+    };
+    
     render(
       <TimelineProvider>
-        <AnimatedElement
-          id="test-element"
-          entryPoint={0}
-          exitPoint={null}
-          persist={true}
-          viewMode="zine"
-          scrollPosition={100}
-          parallaxFactor={0.5}
-        >
-          <div data-testid="child-content">Test Content</div>
+        <AnimatedElement element={elementWithoutKeyframes} data-testid="animated-element">
+          <div>Element Content</div>
         </AnimatedElement>
       </TimelineProvider>
     );
 
-    const element = screen.getByTestId('child-content').parentElement;
-    expect(element.style.transform).toContain('translateY');
+    const element = screen.getByTestId('animated-element');
+    
+    // Should use base element properties
+    expect(element).toHaveStyle('opacity: 1');
+    expect(element).toHaveStyle('transform: translate(100px, 100px) rotate(0deg)');
   });
 });

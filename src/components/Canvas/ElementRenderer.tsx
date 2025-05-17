@@ -2,160 +2,230 @@
  * ElementRenderer component for ChronoCanvas
  * 
  * This component renders individual elements on the canvas with appropriate
- * styling, animations, and interaction handlers.
+ * animations and interactions based on the current mode and timeline position.
  */
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import AnimatedElement from '../Animation/AnimatedElement';
+import React, { useEffect, useState } from 'react';
+import { useCanvas } from '../../context/CanvasContext';
+import { useTimeline } from '../../context/TimelineContext';
 
-// Type definitions
-export interface ElementRendererProps {
-  element: any; // Canvas element object
+interface ElementRendererProps {
+  element: any;
   isSelected: boolean;
-  viewMode: 'editor' | 'timeline' | 'zine' | 'presentation';
-  currentPosition: number;
-  scrollPosition: number;
-  onSelect: () => void;
+  mode: 'editor' | 'timeline' | 'zine' | 'presentation';
+  currentTime: number;
 }
 
 /**
- * ElementRenderer component for rendering canvas elements
+ * ElementRenderer component
+ * Renders a single element with appropriate styling and animations
  */
-const ElementRenderer: React.FC<ElementRendererProps> = ({
-  element,
-  isSelected,
-  viewMode,
-  scrollPosition,
-  onSelect,
+const ElementRenderer: React.FC<ElementRendererProps> = ({ 
+  element, 
+  isSelected, 
+  mode,
+  currentTime 
 }) => {
-  // Generate element style based on properties
-  const getElementStyle = () => {
-    return {
-      position: 'absolute' as const,
-      left: `${element.position.x}px`,
-      top: `${element.position.y}px`,
-      width: `${element.size.width}px`,
-      height: `${element.size.height}px`,
-      zIndex: element.position.z,
-      opacity: element.opacity,
-      transform: `rotate(${element.rotation}deg)`,
-    };
+  const { selectElement } = useCanvas();
+  const { isPlaying } = useTimeline();
+  const [isVisible, setIsVisible] = useState(true);
+  const [animatedProps, setAnimatedProps] = useState({});
+  
+  // Determine element visibility and properties based on timeline data
+  useEffect(() => {
+    // Always visible in editor mode
+    if (mode === 'editor') {
+      setIsVisible(true);
+      return;
+    }
+    
+    // Check timeline data for visibility in other modes
+    if (element.timelineData) {
+      const { entryPoint, exitPoint, persist, keyframes } = element.timelineData;
+      
+      // Determine visibility based on entry/exit points
+      let visible = true;
+      
+      // Check if current time is before entry point
+      if (entryPoint !== undefined && entryPoint !== null && currentTime < entryPoint) {
+        visible = false;
+      }
+      
+      // Check if current time is after exit point and element doesn't persist
+      if (exitPoint !== undefined && exitPoint !== null && !persist && currentTime > exitPoint) {
+        visible = false;
+      }
+      
+      // Apply keyframe interpolation if element has keyframes
+      if (keyframes && keyframes.length > 0 && visible) {
+        // Find the keyframes that surround the current time
+        const sortedKeyframes = [...keyframes].sort((a, b) => a.time - b.time);
+        
+        // Find the previous and next keyframes
+        const prevKeyframe = sortedKeyframes.filter(kf => kf.time <= currentTime).pop();
+        const nextKeyframe = sortedKeyframes.filter(kf => kf.time > currentTime)[0];
+        
+        if (prevKeyframe && nextKeyframe) {
+          // Interpolate between keyframes
+          const progress = (currentTime - prevKeyframe.time) / (nextKeyframe.time - prevKeyframe.time);
+          
+          // Apply interpolated properties
+          const interpolatedProps = interpolateProperties(prevKeyframe.properties, nextKeyframe.properties, progress);
+          setAnimatedProps(interpolatedProps);
+        } else if (prevKeyframe) {
+          // Use properties from the last keyframe
+          setAnimatedProps(prevKeyframe.properties);
+        } else if (nextKeyframe) {
+          // Use properties from the first keyframe
+          setAnimatedProps(nextKeyframe.properties);
+        }
+      }
+      
+      setIsVisible(visible);
+    } else {
+      // No timeline data, always visible
+      setIsVisible(true);
+    }
+  }, [element, currentTime, mode, isPlaying]);
+  
+  /**
+   * Interpolate between two sets of properties
+   */
+  const interpolateProperties = (prevProps: any, nextProps: any, progress: number) => {
+    const result: any = { ...prevProps };
+    
+    // Interpolate numeric properties
+    Object.keys(prevProps).forEach(key => {
+      if (typeof prevProps[key] === 'number' && typeof nextProps[key] === 'number') {
+        result[key] = prevProps[key] + (nextProps[key] - prevProps[key]) * progress;
+      }
+    });
+    
+    return result;
   };
   
-  // Render element content based on type
-  const renderElementContent = () => {
+  // Handle element selection
+  const handleClick = (e: React.MouseEvent) => {
+    if (mode === 'editor') {
+      e.stopPropagation();
+      selectElement(element.id);
+    }
+  };
+  
+  // Skip rendering if element is not visible in current mode
+  if (!isVisible && mode !== 'editor') {
+    return null;
+  }
+  
+  // Apply element type-specific rendering
+  const renderElement = () => {
     switch (element.type) {
-      case 'text':
-        return (
-          <div 
-            className="w-full h-full flex items-center justify-center overflow-hidden"
-            style={{
-              color: element.properties.color || '#000000',
-              fontFamily: element.properties.fontFamily || 'Arial',
-              fontSize: `${element.properties.fontSize || 16}px`,
-              fontWeight: element.properties.fontWeight || 'normal',
-              textAlign: element.properties.textAlign || 'center',
-            }}
-          >
-            {element.properties.text || 'Text Element'}
-          </div>
-        );
-      
       case 'image':
         return (
-          <img
-            src={element.properties.src || 'https://via.placeholder.com/150'}
-            alt={element.properties.alt || 'Image Element'}
-            className="w-full h-full"
-            style={{
-              objectFit: element.properties.objectFit || 'cover',
-            }}
-          />
-        );
-      
-      case 'shape':
-        return (
-          <div 
-            className="w-full h-full"
-            style={{
-              backgroundColor: element.properties.fillColor || '#3b82f6',
-              border: element.properties.strokeWidth 
-                ? `${element.properties.strokeWidth}px solid ${element.properties.strokeColor || '#000000'}`
-                : 'none',
-              borderRadius: element.properties.shapeType === 'circle' ? '50%' : '0',
-            }}
-          />
-        );
-      
-      case 'sticker':
-        return (
           <div className="w-full h-full flex items-center justify-center">
-            <img
-              src={`/stickers/${element.properties.stickerType}/${element.properties.stickerName}.svg`}
-              alt={element.properties.stickerName || 'Sticker'}
-              className="w-full h-full"
+            <img 
+              src={element.src || 'https://via.placeholder.com/150'} 
+              alt={element.alt || 'Image'} 
+              className="max-w-full max-h-full object-contain"
             />
           </div>
         );
-      
-      default:
+      case 'text':
         return (
-          <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-            Unknown Element Type
+          <div className="w-full h-full flex items-center justify-center">
+            <p style={{ 
+              fontSize: element.fontSize || '16px',
+              fontWeight: element.fontWeight || 'normal',
+              color: element.color || '#000',
+              textAlign: element.textAlign || 'center',
+            }}>
+              {element.content || 'Text Element'}
+            </p>
+          </div>
+        );
+      case 'shape':
+        return (
+          <div 
+            className="w-full h-full" 
+            style={{ 
+              backgroundColor: element.backgroundColor || '#6366F1',
+              borderRadius: element.shape === 'circle' ? '50%' : (element.borderRadius || '0'),
+            }}
+          />
+        );
+      default:
+        // Default rendering for unknown element types
+        return (
+          <div className="w-full h-full flex items-center justify-center bg-gray-200">
+            <p>Unknown Element</p>
           </div>
         );
     }
   };
   
+  // For debugging: show element ID and timeline data
+  const debugInfo = () => {
+    if (mode === 'editor' || mode === 'timeline') {
+      return (
+        <div className="absolute -top-6 left-0 text-xs bg-white bg-opacity-80 px-1 rounded">
+          ID: {element.id.substring(0, 4)}
+          {element.timelineData && (
+            <>
+              {element.timelineData.entryPoint !== undefined && 
+                ` | In: ${element.timelineData.entryPoint}s`}
+              {element.timelineData.exitPoint !== undefined && 
+                ` | Out: ${element.timelineData.exitPoint}s`}
+            </>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
+  
+  // Calculate animation styles based on mode and animated properties
+  const getAnimationStyles = () => {
+    // Base styles from element
+    const baseStyles = {
+      left: `${element.position.x}px`,
+      top: `${element.position.y}px`,
+      width: `${element.size.width}px`,
+      height: `${element.size.height}px`,
+      transform: `rotate(${element.rotation || 0}deg)`,
+      opacity: element.opacity !== undefined ? element.opacity : 1,
+      zIndex: element.zIndex || 0,
+    };
+    
+    // Apply animated properties for timeline and zine modes
+    if ((mode === 'timeline' || mode === 'zine' || mode === 'presentation') && Object.keys(animatedProps).length > 0) {
+      return {
+        ...baseStyles,
+        ...animatedProps,
+        transition: isPlaying ? 'all 0.1s linear' : 'none',
+      };
+    }
+    
+    // Add animation for zine view mode
+    if (mode === 'zine') {
+      return {
+        ...baseStyles,
+        transition: 'transform 0.5s ease-out, opacity 0.5s ease-out',
+      };
+    }
+    
+    return baseStyles;
+  };
+  
   return (
-    <AnimatedElement
-      id={element.id}
-      entryPoint={element.timelineData.entryPoint}
-      exitPoint={element.timelineData.exitPoint}
-      persist={element.timelineData.persist}
-      viewMode={viewMode}
-      scrollPosition={scrollPosition}
-      parallaxFactor={element.parallaxFactor || 0}
+    <div
+      className={`absolute ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+      style={getAnimationStyles()}
+      onClick={handleClick}
+      data-element-id={element.id}
     >
-      <motion.div
-        className={`absolute ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}
-        style={getElementStyle()}
-        whileHover={viewMode === 'editor' ? { scale: 1.02 } : {}}
-        onClick={(e) => {
-          if (viewMode === 'editor') {
-            e.stopPropagation();
-            onSelect();
-          }
-        }}
-        data-element-id={element.id}
-        data-element-type={element.type}
-      >
-        {renderElementContent()}
-        
-        {/* Resize handles (only in editor mode and when selected) */}
-        {viewMode === 'editor' && isSelected && (
-          <>
-            {/* Corner resize handles */}
-            <div className="absolute -top-1 -left-1 w-3 h-3 bg-white border border-indigo-500 rounded-full cursor-nwse-resize" />
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-white border border-indigo-500 rounded-full cursor-nesw-resize" />
-            <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-white border border-indigo-500 rounded-full cursor-nesw-resize" />
-            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-white border border-indigo-500 rounded-full cursor-nwse-resize" />
-            
-            {/* Edge resize handles */}
-            <div className="absolute top-1/2 -left-1 w-3 h-3 -mt-1.5 bg-white border border-indigo-500 rounded-full cursor-ew-resize" />
-            <div className="absolute top-1/2 -right-1 w-3 h-3 -mt-1.5 bg-white border border-indigo-500 rounded-full cursor-ew-resize" />
-            <div className="absolute -top-1 left-1/2 w-3 h-3 -ml-1.5 bg-white border border-indigo-500 rounded-full cursor-ns-resize" />
-            <div className="absolute -bottom-1 left-1/2 w-3 h-3 -ml-1.5 bg-white border border-indigo-500 rounded-full cursor-ns-resize" />
-            
-            {/* Rotation handle */}
-            <div className="absolute -top-8 left-1/2 w-3 h-3 -ml-1.5 bg-white border border-indigo-500 rounded-full cursor-move">
-              <div className="absolute top-full left-1/2 w-0.5 h-5 -ml-0.25 bg-indigo-500" />
-            </div>
-          </>
-        )}
-      </motion.div>
-    </AnimatedElement>
+      {renderElement()}
+      {debugInfo()}
+    </div>
   );
 };
 

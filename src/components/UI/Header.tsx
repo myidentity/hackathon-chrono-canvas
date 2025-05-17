@@ -10,17 +10,18 @@ import { motion } from 'framer-motion';
 // Type definitions
 interface HeaderProps {
   viewMode: 'editor' | 'timeline' | 'zine' | 'presentation';
+  onViewModeChange: (mode: 'editor' | 'timeline' | 'zine' | 'presentation') => void;
   'data-testid'?: string;
 }
 
 /**
  * Header component with navigation and view mode controls
  */
-const Header: React.FC<HeaderProps> = ({ viewMode, 'data-testid': testId }) => {
+const Header: React.FC<HeaderProps> = ({ viewMode, onViewModeChange, 'data-testid': testId }) => {
   // Handle view mode change
   const handleViewModeChange = (mode: 'editor' | 'timeline' | 'zine' | 'presentation') => {
-    // This will be implemented with context in the actual component
     console.log(`Changing view mode to ${mode}`);
+    onViewModeChange(mode);
   };
   
   return (

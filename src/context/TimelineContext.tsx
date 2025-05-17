@@ -1,218 +1,302 @@
 /**
- * Timeline context provider for managing timeline state across the application.
+ * Timeline context provider for ChronoCanvas
  * 
- * This context provides access to timeline data, markers, and operations
- * for manipulating the timeline and playback.
- * 
- * @module TimelineContext
+ * This context manages the timeline state, including current position,
+ * playback status, and speed.
  */
 
-import { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useCanvas } from './CanvasContext';
 
-/**
- * Interface for timeline marker
- */
-interface TimelineMarker {
-  id: string;
-  name: string;
-  position: number;
-  color: string;
-}
-
-/**
- * Interface for timeline context value
- */
-interface TimelineContextValue {
-  duration: number;
+// Type definitions
+interface TimelineContextType {
   currentPosition: number;
-  markers: TimelineMarker[];
   isPlaying: boolean;
   playbackSpeed: number;
-  setDuration: (duration: number) => void;
-  setCurrentPosition: (position: number) => void;
-  addMarker: (name: string, position: number, color?: string) => string;
-  updateMarker: (id: string, updates: Partial<Omit<TimelineMarker, 'id'>>) => void;
+  duration: number;
+  markers: TimelineMarker[];
+  togglePlayback: () => void;
+  setPosition: (position: number) => void;
+  setPlaybackSpeed: (speed: number) => void;
+  addMarker: (marker: TimelineMarker) => void;
   removeMarker: (id: string) => void;
+  updateElementAtCurrentTime: () => void;
+  // Additional methods needed by components
   play: () => void;
   pause: () => void;
-  setPlaybackSpeed: (speed: number) => void;
   seekToMarker: (markerId: string) => void;
+  setCurrentPosition: (position: number) => void;
 }
 
-/**
- * Create the timeline context with default value
- */
-const TimelineContext = createContext<TimelineContextValue | undefined>(undefined);
-
-/**
- * Props for the TimelineProvider component
- */
-interface TimelineProviderProps {
-  children: ReactNode;
+export interface TimelineMarker {
+  id: string;
+  position: number;
+  name: string;
+  color?: string;
 }
 
+// Create context with default values
+const TimelineContext = createContext<TimelineContextType>({
+  currentPosition: 0,
+  isPlaying: false,
+  playbackSpeed: 1,
+  duration: 60, // Default duration in seconds
+  markers: [],
+  togglePlayback: () => {},
+  setPosition: () => {},
+  setPlaybackSpeed: () => {},
+  addMarker: () => {},
+  removeMarker: () => {},
+  updateElementAtCurrentTime: () => {},
+  play: () => {},
+  pause: () => {},
+  seekToMarker: () => {},
+  setCurrentPosition: () => {},
+});
+
 /**
- * Provider component for the Timeline context
- * 
- * @param {TimelineProviderProps} props - The component props
- * @returns {JSX.Element} The provider component
+ * Timeline context provider component
  */
-export function TimelineProvider({ children }: TimelineProviderProps): JSX.Element {
-  // Timeline state
-  const [duration, setDuration] = useState<number>(60); // Default 60 seconds
-  const [currentPosition, setCurrentPosition] = useState<number>(0);
-  const [markers, setMarkers] = useState<TimelineMarker[]>([]);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { canvas } = useCanvas();
   
-  // Reference for animation frame
-  const animationFrameRef = useRef<number | null>(null);
-  // Reference for last update time
-  const lastUpdateTimeRef = useRef<number | null>(null);
-
+  // Timeline state
+  const [currentPosition, setCurrentPosition] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [duration, setDuration] = useState(60); // Default duration in seconds
+  const [markers, setMarkers] = useState<TimelineMarker[]>([]);
+  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
+  
   /**
-   * Add a new marker to the timeline
-   * 
-   * @param {string} name - The name of the marker
-   * @param {number} position - The position of the marker in seconds
-   * @param {string} [color] - The color of the marker (optional)
-   * @returns {string} The ID of the newly added marker
+   * Toggle playback state
    */
-  const addMarker = useCallback((name: string, position: number, color: string = '#3b82f6'): string => {
-    const id = `marker-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const newMarker: TimelineMarker = { id, name, position, color };
-    
-    setMarkers(prev => [...prev, newMarker]);
-    
-    return id;
+  const togglePlayback = useCallback(() => {
+    setIsPlaying(prev => !prev);
+    setLastUpdateTime(Date.now());
   }, []);
-
+  
   /**
-   * Update an existing marker on the timeline
-   * 
-   * @param {string} id - The ID of the marker to update
-   * @param {Partial<Omit<TimelineMarker, 'id'>>} updates - The properties to update
+   * Start playback
    */
-  const updateMarker = useCallback((id: string, updates: Partial<Omit<TimelineMarker, 'id'>>): void => {
-    setMarkers(prev => 
-      prev.map(marker => 
-        marker.id === id ? { ...marker, ...updates } : marker
-      )
-    );
-  }, []);
-
-  /**
-   * Remove a marker from the timeline
-   * 
-   * @param {string} id - The ID of the marker to remove
-   */
-  const removeMarker = useCallback((id: string): void => {
-    setMarkers(prev => prev.filter(marker => marker.id !== id));
-  }, []);
-
-  /**
-   * Start timeline playback
-   */
-  const play = useCallback((): void => {
+  const play = useCallback(() => {
     setIsPlaying(true);
+    setLastUpdateTime(Date.now());
   }, []);
-
+  
   /**
-   * Pause timeline playback
+   * Pause playback
    */
-  const pause = useCallback((): void => {
+  const pause = useCallback(() => {
     setIsPlaying(false);
   }, []);
-
+  
   /**
-   * Seek to a specific marker position
-   * 
-   * @param {string} markerId - The ID of the marker to seek to
+   * Set timeline position
    */
-  const seekToMarker = useCallback((markerId: string): void => {
+  const setPosition = useCallback((position: number) => {
+    setCurrentPosition(Math.max(0, Math.min(position, duration)));
+  }, [duration]);
+  
+  /**
+   * Set playback speed
+   */
+  const setPlaybackSpeedValue = useCallback((speed: number) => {
+    setPlaybackSpeed(speed);
+  }, []);
+  
+  /**
+   * Add marker to timeline
+   */
+  const addMarker = useCallback((marker: TimelineMarker) => {
+    setMarkers(prev => [...prev, marker]);
+  }, []);
+  
+  /**
+   * Remove marker from timeline
+   */
+  const removeMarker = useCallback((id: string) => {
+    setMarkers(prev => prev.filter(marker => marker.id !== id));
+  }, []);
+  
+  /**
+   * Seek to a specific marker
+   */
+  const seekToMarker = useCallback((markerId: string) => {
     const marker = markers.find(m => m.id === markerId);
     if (marker) {
       setCurrentPosition(marker.position);
     }
   }, [markers]);
-
+  
   /**
-   * Animation loop for timeline playback
-   * 
-   * @param {number} timestamp - The current timestamp from requestAnimationFrame
+   * Update element visibility and properties based on current timeline position
    */
-  const animationLoop = useCallback((timestamp: number): void => {
-    if (!lastUpdateTimeRef.current) {
-      lastUpdateTimeRef.current = timestamp;
-    }
+  const updateElementAtCurrentTime = useCallback(() => {
+    // Log for debugging
+    console.log('Updating elements at time:', currentPosition);
     
-    const deltaTime = (timestamp - lastUpdateTimeRef.current) / 1000; // Convert to seconds
-    lastUpdateTimeRef.current = timestamp;
+    // Update each element based on its timeline data
+    canvas.elements.forEach(element => {
+      // Skip if element has no timeline data
+      if (!element.timelineData) {
+        console.log('Element has no timeline data:', element.id);
+        return;
+      }
+      
+      const { entryPoint, exitPoint, persist, keyframes } = element.timelineData;
+      
+      // Determine visibility based on entry/exit points
+      let isVisible = true;
+      
+      // Check if current position is before entry point
+      if (entryPoint !== undefined && entryPoint !== null && currentPosition < entryPoint) {
+        isVisible = false;
+      }
+      
+      // Check if current position is after exit point and element doesn't persist
+      if (exitPoint !== undefined && exitPoint !== null && !persist && currentPosition > exitPoint) {
+        isVisible = false;
+      }
+      
+      // Apply keyframe interpolation if element has keyframes
+      if (keyframes && keyframes.length > 0 && isVisible) {
+        // Find the keyframes that surround the current position
+        const sortedKeyframes = [...keyframes].sort((a, b) => a.time - b.time);
+        
+        // Find the previous and next keyframes
+        const prevKeyframe = sortedKeyframes.filter(kf => kf.time <= currentPosition).pop();
+        const nextKeyframe = sortedKeyframes.filter(kf => kf.time > currentPosition)[0];
+        
+        if (prevKeyframe && nextKeyframe) {
+          // Interpolate between keyframes
+          const progress = (currentPosition - prevKeyframe.time) / (nextKeyframe.time - prevKeyframe.time);
+          
+          // Apply interpolated properties
+          const interpolatedProps = interpolateProperties(prevKeyframe.properties, nextKeyframe.properties, progress);
+          
+          // Update element with interpolated properties
+          console.log('Applying interpolated properties to element:', element.id, interpolatedProps);
+        } else if (prevKeyframe) {
+          // Use properties from the last keyframe
+          console.log('Applying last keyframe properties to element:', element.id, prevKeyframe.properties);
+        } else if (nextKeyframe) {
+          // Use properties from the first keyframe
+          console.log('Applying first keyframe properties to element:', element.id, nextKeyframe.properties);
+        } else {
+          // No applicable keyframes, just update visibility
+          console.log('Updating element visibility only:', element.id, isVisible);
+        }
+      } else {
+        // No keyframes, just update visibility
+        console.log('Updating element visibility only:', element.id, isVisible);
+      }
+    });
+  }, [canvas.elements, currentPosition]);
+  
+  /**
+   * Interpolate between two sets of properties
+   */
+  const interpolateProperties = (prevProps: any, nextProps: any, progress: number) => {
+    const result: any = { ...prevProps };
     
-    setCurrentPosition(prev => {
-      const newPosition = prev + (deltaTime * playbackSpeed);
-      // Loop back to start if we reach the end
-      return newPosition >= duration ? 0 : newPosition;
+    // Interpolate numeric properties
+    Object.keys(prevProps).forEach(key => {
+      if (typeof prevProps[key] === 'number' && typeof nextProps[key] === 'number') {
+        result[key] = prevProps[key] + (nextProps[key] - prevProps[key]) * progress;
+      }
     });
     
-    animationFrameRef.current = requestAnimationFrame(animationLoop);
-  }, [duration, playbackSpeed]);
-
-  // Effect to handle playback state changes
+    return result;
+  };
+  
+  // Update timeline position during playback
   useEffect(() => {
-    if (isPlaying) {
-      lastUpdateTimeRef.current = null;
-      animationFrameRef.current = requestAnimationFrame(animationLoop);
-    } else if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
+    if (!isPlaying) return;
     
-    // Cleanup on unmount
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+    const now = Date.now();
+    const elapsed = (now - lastUpdateTime) / 1000; // Convert to seconds
+    const newPosition = currentPosition + elapsed * playbackSpeed;
+    
+    // Update position and reset last update time
+    if (newPosition >= duration) {
+      setCurrentPosition(0);
+    } else {
+      setCurrentPosition(newPosition);
+    }
+    setLastUpdateTime(now);
+    
+    // Update elements based on new position
+    updateElementAtCurrentTime();
+    
+    // Set up animation frame for smooth playback
+    const animationFrame = requestAnimationFrame(() => {
+      // This will trigger the effect again
+      setLastUpdateTime(Date.now());
+    });
+    
+    return () => cancelAnimationFrame(animationFrame);
+  }, [isPlaying, currentPosition, playbackSpeed, duration, lastUpdateTime, updateElementAtCurrentTime]);
+  
+  // Update elements when position changes manually
+  useEffect(() => {
+    if (!isPlaying) {
+      updateElementAtCurrentTime();
+    }
+  }, [currentPosition, isPlaying, updateElementAtCurrentTime]);
+  
+  // Calculate duration based on element timeline data
+  useEffect(() => {
+    let maxDuration = 60; // Default minimum duration
+    
+    canvas.elements.forEach(element => {
+      if (element.timelineData) {
+        const { exitPoint } = element.timelineData;
+        if (exitPoint && exitPoint > maxDuration) {
+          maxDuration = exitPoint + 10; // Add buffer
+        }
+        
+        // Check keyframes
+        if (element.timelineData.keyframes) {
+          element.timelineData.keyframes.forEach(keyframe => {
+            if (keyframe.time > maxDuration) {
+              maxDuration = keyframe.time + 10; // Add buffer
+            }
+          });
+        }
       }
-    };
-  }, [isPlaying, animationLoop]);
-
-  // Create the context value object
-  const value: TimelineContextValue = {
-    duration,
+    });
+    
+    setDuration(maxDuration);
+  }, [canvas.elements]);
+  
+  // Context value
+  const contextValue: TimelineContextType = {
     currentPosition,
-    markers,
     isPlaying,
     playbackSpeed,
-    setDuration,
-    setCurrentPosition,
+    duration,
+    markers,
+    togglePlayback,
+    setPosition,
+    setPlaybackSpeed: setPlaybackSpeedValue,
     addMarker,
-    updateMarker,
     removeMarker,
+    updateElementAtCurrentTime,
     play,
     pause,
-    setPlaybackSpeed,
     seekToMarker,
+    setCurrentPosition,
   };
-
+  
   return (
-    <TimelineContext.Provider value={value}>
+    <TimelineContext.Provider value={contextValue}>
       {children}
     </TimelineContext.Provider>
   );
-}
+};
 
 /**
- * Custom hook for accessing the timeline context
- * 
- * @returns {TimelineContextValue} The timeline context value
- * @throws {Error} If used outside of a TimelineProvider
+ * Hook to use timeline context
  */
-export function useTimeline(): TimelineContextValue {
-  const context = useContext(TimelineContext);
-  
-  if (context === undefined) {
-    throw new Error('useTimeline must be used within a TimelineProvider');
-  }
-  
-  return context;
-}
+export const useTimeline = () => useContext(TimelineContext);

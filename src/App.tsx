@@ -21,7 +21,12 @@ import MicroInteractions from './components/UI/MicroInteractions';
  */
 const App: React.FC = () => {
   // State for current view mode
-  const [viewMode] = useState<'editor' | 'timeline' | 'zine' | 'presentation'>('editor');
+  const [viewMode, setViewMode] = useState<'editor' | 'timeline' | 'zine' | 'presentation'>('editor');
+  
+  // Handler for view mode changes
+  const handleViewModeChange = (mode: 'editor' | 'timeline' | 'zine' | 'presentation') => {
+    setViewMode(mode);
+  };
   
   return (
     <CanvasProvider>
@@ -31,6 +36,7 @@ const App: React.FC = () => {
             {/* Header */}
             <Header 
               viewMode={viewMode} 
+              onViewModeChange={handleViewModeChange}
               data-testid="app-header"
             />
             
@@ -68,6 +74,11 @@ const App: React.FC = () => {
                   <PropertyPanel viewMode={viewMode} />
                 </div>
               )}
+            </div>
+            
+            {/* Hidden element for testing */}
+            <div data-testid="view-mode-state" style={{ display: 'none' }}>
+              {viewMode}
             </div>
           </div>
         </MicroInteractions.ToastProvider>
