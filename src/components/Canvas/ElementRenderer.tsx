@@ -119,9 +119,16 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
     const result: any = { ...prevProps };
     
     // Interpolate numeric properties
-    Object.keys(prevProps).forEach(key => {
+    Object.keys(nextProps).forEach(key => {
       if (typeof prevProps[key] === 'number' && typeof nextProps[key] === 'number') {
         result[key] = prevProps[key] + (nextProps[key] - prevProps[key]) * progress;
+      } else if (nextProps[key] !== undefined && prevProps[key] === undefined) {
+        // Handle case where property exists in next but not in prev
+        if (typeof nextProps[key] === 'number') {
+          result[key] = nextProps[key] * progress;
+        } else {
+          result[key] = nextProps[key];
+        }
       }
     });
     
@@ -211,27 +218,94 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
     return null;
   };
   
+  // Generate CSS transform string from transform properties
+  const generateTransform = (props: any) => {
+    const transformParts: string[] = [];
+    
+    // Handle translation (movement)
+    if (props.translateX !== undefined) {
+      transformParts.push(`translateX(${props.translateX}px)`);
+    }
+    
+    if (props.translateY !== undefined) {
+      transformParts.push(`translateY(${props.translateY}px)`);
+    }
+    
+    // Handle scaling
+    if (props.scale !== undefined) {
+      transformParts.push(`scale(${props.scale})`);
+    } else if (props.scaleX !== undefined || props.scaleY !== undefined) {
+      const scaleX = props.scaleX !== undefined ? props.scaleX : 1;
+      const scaleY = props.scaleY !== undefined ? props.scaleY : 1;
+      transformParts.push(`scale(${scaleX}, ${scaleY})`);
+    }
+    
+    // Handle rotation (in degrees)
+    if (props.rotate !== undefined) {
+      transformParts.push(`rotate(${props.rotate}deg)`);
+    } else if (props.rotation !== undefined) {
+      transformParts.push(`rotate(${props.rotation}deg)`);
+    }
+    
+    // Handle 3D rotations if needed
+    if (props.rotateX !== undefined) {
+      transformParts.push(`rotateX(${props.rotateX}deg)`);
+    }
+    
+    if (props.rotateY !== undefined) {
+      transformParts.push(`rotateY(${props.rotateY}deg)`);
+    }
+    
+    if (props.rotateZ !== undefined) {
+      transformParts.push(`rotateZ(${props.rotateZ}deg)`);
+    }
+    
+    return transformParts.join(' ');
+  };
+  
   // Calculate animation styles based on viewMode and animated properties
   const getAnimationStyles = () => {
     // Base styles from element
-    const baseStyles = {
+    const baseStyles: React.CSSProperties = {
       left: `${element.position.x}px`,
       top: `${element.position.y}px`,
       width: `${element.size.width}px`,
       height: `${element.size.height}px`,
-      transform: `rotate(${element.rotation || 0}deg)`,
       opacity: element.opacity !== undefined ? element.opacity : 1,
       zIndex: element.zIndex || 0,
     };
     
-    // Apply animated properties for timeline and zine modes
+    // Base transform from element properties
+    let baseTransform = `rotate(${element.rotation || 0}deg)`;
+    
+    // Apply animated properties for timeline, zine, and presentation modes
     if ((viewMode === 'timeline' || viewMode === 'zine' || viewMode === 'presentation') && Object.keys(animatedProps).length > 0) {
       // Debug log to verify animation props are being applied
       console.log('Applying animated props for element:', element.id, animatedProps);
       
+      // Extract transform-related properties
+      const transformProps: any = {};
+      const otherProps: any = {};
+      
+      // Separate transform properties from other properties
+      Object.keys(animatedProps).forEach(key => {
+        if (['translateX', 'translateY', 'scale', 'scaleX', 'scaleY', 'rotate', 'rotation', 'rotateX', 'rotateY', 'rotateZ'].includes(key)) {
+          transformProps[key] = animatedProps[key];
+        } else {
+          otherProps[key] = animatedProps[key];
+        }
+      });
+      
+      // Generate transform string
+      const animatedTransform = generateTransform(transformProps);
+      
+      // Combine base transform with animated transform
+      const combinedTransform = animatedTransform ? animatedTransform : baseTransform;
+      
       return {
         ...baseStyles,
-        ...animatedProps,
+        ...otherProps,
+        transform: combinedTransform,
         transition: isPlaying ? 'all 0.1s linear' : 'none',
       };
     }
@@ -240,11 +314,16 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
     if (viewMode === 'zine') {
       return {
         ...baseStyles,
+        transform: baseTransform,
         transition: 'transform 0.5s ease-out, opacity 0.5s ease-out',
       };
     }
     
-    return baseStyles;
+    // Default styles for editor mode
+    return {
+      ...baseStyles,
+      transform: baseTransform,
+    };
   };
   
   return (
