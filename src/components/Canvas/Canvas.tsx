@@ -1,222 +1,177 @@
 /**
- * Canvas component for ChronoCanvas.
+ * Canvas component for ChronoCanvas
  * 
- * This component renders the main canvas area where users can place and manipulate elements.
- * It handles different view modes and element interactions.
- * 
- * @module Canvas
+ * This component renders the main canvas area where elements are displayed
+ * and can be interacted with. It supports panning, zooming, and element
+ * manipulation.
  */
 
-import { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 import { useTimeline } from '../../context/TimelineContext';
+import ElementRenderer from './ElementRenderer';
 
-/**
- * Props for the Canvas component
- */
 interface CanvasProps {
-  /**
-   * The current view mode of the application
-   */
-  viewMode: 'editor' | 'timeline' | 'presentation' | 'zine';
+  mode?: 'editor' | 'timeline' | 'zine' | 'presentation';
 }
 
 /**
- * Canvas component that renders the main workspace
- * 
- * @param {CanvasProps} props - The component props
- * @returns {JSX.Element} The rendered Canvas component
+ * Canvas component
+ * Renders the main canvas area with all elements
  */
-function Canvas({ viewMode }: CanvasProps): JSX.Element {
-  // Get canvas and timeline context
-  const { canvas, selectedElements, selectElement, clearSelection } = useCanvas();
-  const { currentPosition } = useTimeline();
-  
-  // Reference to the canvas container element
+const Canvas: React.FC<CanvasProps> = ({ mode = 'editor' }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const { canvas, updateElementPosition, selectedElement, selectElement } = useCanvas();
+  const { currentPosition, isPlaying } = useTimeline();
   
-  // State for tracking canvas pan and zoom
-  const [scale, setScale] = useState<number>(1);
-  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  // State for canvas interaction
+  const [isPanning, setIsPanning] = useState(false);
+  const [startPanPosition, setStartPanPosition] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [showGrid, setShowGrid] = useState(true);
   
-  // State for tracking if the canvas is being dragged
-  const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
-
-  /**
-   * Handle mouse down event on the canvas
-   * 
-   * @param {React.MouseEvent} e - The mouse event
-   */
+  // Handle mouse down for panning or element selection
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Only enable dragging in editor mode and when not clicking on an element
-    if (viewMode === 'editor' && e.target === canvasRef.current) {
-      setIsDragging(true);
-      setDragStart({ x: e.clientX, y: e.clientY });
-      
-      // Clear selection when clicking on empty canvas area
-      clearSelection();
-    }
-  };
-
-  /**
-   * Handle mouse move event on the canvas
-   * 
-   * @param {React.MouseEvent} e - The mouse event
-   */
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging && dragStart) {
-      const deltaX = e.clientX - dragStart.x;
-      const deltaY = e.clientY - dragStart.y;
-      
-      setPan(prev => ({
-        x: prev.x + deltaX,
-        y: prev.y + deltaY
-      }));
-      
-      setDragStart({ x: e.clientX, y: e.clientY });
-    }
-  };
-
-  /**
-   * Handle mouse up event on the canvas
-   */
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    setDragStart(null);
-  };
-
-  /**
-   * Handle wheel event for zooming
-   * 
-   * @param {React.WheelEvent} e - The wheel event
-   */
-  const handleWheel = (e: React.WheelEvent) => {
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      
-      // Calculate new scale with limits
-      const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      const newScale = Math.min(Math.max(scale * delta, 0.1), 5);
-      
-      setScale(newScale);
-    }
-  };
-
-  /**
-   * Filter visible elements based on timeline position
-   * 
-   * @returns {Array} Array of visible elements at the current timeline position
-   */
-  const getVisibleElements = () => {
-    return canvas.elements.filter(element => {
-      const { entryPoint, exitPoint, persist } = element.timelineData;
-      
-      // Element is visible if:
-      // 1. Current position is after entry point AND
-      // 2. Either:
-      //    a. Current position is before exit point, OR
-      //    b. Element persists and has been shown (current position > entry point)
-      return (
-        currentPosition >= entryPoint && 
-        (exitPoint === null || currentPosition <= exitPoint || persist)
-      );
-    });
-  };
-
-  // Effect to add wheel event listener with passive: false
-  useEffect(() => {
-    const canvasElement = canvasRef.current;
+    if (mode !== 'editor') return;
     
-    if (canvasElement) {
-      const handleWheelEvent = (e: WheelEvent) => {
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault();
-        }
-      };
-      
-      canvasElement.addEventListener('wheel', handleWheelEvent, { passive: false });
-      
-      return () => {
-        canvasElement.removeEventListener('wheel', handleWheelEvent);
-      };
+    // Check if clicking on an element
+    const target = e.target as HTMLElement;
+    const elementId = target.closest('[data-element-id]')?.getAttribute('data-element-id');
+    
+    if (elementId) {
+      // Select the element
+      selectElement(elementId);
+    } else {
+      // Start panning
+      setIsPanning(true);
+      setStartPanPosition({ x: e.clientX, y: e.clientY });
     }
-  }, []);
-
-  // Get visible elements based on current timeline position
-  const visibleElements = getVisibleElements();
-
+  };
+  
+  // Handle mouse move for panning or element dragging
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (mode !== 'editor') return;
+    
+    if (isPanning && canvasRef.current) {
+      // Pan the canvas
+      const dx = e.clientX - startPanPosition.x;
+      const dy = e.clientY - startPanPosition.y;
+      
+      canvasRef.current.scrollLeft -= dx;
+      canvasRef.current.scrollTop -= dy;
+      
+      setStartPanPosition({ x: e.clientX, y: e.clientY });
+    } else if (selectedElement) {
+      // Move the selected element
+      const dx = e.movementX / zoom;
+      const dy = e.movementY / zoom;
+      
+      updateElementPosition(selectedElement, dx, dy);
+    }
+  };
+  
+  // Handle mouse up to end panning or element dragging
+  const handleMouseUp = () => {
+    if (mode !== 'editor') return;
+    
+    setIsPanning(false);
+  };
+  
+  // Handle zoom in/out
+  const handleZoom = (factor: number) => {
+    setZoom(prev => Math.max(0.25, Math.min(4, prev * factor)));
+  };
+  
+  // Toggle grid visibility
+  const toggleGrid = () => {
+    setShowGrid(prev => !prev);
+  };
+  
+  // Log current timeline position for debugging
+  useEffect(() => {
+    console.log(`Canvas: Timeline position ${currentPosition}, Playing: ${isPlaying}`);
+  }, [currentPosition, isPlaying]);
+  
   return (
-    <div 
-      ref={canvasRef}
-      className="w-full h-full relative overflow-hidden bg-white shadow-lg"
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onWheel={handleWheel}
-      style={{ cursor: isDragging ? 'grabbing' : 'default' }}
-    >
-      {/* Canvas background */}
+    <div className="relative flex-1 overflow-hidden">
       <div 
-        className="absolute inset-0"
+        ref={canvasRef}
+        className={`w-full h-full overflow-auto ${showGrid ? 'bg-grid' : 'bg-white'}`}
         style={{ 
-          backgroundColor: canvas.background.type === 'color' ? canvas.background.value : 'transparent',
-          backgroundImage: canvas.background.type === 'gradient' ? canvas.background.value : 'none',
+          cursor: isPanning ? 'grabbing' : 'default',
         }}
-      />
-      
-      {/* Canvas content container with transform for pan and zoom */}
-      <div 
-        className="absolute"
-        style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
-          transformOrigin: '0 0',
-          width: `${canvas.width}px`,
-          height: `${canvas.height}px`,
-        }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
       >
-        {/* Render visible elements */}
-        {visibleElements.map(element => (
-          <div
-            key={element.id}
-            className={`absolute ${selectedElements.includes(element.id) ? 'ring-2 ring-primary-500' : ''}`}
-            style={{
-              left: `${element.position.x}px`,
-              top: `${element.position.y}px`,
-              width: `${element.size.width}px`,
-              height: `${element.size.height}px`,
-              transform: `rotate(${element.rotation}deg)`,
-              opacity: element.opacity,
-              zIndex: element.position.z,
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              selectElement(element.id);
-            }}
-          >
-            {/* Placeholder for element content - will be replaced with actual element renderer */}
-            <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-600">
-              {element.type}
-            </div>
+        <div 
+          className="relative"
+          style={{ 
+            width: '3000px', 
+            height: '3000px',
+            transform: `scale(${zoom})`,
+            transformOrigin: '0 0',
+          }}
+        >
+          {/* Render all elements */}
+          {canvas.elements.map(element => (
+            <ElementRenderer 
+              key={element.id}
+              element={element}
+              isSelected={selectedElement === element.id}
+              mode={mode}
+              currentTime={currentPosition}
+            />
+          ))}
+          
+          {/* Debug info */}
+          <div className="absolute bottom-4 left-4 bg-white bg-opacity-80 p-2 rounded text-sm">
+            {mode === 'editor' && 'Editor Mode'}
+            {mode === 'timeline' && 'Timeline Mode'}
+            {mode === 'zine' && 'Zine View'}
+            {mode === 'presentation' && 'Presentation Mode'}
+            <br />
+            Time: {currentPosition.toFixed(2)} / {isPlaying ? 'Playing' : 'Paused'}
+            <br />
+            Elements: {canvas.elements.length}
           </div>
-        ))}
+        </div>
       </div>
       
-      {/* View mode indicator */}
-      <div className="absolute bottom-4 right-4 bg-white bg-opacity-75 px-3 py-1 rounded-full text-sm font-medium text-gray-700">
-        {viewMode === 'editor' && 'Editor Mode'}
-        {viewMode === 'timeline' && 'Timeline Mode'}
-        {viewMode === 'presentation' && 'Presentation Mode'}
-        {viewMode === 'zine' && 'Zine Mode'}
-      </div>
-      
-      {/* Zoom level indicator */}
-      <div className="absolute bottom-4 left-4 bg-white bg-opacity-75 px-3 py-1 rounded-full text-sm font-medium text-gray-700">
-        {Math.round(scale * 100)}%
+      {/* Zoom controls */}
+      <div className="absolute bottom-4 right-4 flex flex-col gap-2">
+        <button 
+          className="bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+          onClick={() => handleZoom(1.2)}
+          title="Zoom In"
+        >
+          <span className="text-xl">+</span>
+        </button>
+        <button 
+          className="bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+          onClick={() => handleZoom(0.8)}
+          title="Zoom Out"
+        >
+          <span className="text-xl">-</span>
+        </button>
+        <button 
+          className="bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+          onClick={() => setZoom(1)}
+          title="Reset Zoom"
+        >
+          <span className="text-sm">100%</span>
+        </button>
+        <button 
+          className="bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+          onClick={toggleGrid}
+          title={showGrid ? "Hide Grid" : "Show Grid"}
+        >
+          <span className="text-sm">#</span>
+        </button>
       </div>
     </div>
   );
-}
+};
 
 export default Canvas;

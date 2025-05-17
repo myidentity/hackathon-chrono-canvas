@@ -1,271 +1,330 @@
 /**
- * Canvas context provider for managing canvas state across the application.
+ * Canvas context provider for ChronoCanvas
  * 
- * This context provides access to canvas data, elements, and operations
- * for manipulating the canvas content.
- * 
- * @module CanvasContext
+ * This context manages the canvas state, including elements, selection,
+ * and element manipulation.
  */
 
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 
-/**
- * Interface for canvas element position
- */
-interface Position {
-  x: number;
-  y: number;
-  z: number;
-}
-
-/**
- * Interface for canvas element size
- */
-interface Size {
-  width: number;
-  height: number;
-}
-
-/**
- * Interface for element timeline data
- */
-interface ElementTimelineData {
-  entryPoint: number;
-  exitPoint: number | null;
-  persist: boolean;
-  keyframes: Keyframe[];
-}
-
-/**
- * Interface for animation keyframe
- */
-interface Keyframe {
-  time: number;
-  properties: Record<string, any>;
-}
-
-/**
- * Interface for canvas element animation
- */
-interface Animation {
-  type: string;
-  duration: number;
-  easing: string;
-  delay: number;
-  trigger: 'timeline' | 'scroll' | 'interaction';
-  properties: Record<string, any>;
-}
-
-/**
- * Interface for canvas element
- */
+// Type definitions
 export interface CanvasElement {
   id: string;
-  type: 'image' | 'text' | 'shape' | 'sticker' | 'color' | 'media';
-  position: Position;
-  size: Size;
-  rotation: number;
-  opacity: number;
-  timelineData: ElementTimelineData;
-  properties: Record<string, any>;
-  animations: Animation[];
-}
-
-/**
- * Interface for canvas data
- */
-export interface Canvas {
-  id: string;
-  name: string;
-  width: number;
-  height: number;
-  background: {
-    type: 'color' | 'gradient' | 'image';
-    value: string;
+  type: 'image' | 'text' | 'shape' | 'sticker' | 'media';
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  rotation?: number;
+  opacity?: number;
+  zIndex?: number;
+  src?: string;
+  alt?: string;
+  content?: string;
+  fontSize?: string;
+  fontWeight?: string;
+  color?: string;
+  backgroundColor?: string;
+  textAlign?: string;
+  shape?: string;
+  borderRadius?: string;
+  timelineData?: {
+    entryPoint?: number;
+    exitPoint?: number;
+    persist?: boolean;
+    keyframes?: Array<{
+      time: number;
+      properties: any;
+    }>;
   };
-  elements: CanvasElement[];
-  createdAt: Date;
-  updatedAt: Date;
 }
 
-/**
- * Interface for canvas context value
- */
-interface CanvasContextValue {
-  canvas: Canvas;
-  selectedElements: string[];
-  addElement: (element: Omit<CanvasElement, 'id'>) => string;
+export interface CanvasState {
+  elements: CanvasElement[];
+  viewBox: { x: number; y: number; width: number; height: number };
+}
+
+export interface CanvasContextValue {
+  canvas: CanvasState;
+  selectedElement: string | null;
+  addElement: (element: Partial<CanvasElement>) => string;
   updateElement: (id: string, updates: Partial<CanvasElement>) => void;
   removeElement: (id: string) => void;
-  selectElement: (id: string) => void;
-  deselectElement: (id: string) => void;
-  clearSelection: () => void;
-  updateCanvas: (updates: Partial<Canvas>) => void;
+  selectElement: (id: string | null) => void;
+  updateElementPosition: (id: string, dx: number, dy: number) => void;
+  updateElementSize: (id: string, width: number, height: number) => void;
+  updateElementRotation: (id: string, rotation: number) => void;
+  updateElementVisibility: (id: string, isVisible: boolean, properties?: any) => void;
 }
 
-/**
- * Default canvas state
- */
-const defaultCanvas: Canvas = {
-  id: 'default',
-  name: 'Untitled Canvas',
-  width: 1920,
-  height: 1080,
-  background: {
-    type: 'color',
-    value: '#ffffff',
-  },
-  elements: [],
-  createdAt: new Date(),
-  updatedAt: new Date(),
-};
+// Create context with default values
+const CanvasContext = createContext<CanvasContextValue>({
+  canvas: { elements: [], viewBox: { x: 0, y: 0, width: 1000, height: 1000 } },
+  selectedElement: null,
+  addElement: () => '',
+  updateElement: () => {},
+  removeElement: () => {},
+  selectElement: () => {},
+  updateElementPosition: () => {},
+  updateElementSize: () => {},
+  updateElementRotation: () => {},
+  updateElementVisibility: () => {},
+});
 
 /**
- * Create the canvas context with default value
+ * Canvas context provider component
  */
-const CanvasContext = createContext<CanvasContextValue | undefined>(undefined);
-
-/**
- * Props for the CanvasProvider component
- */
-interface CanvasProviderProps {
-  children: ReactNode;
-}
-
-/**
- * Provider component for the Canvas context
- * 
- * @param {CanvasProviderProps} props - The component props
- * @returns {JSX.Element} The provider component
- */
-export function CanvasProvider({ children }: CanvasProviderProps): JSX.Element {
-  const [canvas, setCanvas] = useState<Canvas>(defaultCanvas);
-  const [selectedElements, setSelectedElements] = useState<string[]>([]);
-
+export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Canvas state
+  const [canvas, setCanvas] = useState<CanvasState>({
+    elements: [
+      // Sample elements for testing
+      {
+        id: 'sample-image-1',
+        type: 'image',
+        position: { x: 100, y: 100 },
+        size: { width: 200, height: 150 },
+        src: 'https://via.placeholder.com/200x150/8B5CF6/FFFFFF?text=Sample+Image+1',
+        alt: 'Sample Image 1',
+        timelineData: {
+          entryPoint: 0,
+          exitPoint: 30,
+          persist: true,
+          keyframes: [
+            {
+              time: 0,
+              properties: {
+                opacity: 0,
+                rotation: 0,
+              },
+            },
+            {
+              time: 5,
+              properties: {
+                opacity: 1,
+                rotation: 0,
+              },
+            },
+            {
+              time: 15,
+              properties: {
+                opacity: 1,
+                rotation: 180,
+              },
+            },
+            {
+              time: 30,
+              properties: {
+                opacity: 0,
+                rotation: 360,
+              },
+            },
+          ],
+        },
+      },
+      {
+        id: 'sample-image-2',
+        type: 'image',
+        position: { x: 350, y: 100 },
+        size: { width: 200, height: 150 },
+        src: 'https://via.placeholder.com/200x150/F59E0B/FFFFFF?text=Sample+Image+2',
+        alt: 'Sample Image 2',
+        timelineData: {
+          entryPoint: 10,
+          exitPoint: 40,
+          persist: false,
+          keyframes: [
+            {
+              time: 10,
+              properties: {
+                opacity: 0,
+                position: { x: 350, y: 100 },
+              },
+            },
+            {
+              time: 20,
+              properties: {
+                opacity: 1,
+                position: { x: 500, y: 200 },
+              },
+            },
+            {
+              time: 40,
+              properties: {
+                opacity: 0,
+                position: { x: 650, y: 300 },
+              },
+            },
+          ],
+        },
+      },
+    ],
+    viewBox: { x: 0, y: 0, width: 1000, height: 1000 },
+  });
+  
+  // Selected element
+  const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  
   /**
    * Add a new element to the canvas
-   * 
-   * @param {Omit<CanvasElement, 'id'>} element - The element to add (without ID)
-   * @returns {string} The ID of the newly added element
    */
-  const addElement = useCallback((element: Omit<CanvasElement, 'id'>): string => {
-    const id = `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const newElement = { ...element, id } as CanvasElement;
+  const addElement = useCallback((element: Partial<CanvasElement>) => {
+    const id = `element-${Date.now()}`;
+    const newElement: CanvasElement = {
+      id,
+      type: element.type || 'shape',
+      position: element.position || { x: 100, y: 100 },
+      size: element.size || { width: 100, height: 100 },
+      ...element,
+    };
     
-    setCanvas(prevCanvas => ({
-      ...prevCanvas,
-      elements: [...prevCanvas.elements, newElement],
-      updatedAt: new Date(),
+    setCanvas(prev => ({
+      ...prev,
+      elements: [...prev.elements, newElement],
     }));
     
     return id;
   }, []);
-
+  
   /**
-   * Update an existing element on the canvas
-   * 
-   * @param {string} id - The ID of the element to update
-   * @param {Partial<CanvasElement>} updates - The properties to update
+   * Update an existing element
    */
-  const updateElement = useCallback((id: string, updates: Partial<CanvasElement>): void => {
-    setCanvas(prevCanvas => ({
-      ...prevCanvas,
-      elements: prevCanvas.elements.map(element => 
-        element.id === id ? { ...element, ...updates } : element
-      ),
-      updatedAt: new Date(),
-    }));
-  }, []);
-
-  /**
-   * Remove an element from the canvas
-   * 
-   * @param {string} id - The ID of the element to remove
-   */
-  const removeElement = useCallback((id: string): void => {
-    setCanvas(prevCanvas => ({
-      ...prevCanvas,
-      elements: prevCanvas.elements.filter(element => element.id !== id),
-      updatedAt: new Date(),
-    }));
-    
-    // Also remove from selection if selected
-    setSelectedElements(prev => prev.filter(elementId => elementId !== id));
-  }, []);
-
-  /**
-   * Select an element on the canvas
-   * 
-   * @param {string} id - The ID of the element to select
-   */
-  const selectElement = useCallback((id: string): void => {
-    setSelectedElements(prev => {
-      if (prev.includes(id)) return prev;
-      return [...prev, id];
-    });
-  }, []);
-
-  /**
-   * Deselect an element on the canvas
-   * 
-   * @param {string} id - The ID of the element to deselect
-   */
-  const deselectElement = useCallback((id: string): void => {
-    setSelectedElements(prev => prev.filter(elementId => elementId !== id));
-  }, []);
-
-  /**
-   * Clear all element selections
-   */
-  const clearSelection = useCallback((): void => {
-    setSelectedElements([]);
-  }, []);
-
-  /**
-   * Update canvas properties
-   * 
-   * @param {Partial<Canvas>} updates - The canvas properties to update
-   */
-  const updateCanvas = useCallback((updates: Partial<Canvas>): void => {
+  const updateElement = useCallback((id: string, updates: Partial<CanvasElement>) => {
     setCanvas(prev => ({
       ...prev,
-      ...updates,
-      updatedAt: new Date(),
+      elements: prev.elements.map(element => 
+        element.id === id ? { ...element, ...updates } : element
+      ),
     }));
   }, []);
-
-  // Create the context value object
-  const value: CanvasContextValue = {
+  
+  /**
+   * Remove an element from the canvas
+   */
+  const removeElement = useCallback((id: string) => {
+    setCanvas(prev => ({
+      ...prev,
+      elements: prev.elements.filter(element => element.id !== id),
+    }));
+    
+    if (selectedElement === id) {
+      setSelectedElement(null);
+    }
+  }, [selectedElement]);
+  
+  /**
+   * Select an element
+   */
+  const selectElement = useCallback((id: string | null) => {
+    setSelectedElement(id);
+  }, []);
+  
+  /**
+   * Update element position
+   */
+  const updateElementPosition = useCallback((id: string, dx: number, dy: number) => {
+    setCanvas(prev => ({
+      ...prev,
+      elements: prev.elements.map(element => {
+        if (element.id === id) {
+          return {
+            ...element,
+            position: {
+              x: element.position.x + dx,
+              y: element.position.y + dy,
+            },
+          };
+        }
+        return element;
+      }),
+    }));
+  }, []);
+  
+  /**
+   * Update element size
+   */
+  const updateElementSize = useCallback((id: string, width: number, height: number) => {
+    setCanvas(prev => ({
+      ...prev,
+      elements: prev.elements.map(element => {
+        if (element.id === id) {
+          return {
+            ...element,
+            size: { width, height },
+          };
+        }
+        return element;
+      }),
+    }));
+  }, []);
+  
+  /**
+   * Update element rotation
+   */
+  const updateElementRotation = useCallback((id: string, rotation: number) => {
+    setCanvas(prev => ({
+      ...prev,
+      elements: prev.elements.map(element => {
+        if (element.id === id) {
+          return {
+            ...element,
+            rotation,
+          };
+        }
+        return element;
+      }),
+    }));
+  }, []);
+  
+  /**
+   * Update element visibility and properties for timeline animations
+   */
+  const updateElementVisibility = useCallback((id: string, isVisible: boolean, properties?: any) => {
+    setCanvas(prev => ({
+      ...prev,
+      elements: prev.elements.map(element => {
+        if (element.id === id) {
+          // If properties are provided, update them along with visibility
+          if (properties) {
+            return {
+              ...element,
+              ...properties,
+              // Special handling for position if it's in the properties
+              position: properties.position ? properties.position : element.position,
+            };
+          }
+          
+          // Otherwise just update visibility via opacity
+          return {
+            ...element,
+            opacity: isVisible ? 1 : 0,
+          };
+        }
+        return element;
+      }),
+    }));
+  }, []);
+  
+  // Context value
+  const contextValue: CanvasContextValue = {
     canvas,
-    selectedElements,
+    selectedElement,
     addElement,
     updateElement,
     removeElement,
     selectElement,
-    deselectElement,
-    clearSelection,
-    updateCanvas,
+    updateElementPosition,
+    updateElementSize,
+    updateElementRotation,
+    updateElementVisibility,
   };
-
+  
   return (
-    <CanvasContext.Provider value={value}>
+    <CanvasContext.Provider value={contextValue}>
       {children}
     </CanvasContext.Provider>
   );
-}
+};
 
 /**
- * Custom hook for accessing the canvas context
- * 
- * @returns {CanvasContextValue} The canvas context value
- * @throws {Error} If used outside of a CanvasProvider
+ * Hook to use canvas context
  */
-export function useCanvas(): CanvasContextValue {
-  const context = useContext(CanvasContext);
-  
-  if (context === undefined) {
-    throw new Error('useCanvas must be used within a CanvasProvider');
-  }
-  
-  return context;
-}
+export const useCanvas = () => useContext(CanvasContext);
