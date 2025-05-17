@@ -19,7 +19,7 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     host: true,
-    allowedHosts: ['5173-iw87zc5lzo1ib6gdn4ug7-fb8a0aa4.manus.computer'],
+    allowedHosts: ['5173-iw87zc5lzo1ib6gdn4ug7-fb8a0aa4.manus.computer', '5173-iyf1fwawe5nnmmqchhk9d-917f8d6c.manus.computer'],
   },
   preview: {
     port: 4173,
