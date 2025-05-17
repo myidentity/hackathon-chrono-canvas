@@ -26,6 +26,7 @@ interface TimelineContextType {
   pause: () => void;
   seekToMarker: (markerId: string) => void;
   setCurrentPosition: (position: number) => void;
+  setDuration: (duration: number) => void; // Added for test compatibility
 }
 
 export interface TimelineMarker {
@@ -52,6 +53,7 @@ const TimelineContext = createContext<TimelineContextType>({
   pause: () => {},
   seekToMarker: () => {},
   setCurrentPosition: () => {},
+  setDuration: () => {}, // Added for test compatibility
 });
 
 /**
@@ -287,6 +289,7 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     pause,
     seekToMarker,
     setCurrentPosition,
+    setDuration, // Expose setDuration for test compatibility
   };
   
   return (
