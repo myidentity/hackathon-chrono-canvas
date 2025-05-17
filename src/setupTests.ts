@@ -7,10 +7,12 @@
 
 import '@testing-library/jest-dom';
 import { configure } from '@testing-library/react';
+import { AllProviders } from './test-utils/test-providers';
 
 // Configure testing library
 configure({
   testIdAttribute: 'data-testid',
+  wrapper: AllProviders,
 });
 
 // Mock IntersectionObserver
@@ -94,3 +96,23 @@ Object.defineProperty(window, 'matchMedia', {
 // Mock requestAnimationFrame
 global.requestAnimationFrame = (callback: FrameRequestCallback): number => setTimeout(callback, 0) as unknown as number;
 global.cancelAnimationFrame = (id: number): void => clearTimeout(id);
+
+// Make canvas available for tests that need it
+HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
+  clearRect: jest.fn(),
+  drawImage: jest.fn(),
+  fillRect: jest.fn(),
+  fillText: jest.fn(),
+  measureText: jest.fn(() => ({ width: 0 })),
+  setTransform: jest.fn(),
+  translate: jest.fn(),
+  scale: jest.fn(),
+  rotate: jest.fn(),
+  save: jest.fn(),
+  restore: jest.fn(),
+  // Add required properties to satisfy the interface
+  canvas: document.createElement('canvas'),
+  globalAlpha: 1,
+  globalCompositeOperation: 'source-over',
+  beginPath: jest.fn(),
+})) as unknown as (contextId: string, options?: any) => CanvasRenderingContext2D | null;
