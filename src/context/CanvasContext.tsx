@@ -11,7 +11,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 export interface CanvasElement {
   id: string;
   type: 'image' | 'text' | 'shape' | 'sticker' | 'media';
-  position: { x: number; y: number };
+  position: { x: number; y: number; z?: number };
   size: { width: number; height: number };
   rotation?: number;
   opacity?: number;
@@ -26,9 +26,11 @@ export interface CanvasElement {
   textAlign?: string;
   shape?: string;
   borderRadius?: string;
+  properties?: any;
+  animations?: any[];
   timelineData?: {
     entryPoint?: number;
-    exitPoint?: number;
+    exitPoint?: number | null;
     persist?: boolean;
     keyframes?: Array<{
       time: number;
@@ -40,15 +42,19 @@ export interface CanvasElement {
 export interface CanvasState {
   elements: CanvasElement[];
   viewBox: { x: number; y: number; width: number; height: number };
+  width: number;
+  height: number;
 }
 
 export interface CanvasContextValue {
   canvas: CanvasState;
   selectedElement: string | null;
+  selectedElements: string[];
   addElement: (element: Partial<CanvasElement>) => string;
   updateElement: (id: string, updates: Partial<CanvasElement>) => void;
   removeElement: (id: string) => void;
   selectElement: (id: string | null) => void;
+  clearSelection: () => void;
   updateElementPosition: (id: string, dx: number, dy: number) => void;
   updateElementSize: (id: string, width: number, height: number) => void;
   updateElementRotation: (id: string, rotation: number) => void;
@@ -57,12 +63,19 @@ export interface CanvasContextValue {
 
 // Create context with default values
 const CanvasContext = createContext<CanvasContextValue>({
-  canvas: { elements: [], viewBox: { x: 0, y: 0, width: 1000, height: 1000 } },
+  canvas: { 
+    elements: [], 
+    viewBox: { x: 0, y: 0, width: 1000, height: 1000 },
+    width: 1920,
+    height: 1080
+  },
   selectedElement: null,
+  selectedElements: [],
   addElement: () => '',
   updateElement: () => {},
   removeElement: () => {},
   selectElement: () => {},
+  clearSelection: () => {},
   updateElementPosition: () => {},
   updateElementSize: () => {},
   updateElementRotation: () => {},
@@ -158,10 +171,15 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       },
     ],
     viewBox: { x: 0, y: 0, width: 1000, height: 1000 },
+    width: 1920,
+    height: 1080
   });
   
   // Selected element
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  
+  // Selected elements array for multi-selection
+  const [selectedElements, setSelectedElements] = useState<string[]>([]);
   
   /**
    * Add a new element to the canvas
@@ -208,6 +226,8 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (selectedElement === id) {
       setSelectedElement(null);
     }
+    
+    setSelectedElements(prev => prev.filter(elementId => elementId !== id));
   }, [selectedElement]);
   
   /**
@@ -215,6 +235,20 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
    */
   const selectElement = useCallback((id: string | null) => {
     setSelectedElement(id);
+    
+    if (id) {
+      setSelectedElements([id]);
+    } else {
+      setSelectedElements([]);
+    }
+  }, []);
+  
+  /**
+   * Clear selection
+   */
+  const clearSelection = useCallback(() => {
+    setSelectedElement(null);
+    setSelectedElements([]);
   }, []);
   
   /**
@@ -230,6 +264,7 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             position: {
               x: element.position.x + dx,
               y: element.position.y + dy,
+              ...(element.position.z !== undefined ? { z: element.position.z } : {})
             },
           };
         }
@@ -307,10 +342,12 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const contextValue: CanvasContextValue = {
     canvas,
     selectedElement,
+    selectedElements,
     addElement,
     updateElement,
     removeElement,
     selectElement,
+    clearSelection,
     updateElementPosition,
     updateElementSize,
     updateElementRotation,
