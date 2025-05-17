@@ -15,6 +15,31 @@ The Editor Mode is the main workspace where you can create and modify your canva
 4. **Properties Panel**: Adjust settings and properties of selected elements
 5. **Timeline Controls**: Manage the timing and animation of elements on your canvas
 
+### Timeline Mode
+![Timeline Mode](./docs/images/annotated-timeline.png)
+
+The Timeline Mode provides a dedicated environment for managing the temporal aspects of your presentation:
+
+1. **Timeline Playback Controls**: Play, pause, and control the animation playback
+2. **Timeline Navigation Controls**: Jump to first/last frame and navigate through the timeline
+3. **Playback Speed Selector**: Adjust the speed of animation playback
+4. **Zoom Controls**: Zoom in/out of the timeline for precise editing
+5. **Add Marker Button**: Create markers at specific points in the timeline
+6. **Add Keyframe Button**: Add animation keyframes for elements
+7. **Duration Setting**: Set the overall duration of your presentation
+8. **Timeline Ruler**: Visual representation of time with increments
+
+### Zine View Mode
+![Zine View Mode](./docs/images/annotated-zine.png)
+
+The Zine View Mode transforms your timeline-based content into a scroll-triggered experience:
+
+1. **Sample Element**: Content elements appear based on scroll position
+2. **Sample Image**: Images and other media are displayed in the scrollable view
+3. **Scroll Position**: Indicator showing current scroll position in pixels
+4. **Time Indicator**: Shows the mapped timeline position based on scroll
+5. **Elements Counter**: Displays the number of visible elements out of total
+
 ### Presentation Mode
 ![Presentation Mode](./docs/images/annotated-presentation.png)
 
