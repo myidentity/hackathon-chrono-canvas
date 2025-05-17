@@ -26,6 +26,105 @@ The Presentation Mode provides a clean view for showcasing your creation:
 4. **Playback Controls**: Control the playback of your timeline-based presentation
 5. **Zoom Controls**: Adjust the view size as needed
 
+## Detailed Tab Descriptions
+
+### Editor Tab
+The Editor tab is the primary workspace for content creation and manipulation:
+
+- **What You Can Do**:
+  - Add elements (images, text, shapes) to your canvas from the element library
+  - Upload your own images using the image upload feature
+  - Arrange, resize, and rotate elements freely on the canvas
+  - Select elements to modify their properties in the properties panel
+  - Set initial positions and styles for all elements
+  - Use the grid feature for precise alignment
+  - Create the visual foundation of your presentation
+  - Apply basic transformations (move, scale, rotate) to any element
+  - Group elements together for easier manipulation
+  - Set z-index to control which elements appear on top of others
+
+- **Key Features**:
+  - Drag-and-drop interface for intuitive element placement
+  - Grid snapping for precise alignment
+  - Multi-select capability for manipulating multiple elements simultaneously
+  - Zoom and pan controls for detailed work
+  - Undo/redo functionality for design iterations
+  - Direct manipulation of element properties (size, position, color, opacity)
+
+### Timeline Tab
+The Timeline tab focuses on the temporal aspects of your presentation:
+
+- **What You Can Do**:
+  - Define when elements appear and disappear in your presentation
+  - Create keyframes for animations at specific points in time
+  - Set animation properties (movement, rotation, scaling, opacity)
+  - Adjust the duration of your entire presentation
+  - Add markers to important points in your timeline
+  - Preview animations as you create them
+  - Fine-tune the timing of transitions between elements
+  - Create complex multi-element animations that work together
+  - Set different animation easing functions for natural movement
+  - Synchronize animations with specific timeline events
+
+- **Key Features**:
+  - Visual timeline with draggable keyframes
+  - Playback controls for testing animations
+  - Keyframe interpolation for smooth animations
+  - Multiple animation types (fade, slide, scale, bounce, flip)
+  - Customizable animation duration and easing
+  - Timeline markers for organization and navigation
+  - Time-based element visibility controls
+  - Scrubbing capability to manually move through the timeline
+
+### Zine View Tab
+The Zine View tab transforms your timeline-based content into a scroll-triggered experience:
+
+- **What You Can Do**:
+  - Preview how your content will appear in a scroll-based format
+  - Test how animations trigger as users scroll through the content
+  - Adjust parallax effects for depth and visual interest
+  - See how your content flows in a vertical narrative format
+  - Experience your content as viewers would in a web-based zine
+  - Modify scroll trigger points for optimal timing
+  - Create a narrative flow that unfolds as the user scrolls
+  - Test different scroll speeds and their effect on animations
+  - Add scroll-specific animations that don't appear in other views
+  - Create immersive storytelling experiences driven by user scrolling
+
+- **Key Features**:
+  - Scroll-triggered animations
+  - Vertical narrative layout
+  - Parallax scrolling effects
+  - Automatic conversion of timeline points to scroll positions
+  - Interactive preview of the final user experience
+  - Responsive layout testing for different screen sizes
+  - Scroll-based progress indicators
+
+### Presentation Tab
+The Presentation tab offers a clean, distraction-free view for showcasing your creation:
+
+- **What You Can Do**:
+  - Play your complete animated presentation from start to finish
+  - Control playback with play/pause, speed controls, and timeline scrubbing
+  - Share your presentation with others in a clean, focused view
+  - Navigate to specific points using timeline markers
+  - View your content exactly as your audience will see it
+  - Test the full animation sequence in real-time
+  - Present your work in a professional, distraction-free environment
+  - Adjust playback speed to emphasize different sections
+  - Use full-screen mode for immersive presentations
+  - Export or record your presentation for sharing
+
+- **Key Features**:
+  - Distraction-free viewing experience
+  - Full playback controls (play, pause, speed adjustment)
+  - Timeline scrubbing for manual navigation
+  - First/last frame jumps for quick navigation
+  - Zoom controls for detail viewing
+  - Automatic playback of all animations and transitions
+  - Clean UI that puts focus entirely on your content
+  - Presentation-optimized layout
+
 ## Features
 
 - **Time-based Moodboard**: Place elements on a canvas and associate them with specific timeline points
