@@ -60,6 +60,14 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
         visible = false;
       }
       
+      // In presentation mode, make elements visible for demonstration
+      if (viewMode === 'presentation') {
+        // For demonstration, make all elements visible after a certain time
+        if (currentPosition > 0) {
+          visible = true;
+        }
+      }
+      
       // Apply keyframe interpolation if element has keyframes
       if (keyframes && keyframes.length > 0 && visible) {
         // Find the keyframes that surround the current time
@@ -101,16 +109,67 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
       } else if (visible) {
         // No keyframes or not visible, reset animated props
         console.log(`Element ${element.id} visible but no keyframes applied`);
-        setAnimatedProps({});
+        
+        // For presentation mode, add default animation properties if none exist
+        if (viewMode === 'presentation' && !keyframes) {
+          // Add some default animation based on element type
+          const defaultProps = getDefaultAnimationProps(element, currentPosition);
+          setAnimatedProps(defaultProps);
+        } else {
+          setAnimatedProps({});
+        }
       }
       
       setIsVisible(visible);
     } else {
       // No timeline data, always visible
       setIsVisible(true);
-      setAnimatedProps({});
+      
+      // For presentation mode, add default animation properties
+      if (viewMode === 'presentation') {
+        const defaultProps = getDefaultAnimationProps(element, currentPosition);
+        setAnimatedProps(defaultProps);
+      } else {
+        setAnimatedProps({});
+      }
     }
   }, [element, currentPosition, viewMode, isPlaying]);
+  
+  /**
+   * Get default animation properties based on element type and current time
+   */
+  const getDefaultAnimationProps = (element: any, currentTime: number) => {
+    // Default animation properties
+    const defaultProps: any = {};
+    
+    // Different animation based on element type
+    if (element.type === 'image') {
+      // For images, scale and rotate based on time
+      const scale = 0.8 + (Math.sin(currentTime * 0.5) * 0.2);
+      const rotate = Math.sin(currentTime * 0.3) * 15; // -15 to 15 degrees
+      
+      defaultProps.scale = scale;
+      defaultProps.rotate = rotate;
+      defaultProps.opacity = 0.7 + (Math.sin(currentTime * 0.7) * 0.3);
+    } else if (element.type === 'shape') {
+      // For shapes, rotate and translate
+      const translateX = Math.sin(currentTime * 0.4) * 50; // -50 to 50px
+      const translateY = Math.cos(currentTime * 0.3) * 30; // -30 to 30px
+      const rotate = currentTime * 30; // Continuous rotation
+      
+      defaultProps.translateX = translateX;
+      defaultProps.translateY = translateY;
+      defaultProps.rotate = rotate;
+    } else if (element.type === 'text') {
+      // For text, subtle scale and opacity changes
+      const scale = 1 + (Math.sin(currentTime * 0.2) * 0.1);
+      
+      defaultProps.scale = scale;
+      defaultProps.opacity = 0.8 + (Math.sin(currentTime * 0.5) * 0.2);
+    }
+    
+    return defaultProps;
+  };
   
   /**
    * Interpolate between two sets of properties
