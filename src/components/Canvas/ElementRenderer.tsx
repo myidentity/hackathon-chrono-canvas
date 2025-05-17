@@ -173,7 +173,7 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
   
   // For debugging: show element ID and timeline data
   const debugInfo = () => {
-    if (mode === 'editor' || mode === 'timeline') {
+    if (viewMode === 'editor' || viewMode === 'timeline') {
       return (
         <div className="absolute -top-6 left-0 text-xs bg-white bg-opacity-80 px-1 rounded">
           ID: {element.id.substring(0, 4)}
@@ -191,7 +191,7 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
     return null;
   };
   
-  // Calculate animation styles based on mode and animated properties
+  // Calculate animation styles based on viewMode and animated properties
   const getAnimationStyles = () => {
     // Base styles from element
     const baseStyles = {
