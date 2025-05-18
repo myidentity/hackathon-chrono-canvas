@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useCanvasContext } from '../../context/CanvasContext';
+import { useCanvas } from '../../context/CanvasContext';
 import MD3Shapes from '../../utils/MD3Shapes';
 import AdditionalShapes from '../../utils/AdditionalShapes';
 import './ShapePanel.css';
@@ -9,7 +9,7 @@ interface ShapePanelProps {
 }
 
 const ShapePanel: React.FC<ShapePanelProps> = ({ onSelectShape }) => {
-  const { shapes } = useCanvasContext();
+  const { shapes } = useCanvas();
   const [selectedCategory, setSelectedCategory] = useState('md3');
   const [allShapes, setAllShapes] = useState<Record<string, any[]>>({
     original: shapes || [],

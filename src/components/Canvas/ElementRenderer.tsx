@@ -1,5 +1,5 @@
 import React from 'react';
-import { useCanvasContext } from '../../context/CanvasContext';
+import { useCanvas } from '../../context/CanvasContext';
 import ImageElement from './ImageElement';
 import TextElement from './TextElement';
 import ShapeElement from './ShapeElement';
@@ -13,7 +13,7 @@ interface ElementRendererProps {
 }
 
 const ElementRenderer: React.FC<ElementRendererProps> = ({ element, isSelected, onClick }) => {
-  const { mode } = useCanvasContext();
+  const { mode } = useCanvas();
   const isEditor = mode === 'editor';
 
   switch (element.type) {
