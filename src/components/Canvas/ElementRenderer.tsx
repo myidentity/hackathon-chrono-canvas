@@ -9,22 +9,32 @@ import AudioElement from './AudioElement';
 interface ElementRendererProps {
   element: any;
   isSelected: boolean;
-  onClick: (e: React.MouseEvent) => void;
+  onSelect: (e: React.MouseEvent) => void;
+  viewMode?: 'editor' | 'timeline' | 'zine' | 'presentation';
+  currentPosition?: number;
+  scrollPosition?: number;
 }
 
-const ElementRenderer: React.FC<ElementRendererProps> = ({ element, isSelected, onClick }) => {
+const ElementRenderer: React.FC<ElementRendererProps> = ({ 
+  element, 
+  isSelected, 
+  onSelect,
+  viewMode = 'editor',
+  currentPosition = 0,
+  scrollPosition = 0
+}) => {
   const { mode } = useCanvas();
-  const isEditor = mode === 'editor';
+  const isEditor = mode === 'editor' || viewMode === 'editor';
 
   switch (element.type) {
     case 'image':
-      return <ImageElement element={element} isSelected={isSelected} onClick={onClick} />;
+      return <ImageElement element={element} isSelected={isSelected} onClick={onSelect} />;
     case 'text':
-      return <TextElement element={element} isSelected={isSelected} onClick={onClick} />;
+      return <TextElement element={element} isSelected={isSelected} onClick={onSelect} />;
     case 'shape':
-      return <ShapeElement element={element} isSelected={isSelected} onClick={onClick} />;
+      return <ShapeElement element={element} isSelected={isSelected} onClick={onSelect} />;
     case 'sticker':
-      return <StickerElement element={element} isSelected={isSelected} onClick={onClick} />;
+      return <StickerElement element={element} isSelected={isSelected} onClick={onSelect} />;
     case 'audio':
       return <AudioElement element={element} isEditor={isEditor} />;
     case 'map':
@@ -42,7 +52,7 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({ element, isSelected, 
             cursor: 'move',
             zIndex: element.zIndex || 1
           }}
-          onClick={onClick}
+          onClick={onSelect}
         >
           {element.component}
         </div>
