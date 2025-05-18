@@ -40,7 +40,7 @@ interface PropertyPanelProps {
 const PropertyPanel: React.FC<PropertyPanelProps> = () => {
   // Get canvas and timeline context
   const { canvas, selectedElement, updateElement, removeElement } = useCanvas();
-  const { currentPosition, addMarker, removeMarker, setPosition } = useTimeline();
+  const { currentPosition, addMarker, removeMarker, setPosition, markers } = useTimeline();
   
   // State for property editing
   const [elementProperties, setElementProperties] = useState<Partial<CanvasElement> | null>(null);
@@ -117,6 +117,11 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
     updateElement(selectedElement, { timelineData: timelineData as any });
   };
   
+  // Generate a stable marker ID for a keyframe
+  const generateKeyframeMarkerId = (elementId: string, time: number) => {
+    return `keyframe-${elementId}-${time.toFixed(1)}`;
+  };
+  
   // Handle adding a keyframe
   const handleAddKeyframe = () => {
     if (!elementProperties || !selectedElement) return;
@@ -178,15 +183,28 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
     // Update element in canvas context
     updateElement(selectedElement, { timelineData: timelineData as any });
     
-    // Add a marker for this keyframe
+    // Generate a stable marker ID based on element ID and time
+    const markerId = generateKeyframeMarkerId(selectedElement, currentPosition);
+    
+    // Add a marker for this keyframe with the stable ID
     const newMarker: TimelineMarker = {
-      id: `keyframe-${selectedElement}-${Date.now()}`,
+      id: markerId,
       position: currentPosition,
       name: `${elementProperties.type || 'Element'} Keyframe`,
       color: '#F26D5B'
     };
     
+    // Check if a marker with this ID already exists
+    const existingMarker = markers.find(m => m.id === markerId);
+    if (existingMarker) {
+      // If it exists, remove it first to avoid duplicates
+      removeMarker(markerId);
+    }
+    
+    // Add the marker
     addMarker(newMarker);
+    
+    console.log(`Added keyframe marker with ID: ${markerId} at position: ${currentPosition}`);
   };
   
   // Handle element deletion
@@ -229,20 +247,16 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
     // Update element in canvas context
     updateElement(selectedElement, { timelineData: timelineData as any });
     
-    // Find and remove only the specific marker for this keyframe
-    // This is the fix for the bug where all keyframes were being removed
-    const markers = document.querySelectorAll(`[data-testid^="marker-keyframe-${selectedElement}-"]`);
-    markers.forEach(marker => {
-      const markerId = marker.getAttribute('data-testid')?.replace('marker-', '');
-      if (markerId) {
-        // Check if this marker corresponds to the keyframe we're deleting
-        // by comparing its position with the keyframe time
-        const markerPosition = marker.getAttribute('data-position');
-        if (markerPosition && Math.abs(parseFloat(markerPosition) - keyframeTime) < 0.1) {
-          removeMarker(markerId);
-        }
-      }
-    });
+    // Generate the stable marker ID for this keyframe
+    const markerId = generateKeyframeMarkerId(selectedElement, keyframeTime);
+    
+    console.log(`Removing keyframe marker with ID: ${markerId} at position: ${keyframeTime}`);
+    
+    // Remove the marker using the stable ID
+    removeMarker(markerId);
+    
+    // Log the current markers after removal for debugging
+    console.log('Current markers after removal:', markers);
   };
   
   // If no element is selected, show empty state
