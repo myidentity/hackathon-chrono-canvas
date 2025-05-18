@@ -96,6 +96,7 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ onSelectMedia }) => {
               key={`image-${index}`} 
               className="media-item image-item"
               onClick={() => handleImageClick(image)}
+              title={image.name || ""}
             >
               <img src={image.src} alt="" />
             </div>
