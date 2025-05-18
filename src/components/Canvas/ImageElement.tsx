@@ -75,7 +75,9 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
         border: isSelected ? '2px dashed #1976d2' : 'none',
         pointerEvents: 'all',
         cursor: isSelected ? 'move' : 'pointer',
-        zIndex: element.zIndex || 1
+        zIndex: element.zIndex || 1,
+        transform: `rotate(${element.rotation || 0}deg)`,
+        opacity: element.opacity !== undefined ? element.opacity : 1
       }}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
