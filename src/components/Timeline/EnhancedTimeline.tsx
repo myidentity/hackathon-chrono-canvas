@@ -149,11 +149,22 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
    * Add a keyframe for the selected element at the current position
    */
   const handleAddKeyframe = () => {
-    if (!selectedElement) return;
+    console.log('Add Keyframe button clicked');
+    console.log('Selected element:', selectedElement);
+    
+    if (!selectedElement) {
+      console.log('No element selected, cannot add keyframe');
+      return;
+    }
     
     // Find the selected element
     const element = canvas.elements.find(el => el.id === selectedElement);
-    if (!element) return;
+    if (!element) {
+      console.log('Selected element not found in canvas elements');
+      return;
+    }
+    
+    console.log('Found element for keyframe:', element);
     
     // Get current properties for the keyframe
     const keyframeProperties = {
@@ -162,6 +173,8 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
       rotation: element.rotation || 0,
       opacity: element.opacity !== undefined ? element.opacity : 1,
     };
+    
+    console.log('Keyframe properties:', keyframeProperties);
     
     // Create or update timeline data with the new keyframe
     const timelineData = element.timelineData || {
@@ -178,12 +191,14 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     
     if (existingKeyframeIndex !== undefined && existingKeyframeIndex >= 0 && timelineData.keyframes) {
       // Update existing keyframe
+      console.log('Updating existing keyframe at index:', existingKeyframeIndex);
       timelineData.keyframes[existingKeyframeIndex] = {
         time: currentPosition,
         properties: keyframeProperties,
       };
     } else {
       // Add new keyframe
+      console.log('Adding new keyframe');
       timelineData.keyframes = [
         ...(timelineData.keyframes || []),
         {
@@ -196,6 +211,8 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     // Sort keyframes by time
     timelineData.keyframes.sort((a, b) => a.time - b.time);
     
+    console.log('Updated timeline data:', timelineData);
+    
     // Update the element
     updateElement(selectedElement, { timelineData });
     
@@ -204,9 +221,10 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
       id: `keyframe-${selectedElement}-${Date.now()}`,
       position: currentPosition,
       name: `${element.type} Keyframe`,
-      color: '#3b82f6'
+      color: '#F26D5B' // Using coral accent color as requested
     };
     
+    console.log('Adding keyframe marker:', marker);
     addMarker(marker);
   };
   
@@ -517,13 +535,17 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
           
           // Only render markers in the visible range
           if (position >= 0 && position <= 100) {
+            // Check if this is a keyframe marker (by ID prefix)
+            const isKeyframe = marker.id.startsWith('keyframe-');
+            
             return (
               <div 
                 key={marker.id}
-                className="absolute top-0 w-2 h-12 -ml-1 cursor-pointer"
+                className={`absolute top-0 ${isKeyframe ? 'w-4 h-4 -ml-2 -mt-2 rotate-45 transform' : 'w-2 h-12 -ml-1'} cursor-pointer`}
                 style={{ 
                   left: `${position}%`,
-                  backgroundColor: marker.color || '#3b82f6'
+                  backgroundColor: marker.color || '#3b82f6',
+                  top: isKeyframe ? '6px' : '0'
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -601,28 +623,27 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
                 placeholder="Enter marker name"
               />
             </div>
-            <div className="mb-4">
+            <div className="mb-6">
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Marker Color
               </label>
               <input 
                 type="color"
-                className="w-full h-10 bg-gray-700 border border-gray-600 rounded px-1"
+                className="w-full h-10 bg-gray-700 border border-gray-600 rounded px-1 py-1"
                 value={markerForm.color}
                 onChange={(e) => setMarkerForm({ ...markerForm, color: e.target.value })}
               />
             </div>
             <div className="flex justify-end space-x-3">
               <button 
+                className="bg-gray-700 hover:bg-gray-600 rounded px-4 py-2 text-sm"
                 onClick={() => setShowMarkerForm(false)}
-                className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
               >
                 Cancel
               </button>
               <button 
+                className="bg-indigo-600 hover:bg-indigo-700 rounded px-4 py-2 text-sm"
                 onClick={handleAddMarker}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-                disabled={!markerForm.name.trim()}
               >
                 Add Marker
               </button>
