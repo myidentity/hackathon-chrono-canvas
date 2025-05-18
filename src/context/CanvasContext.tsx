@@ -5,7 +5,7 @@
  * and element manipulation.
  */
 
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 // Type definitions
@@ -60,7 +60,7 @@ export interface CanvasState {
 export interface CanvasContextValue {
   canvas: CanvasState;
   selectedElement: string | null;
-  isDraggingAny: boolean; // Added global drag state
+  isDraggingAny: boolean; // Global drag state
   addElement: (element: Partial<CanvasElement>) => string;
   updateElement: (id: string, updates: Partial<CanvasElement>) => void;
   removeElement: (id: string) => void;
@@ -69,7 +69,7 @@ export interface CanvasContextValue {
   updateElementSize: (id: string, width: number, height: number) => void;
   updateElementRotation: (id: string, rotation: number) => void;
   updateElementVisibility: (id: string, isVisible: boolean, properties?: Partial<CanvasElement>) => void;
-  setDraggingState: (isDragging: boolean) => void; // Added method to update drag state
+  setDraggingState: (isDragging: boolean) => void; // Method to update drag state
   clearCanvas: () => void;
 }
 
@@ -77,7 +77,7 @@ export interface CanvasContextValue {
 const CanvasContext = createContext<CanvasContextValue>({
   canvas: { elements: [], viewBox: { x: 0, y: 0, width: 1000, height: 1000 } },
   selectedElement: null,
-  isDraggingAny: false, // Initialize global drag state
+  isDraggingAny: false,
   addElement: () => '',
   updateElement: () => {},
   removeElement: () => {},
@@ -86,7 +86,7 @@ const CanvasContext = createContext<CanvasContextValue>({
   updateElementSize: () => {},
   updateElementRotation: () => {},
   updateElementVisibility: () => {},
-  setDraggingState: () => {}, // Initialize drag state setter
+  setDraggingState: () => {},
   clearCanvas: () => {},
 });
 
@@ -109,22 +109,41 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Force event system initialization on first render
   const isInitialized = useRef<boolean>(false);
   
-  if (!isInitialized.current) {
-    // Create a dummy event to ensure React's event system is fully initialized
-    const event = new MouseEvent('mousemove', {
-      bubbles: true,
-      cancelable: true,
-      view: window
-    });
-    document.dispatchEvent(event);
-    isInitialized.current = true;
-  }
+  // Initialize event system
+  useEffect(() => {
+    if (!isInitialized.current) {
+      // Create and dispatch synthetic events to ensure event system is fully initialized
+      const events = ['mousemove', 'mousedown', 'mouseup', 'click'];
+      events.forEach(eventType => {
+        const event = new MouseEvent(eventType, {
+          bubbles: true,
+          cancelable: true,
+          view: window
+        });
+        document.dispatchEvent(event);
+      });
+      
+      // Add a global style for dragging
+      const style = document.createElement('style');
+      style.innerHTML = `
+        .element-dragging {
+          cursor: grabbing !important;
+        }
+        [data-element-type="image"] {
+          will-change: transform, left, top;
+        }
+      `;
+      document.head.appendChild(style);
+      
+      isInitialized.current = true;
+    }
+  }, []);
   
   /**
    * Add a new element to the canvas
    */
   const addElement = useCallback((element: Partial<CanvasElement>) => {
-    const id = `element-${uuidv4()}`;
+    const id = element.type === 'image' ? `image-${uuidv4().substring(0, 8)}` : `element-${uuidv4().substring(0, 8)}`;
     const newElement: CanvasElement = {
       id,
       type: element.type || 'shape',
@@ -297,6 +316,13 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
    */
   const setDraggingState = useCallback((isDragging: boolean) => {
     setIsDraggingAny(isDragging);
+    
+    // Apply global styling when dragging
+    if (isDragging) {
+      document.body.classList.add('element-dragging');
+    } else {
+      document.body.classList.remove('element-dragging');
+    }
   }, []);
   
   /**

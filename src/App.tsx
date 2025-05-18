@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { CanvasProvider } from './context/CanvasContext';
 import { TimelineProvider } from './context/TimelineContext';
 import Canvas from './components/Canvas/Canvas';
@@ -9,9 +9,12 @@ import ElementLibrary from './components/ElementLibrary/ElementLibrary';
 import PopulateCanvas from './components/Canvas/PopulateCanvas';
 import './App.css';
 
+// Version information
+const APP_VERSION = '0.1.1';
+
 function App() {
-  const [activeTab, setActiveTab] = useState<'editor' | 'timeline' | 'zine' | 'presentation'>('editor');
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [activeTab, setActiveTab] = React.useState<'editor' | 'timeline' | 'zine' | 'presentation'>('editor');
+  const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
   
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
@@ -24,7 +27,7 @@ function App() {
           <header className="app-header">
             <div className="logo">
               <span className="material-icons text-indigo-600">dashboard</span>
-              <h1>ChronoCanvas</h1>
+              <h1>ChronoCanvas <span style={{ fontSize: '0.5em', opacity: 0.7 }}>{APP_VERSION}</span></h1>
             </div>
             
             <div className="tabs">

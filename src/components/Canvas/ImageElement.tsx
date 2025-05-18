@@ -23,25 +23,40 @@ interface ImageElementProps {
 }
 
 const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClick }) => {
-  const { updateElementPosition } = useCanvas();
+  const { updateElementPosition, setDraggingState } = useCanvas();
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const elementRef = useRef<HTMLDivElement>(null);
   
-  // Force event optimization on mount
+  // Force event system initialization on mount
   useEffect(() => {
-    // This empty effect ensures React properly initializes event handlers
+    // This effect ensures React properly initializes event handlers
     // for this component, regardless of element addition sequence
     const node = elementRef.current;
     if (node) {
-      // Trigger a synthetic event to ensure event system is initialized
-      const event = new MouseEvent('mousemove', {
-        bubbles: true,
-        cancelable: true,
-        view: window
+      // Create and dispatch synthetic events to ensure event system is fully initialized
+      const events = ['mousemove', 'mousedown', 'mouseup', 'click'];
+      events.forEach(eventType => {
+        const event = new MouseEvent(eventType, {
+          bubbles: true,
+          cancelable: true,
+          view: window
+        });
+        node.dispatchEvent(event);
       });
-      node.dispatchEvent(event);
+      
+      // Add a class to help with debugging
+      node.classList.add('image-element-initialized');
     }
+    
+    // Clean up function
+    return () => {
+      if (isDragging) {
+        setIsDragging(false);
+        setDraggingState(false);
+        document.body.classList.remove('element-dragging');
+      }
+    };
   }, []);
 
   const handleClick = (e: React.MouseEvent) => {
@@ -52,11 +67,24 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isSelected) {
       e.stopPropagation(); // Prevent canvas panning when dragging element
+      e.preventDefault(); // Prevent default browser behavior
+      
       setIsDragging(true);
+      setDraggingState(true); // Update global dragging state
       setDragStart({ x: e.clientX, y: e.clientY });
       
       // Add a class to the body to indicate dragging is active
       document.body.classList.add('element-dragging');
+      
+      // Force the browser to acknowledge this element is being interacted with
+      if (elementRef.current) {
+        elementRef.current.style.zIndex = `${(parseInt(elementRef.current.style.zIndex || '1') + 1)}`;
+        setTimeout(() => {
+          if (elementRef.current) {
+            elementRef.current.style.zIndex = `${element.zIndex || 1}`;
+          }
+        }, 0);
+      }
     }
   };
 
@@ -83,7 +111,10 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
   const handleMouseUp = (e: React.MouseEvent) => {
     if (isDragging) {
       e.stopPropagation(); // Prevent canvas panning when dragging element
+      e.preventDefault(); // Prevent default browser behavior
+      
       setIsDragging(false);
+      setDraggingState(false); // Update global dragging state
       
       // Remove the dragging class from body
       document.body.classList.remove('element-dragging');
@@ -109,8 +140,9 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
         zIndex: element.zIndex || 1,
         transform: `rotate(${element.rotation || 0}deg)`,
         opacity: element.opacity !== undefined ? element.opacity : 1,
-        willChange: isDragging ? 'left, top' : 'auto', // Optimize rendering during drag
-        touchAction: 'none' // Prevent browser handling of touch events
+        willChange: isDragging ? 'left, top, transform' : 'auto', // Optimize rendering during drag
+        touchAction: 'none', // Prevent browser handling of touch events
+        userSelect: 'none' // Prevent text selection during drag
       }}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
@@ -127,7 +159,8 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
           height: '100%',
           objectFit: 'contain',
           pointerEvents: 'none', // Prevent img from capturing events
-          userSelect: 'none' // Prevent selection during drag
+          userSelect: 'none', // Prevent selection during drag
+          WebkitUserDrag: 'none' // Prevent Safari from dragging the image
         }}
         draggable={false} // Prevent browser's native drag behavior
       />
