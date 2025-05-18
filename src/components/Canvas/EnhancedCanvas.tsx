@@ -29,7 +29,7 @@ interface Transform {
  * Enhanced Canvas component with zoom, pan, and grid functionality
  */
 const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
-  const { canvas, selectedElement, selectElement, addElement } = useCanvas();
+  const { canvas, selectedElement, selectElement, addElement, removeElement } = useCanvas();
   const { currentPosition } = useTimeline();
   const { addImage } = useImageLibrary();
   
@@ -63,6 +63,25 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
   // State for tracking mouse position and drag
   const [isCanvasDragging, setIsCanvasDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  
+  // Handle keyboard events for delete key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle delete key when in editor mode and an element is selected
+      if (viewMode === 'editor' && selectedElement && (e.key === 'Delete' || e.key === 'Backspace')) {
+        console.log('Delete key pressed, removing element:', selectedElement);
+        removeElement(selectedElement);
+      }
+    };
+    
+    // Add event listener
+    document.addEventListener('keydown', handleKeyDown);
+    
+    // Clean up
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [viewMode, selectedElement, removeElement]);
   
   // Handle mouse down for panning - only when clicking directly on the canvas background
   const handleMouseDown = (e: React.MouseEvent) => {
