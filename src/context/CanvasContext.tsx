@@ -26,6 +26,7 @@ export interface CanvasElement {
   textAlign?: string;
   shape?: string;
   borderRadius?: string;
+  emoji?: string;
   timelineData?: {
     entryPoint?: number;
     exitPoint?: number;
@@ -53,6 +54,7 @@ export interface CanvasContextValue {
   updateElementSize: (id: string, width: number, height: number) => void;
   updateElementRotation: (id: string, rotation: number) => void;
   updateElementVisibility: (id: string, isVisible: boolean, properties?: any) => void;
+  clearCanvas: () => void;
 }
 
 // Create context with default values
@@ -67,96 +69,16 @@ const CanvasContext = createContext<CanvasContextValue>({
   updateElementSize: () => {},
   updateElementRotation: () => {},
   updateElementVisibility: () => {},
+  clearCanvas: () => {},
 });
 
 /**
  * Canvas context provider component
  */
 export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Canvas state
+  // Canvas state - starting with an empty canvas
   const [canvas, setCanvas] = useState<CanvasState>({
-    elements: [
-      // Sample elements for testing
-      {
-        id: 'sample-image-1',
-        type: 'image',
-        position: { x: 100, y: 100 },
-        size: { width: 200, height: 150 },
-        src: '/images/sample_image_1.jpg',
-        alt: 'Sample Image 1',
-        timelineData: {
-          entryPoint: 0,
-          exitPoint: 30,
-          persist: true,
-          keyframes: [
-            {
-              time: 0,
-              properties: {
-                opacity: 0,
-                rotation: 0,
-              },
-            },
-            {
-              time: 5,
-              properties: {
-                opacity: 1,
-                rotation: 0,
-              },
-            },
-            {
-              time: 15,
-              properties: {
-                opacity: 1,
-                rotation: 180,
-              },
-            },
-            {
-              time: 30,
-              properties: {
-                opacity: 0,
-                rotation: 360,
-              },
-            },
-          ],
-        },
-      },
-      {
-        id: 'sample-image-2',
-        type: 'image',
-        position: { x: 350, y: 100 },
-        size: { width: 200, height: 150 },
-        src: '/images/sample_image_2.jpg',
-        alt: 'Sample Image 2',
-        timelineData: {
-          entryPoint: 10,
-          exitPoint: 40,
-          persist: false,
-          keyframes: [
-            {
-              time: 10,
-              properties: {
-                opacity: 0,
-                position: { x: 350, y: 100 },
-              },
-            },
-            {
-              time: 20,
-              properties: {
-                opacity: 1,
-                position: { x: 500, y: 200 },
-              },
-            },
-            {
-              time: 40,
-              properties: {
-                opacity: 0,
-                position: { x: 650, y: 300 },
-              },
-            },
-          ],
-        },
-      },
-    ],
+    elements: [],
     viewBox: { x: 0, y: 0, width: 1000, height: 1000 },
   });
   
@@ -303,6 +225,17 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }));
   }, []);
   
+  /**
+   * Clear all elements from the canvas
+   */
+  const clearCanvas = useCallback(() => {
+    setCanvas(prev => ({
+      ...prev,
+      elements: [],
+    }));
+    setSelectedElement(null);
+  }, []);
+  
   // Context value
   const contextValue: CanvasContextValue = {
     canvas,
@@ -315,6 +248,7 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     updateElementSize,
     updateElementRotation,
     updateElementVisibility,
+    clearCanvas,
   };
   
   return (

@@ -18,15 +18,10 @@ interface PopulateCanvasProps {
  * Adds a button to populate the canvas with random shapes and symbols
  */
 const PopulateCanvas: React.FC<PopulateCanvasProps> = ({ className = '' }) => {
-  const { addElement, canvas, clearCanvas } = useCanvas();
+  const { addElement, canvas } = useCanvas();
   
   // Handle populating the canvas with random elements
   const handlePopulate = () => {
-    // Clear existing elements if needed
-    if (canvas.elements.length > 0 && window.confirm('Clear existing elements before adding new ones?')) {
-      clearCanvas();
-    }
-    
     // Generate random elements (adjust count as needed)
     const elements = generateRandomElements(20, 800, 600);
     

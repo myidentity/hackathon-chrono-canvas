@@ -352,11 +352,13 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
                 <option value="bolder">Bolder</option>
               </select>
             </div>
-            <ColorPicker
-              color={elementProperties.color || '#000000'}
-              onChange={(color) => handlePropertyChange('color', color)}
-              label="Text Color"
-            />
+            <div>
+              <ColorPicker
+                color={elementProperties.color || '#000000'}
+                onChange={(color) => handlePropertyChange('color', color)}
+                label="Color"
+              />
+            </div>
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Text Align</label>
               <select 
@@ -372,15 +374,14 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
             </div>
           </div>
         </div>
-      )}
-      
+      )}      
       {elementProperties.type === 'shape' && (
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Shape Type
           </label>
           <select 
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
             value={elementProperties.shape || 'rectangle'}
             onChange={(e) => handlePropertyChange('shape', e.target.value)}
           >
@@ -390,19 +391,17 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
           </select>
           <div className="grid grid-cols-2 gap-2 mt-2">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Background Color</label>
-              <input 
-                type="color"
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm h-10"
-                value={elementProperties.backgroundColor || '#6366F1'}
-                onChange={(e) => handlePropertyChange('backgroundColor', e.target.value)}
+              <ColorPicker
+                color={elementProperties.backgroundColor || '#6366F1'}
+                onChange={(color) => handlePropertyChange('backgroundColor', color)}
+                label="Background Color"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Border Radius</label>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Border Radius</label>
               <input 
                 type="text"
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
                 value={elementProperties.borderRadius || '0'}
                 onChange={(e) => handlePropertyChange('borderRadius', e.target.value)}
               />

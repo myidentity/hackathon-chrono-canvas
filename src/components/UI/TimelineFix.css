@@ -11,3 +11,57 @@
   height: 48px; /* Fixed height for timeline track */
   min-height: 48px;
 }
+
+/* Dark mode specific styles for timeline panel */
+.dark .timeline-container {
+  @apply bg-gray-800 border-gray-700;
+}
+
+.dark .timeline-scrubber {
+  @apply bg-blue-400;
+}
+
+/* Timeline markers in dark mode */
+.dark .timeline-marker {
+  @apply bg-gray-700 border-gray-600 text-gray-300;
+}
+
+.dark .timeline-marker:hover {
+  @apply bg-gray-600;
+}
+
+.dark .timeline-marker.active {
+  @apply bg-blue-600 border-blue-500 text-white;
+}
+
+/* Timeline controls in dark mode */
+.dark .timeline-controls button {
+  @apply bg-gray-700 text-gray-300 hover:bg-gray-600;
+}
+
+.dark .timeline-controls button:disabled {
+  @apply bg-gray-800 text-gray-500;
+}
+
+/* Timeline time indicators in dark mode */
+.dark .timeline-time {
+  @apply text-gray-400;
+}
+
+/* Timeline track in dark mode */
+.dark .timeline-track {
+  @apply bg-gray-700;
+}
+
+/* Timeline elements in dark mode */
+.dark .timeline-element {
+  @apply bg-gray-600 border-gray-500;
+}
+
+.dark .timeline-element:hover {
+  @apply bg-gray-500;
+}
+
+.dark .timeline-element.selected {
+  @apply bg-blue-600 border-blue-500;
+}

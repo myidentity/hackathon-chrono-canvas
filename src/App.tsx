@@ -14,7 +14,7 @@ import Header from './components/UI/Header';
 import ElementLibrary from './components/ElementLibrary/ElementLibrary';
 import EnhancedCanvas from './components/Canvas/EnhancedCanvas';
 import PropertyPanel from './components/PropertyPanel/PropertyPanel';
-import Timeline from './components/Timeline/Timeline';
+import EnhancedTimeline from './components/Timeline/EnhancedTimeline';
 
 /**
  * View mode type
@@ -40,7 +40,7 @@ function App() {
               {/* Main content */}
               <div className="flex flex-1 overflow-hidden">
                 {/* Left sidebar - Element library */}
-                <div className="w-64 border-r border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
+                <div className={`w-64 border-r border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col ${viewMode !== 'editor' ? 'hidden' : ''}`}>
                   <ElementLibrary />
                 </div>
                 
@@ -50,14 +50,14 @@ function App() {
                 </div>
                 
                 {/* Right sidebar - Property panel */}
-                <div className="w-64 border-l border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className={`w-64 border-l border-gray-200 dark:border-gray-700 overflow-hidden ${viewMode !== 'editor' ? 'hidden' : ''}`}>
                   <PropertyPanel />
                 </div>
               </div>
               
               {/* Timeline panel */}
               <div className="h-64 border-t border-gray-200 dark:border-gray-700 overflow-hidden">
-                <Timeline />
+                <EnhancedTimeline mode={viewMode} />
               </div>
             </div>
           </ImageLibraryProvider>

@@ -7,7 +7,7 @@
  * @module ElementLibrary
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 import { useImageLibrary } from '../../context/ImageLibraryContext';
 import ToolsPalette from '../UI/ToolsPalette';
@@ -38,7 +38,7 @@ interface LibraryElement {
  */
 function ElementLibrary(): JSX.Element {
   // Get canvas context
-  const { addElement } = useCanvas();
+  const { addElement, clearCanvas } = useCanvas();
   
   // Get image library context
   const { images } = useImageLibrary();
@@ -48,6 +48,15 @@ function ElementLibrary(): JSX.Element {
   
   // State for search query
   const [searchQuery, setSearchQuery] = useState<string>('');
+  
+  // State for filtered stickers
+  const [filteredStickers, setFilteredStickers] = useState<any[]>([]);
+  
+  // State for filtered shapes
+  const [filteredShapes, setFilteredShapes] = useState<boolean>(false);
+  
+  // State for clear canvas confirmation
+  const [showClearConfirm, setShowClearConfirm] = useState<boolean>(false);
   
   /**
    * Handle category change
@@ -166,6 +175,28 @@ function ElementLibrary(): JSX.Element {
     addElement(newSticker);
   };
   
+  /**
+   * Handle clear canvas with confirmation
+   */
+  const handleClearCanvas = () => {
+    setShowClearConfirm(true);
+  };
+  
+  /**
+   * Confirm and clear canvas
+   */
+  const confirmClearCanvas = () => {
+    clearCanvas();
+    setShowClearConfirm(false);
+  };
+  
+  /**
+   * Cancel clear canvas
+   */
+  const cancelClearCanvas = () => {
+    setShowClearConfirm(false);
+  };
+  
   // Convert images from ImageLibraryContext to LibraryElement format
   const imageElements: LibraryElement[] = images.map(image => ({
     id: image.id,
@@ -215,23 +246,37 @@ function ElementLibrary(): JSX.Element {
   };
   
   // Filter elements based on search query
-  const filteredElements = searchQuery && activeCategory !== 'shapes' && activeCategory !== 'stickers'
+  const filteredElements = searchQuery
     ? libraryElements[activeCategory].filter(element => 
         element.name.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : libraryElements[activeCategory];
   
+  // Update filtered state when search query changes
+  useEffect(() => {
+    // Signal to child components that search is active
+    setFilteredShapes(searchQuery.length > 0);
+  }, [searchQuery]);
+  
   return (
     <div className="h-full flex flex-col">
-      {/* Search input */}
-      <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+      {/* Search input and Clear Canvas button */}
+      <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center">
         <input
           type="text"
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 dark:text-gray-200"
+          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 dark:text-gray-200"
           placeholder="Search elements..."
           value={searchQuery}
           onChange={handleSearchChange}
         />
+        <button
+          onClick={handleClearCanvas}
+          className="ml-2 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center"
+          title="Clear Canvas"
+        >
+          <span className="material-icons text-sm mr-1">delete</span>
+          Clear
+        </button>
       </div>
       
       {/* Category tabs with Material Design - reordered as requested */}
@@ -247,11 +292,11 @@ function ElementLibrary(): JSX.Element {
       {/* Element grid, ToolsPalette, or TravelStickers */}
       {activeCategory === 'shapes' ? (
         <div className="flex-1 overflow-y-auto">
-          <ToolsPalette className="m-3" />
+          <ToolsPalette className="m-3" searchQuery={searchQuery} />
         </div>
       ) : activeCategory === 'stickers' ? (
         <div className="flex-1 overflow-y-auto">
-          <TravelStickers onSelectSticker={handleAddSticker} />
+          <TravelStickers onSelectSticker={handleAddSticker} searchQuery={searchQuery} />
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto p-3 grid grid-cols-2 gap-3">
@@ -303,6 +348,32 @@ function ElementLibrary(): JSX.Element {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      
+      {/* Clear Canvas confirmation modal */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md">
+            <h3 className="text-lg font-medium mb-4 dark:text-white">Clear Canvas</h3>
+            <p className="mb-6 dark:text-gray-300">
+              Are you sure you want to clear the canvas? This will remove all elements and cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button 
+                onClick={cancelClearCanvas}
+                className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmClearCanvas}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50"
+              >
+                Clear Canvas
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

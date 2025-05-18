@@ -5,7 +5,7 @@
  * animations and interactions based on the current mode and timeline position.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 import { useTimeline } from '../../context/TimelineContext';
 
@@ -30,10 +30,14 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
   scrollPosition = 0,
   onSelect
 }) => {
-  const { selectElement } = useCanvas();
+  const { selectElement, removeElement, updateElementPosition } = useCanvas();
   const { isPlaying } = useTimeline();
   const [isVisible, setIsVisible] = useState(true);
   const [animatedProps, setAnimatedProps] = useState({});
+  const [isHovered, setIsHovered] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const elementRef = useRef<HTMLDivElement>(null);
   
   // Determine element visibility and properties based on timeline data
   useEffect(() => {
@@ -77,13 +81,6 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
         const prevKeyframe = sortedKeyframes.filter(kf => kf.time <= currentPosition).pop();
         const nextKeyframe = sortedKeyframes.filter(kf => kf.time > currentPosition)[0];
         
-        // Debug log for keyframe calculation
-        console.log(`Element ${element.id} at time ${currentPosition}:`, { 
-          prevKeyframe, 
-          nextKeyframe,
-          visible
-        });
-        
         if (prevKeyframe && nextKeyframe) {
           // Interpolate between keyframes
           const progress = (currentPosition - prevKeyframe.time) / (nextKeyframe.time - prevKeyframe.time);
@@ -91,24 +88,15 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
           // Apply interpolated properties
           const interpolatedProps = interpolateProperties(prevKeyframe.properties, nextKeyframe.properties, progress);
           setAnimatedProps(interpolatedProps);
-          
-          // Debug log for interpolation
-          console.log(`Interpolating element ${element.id}:`, {
-            progress,
-            interpolatedProps
-          });
         } else if (prevKeyframe) {
           // Use properties from the last keyframe
           setAnimatedProps(prevKeyframe.properties);
-          console.log(`Using last keyframe for element ${element.id}:`, prevKeyframe.properties);
         } else if (nextKeyframe) {
           // Use properties from the first keyframe
           setAnimatedProps(nextKeyframe.properties);
-          console.log(`Using first keyframe for element ${element.id}:`, nextKeyframe.properties);
         }
       } else if (visible) {
         // No keyframes or not visible, reset animated props
-        console.log(`Element ${element.id} visible but no keyframes applied`);
         
         // For presentation mode, add default animation properties if none exist
         if (viewMode === 'presentation' && !keyframes) {
@@ -205,6 +193,65 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
       }
     }
   };
+
+  // Handle element removal
+  const handleRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (viewMode === 'editor') {
+      removeElement(element.id);
+    }
+  };
+  
+  // Handle mouse down for dragging
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (viewMode === 'editor') {
+      e.stopPropagation();
+      setIsDragging(true);
+      setDragStart({ x: e.clientX, y: e.clientY });
+      
+      // Select the element when starting to drag
+      if (onSelect) {
+        onSelect();
+      } else {
+        selectElement(element.id);
+      }
+      
+      // Add event listeners to document for mouse move and up
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+  };
+  
+  // Handle mouse move for dragging
+  const handleMouseMove = (e: MouseEvent) => {
+    if (isDragging && viewMode === 'editor') {
+      const deltaX = e.clientX - dragStart.x;
+      const deltaY = e.clientY - dragStart.y;
+      
+      // Update element position
+      updateElementPosition(element.id, deltaX, deltaY);
+      
+      // Update drag start position
+      setDragStart({ x: e.clientX, y: e.clientY });
+    }
+  };
+  
+  // Handle mouse up to end dragging
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    
+    // Remove event listeners
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+  };
+  
+  // Clean up event listeners on unmount
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
   
   // Skip rendering if element is not visible in current mode
   if (!isVisible && viewMode !== 'editor') {
@@ -238,23 +285,174 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
           </div>
         );
       case 'shape':
+        return renderShape(element);
+      case 'symbol':
+        return renderSymbol(element);
+      case 'sticker':
+        return (
+          <div className="w-full h-full flex items-center justify-center">
+            <div 
+              className="text-4xl"
+              style={{
+                fontSize: Math.min(element.size.width, element.size.height) * 0.6 + 'px'
+              }}
+            >
+              {element.emoji || '🌟'}
+            </div>
+          </div>
+        );
+      default:
+        // Default rendering for unknown element types
+        return (
+          <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
+            <p className="text-gray-800 dark:text-gray-200">Unknown Element: {element.type}</p>
+          </div>
+        );
+    }
+  };
+
+  // Render shape based on shape type
+  const renderShape = (element: any) => {
+    const shapeType = element.shape || 'rectangle';
+    
+    switch (shapeType) {
+      case 'circle':
+        return (
+          <div 
+            className="w-full h-full rounded-full" 
+            style={{ backgroundColor: element.backgroundColor || '#6366F1' }}
+          />
+        );
+      case 'triangle':
+        return (
+          <div className="w-full h-full relative">
+            <div 
+              style={{ 
+                width: '0',
+                height: '0',
+                borderLeft: `${element.size.width / 2}px solid transparent`,
+                borderRight: `${element.size.width / 2}px solid transparent`,
+                borderBottom: `${element.size.height}px solid ${element.backgroundColor || '#6366F1'}`,
+                position: 'absolute',
+                top: '0',
+                left: '0'
+              }}
+            />
+          </div>
+        );
+      case 'star':
+        return (
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="material-icons" style={{ 
+              fontSize: `${Math.min(element.size.width, element.size.height) * 0.8}px`,
+              color: element.backgroundColor || '#6366F1'
+            }}>
+              star
+            </span>
+          </div>
+        );
+      case 'hexagon':
+        return (
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="material-icons" style={{ 
+              fontSize: `${Math.min(element.size.width, element.size.height) * 0.8}px`,
+              color: element.backgroundColor || '#6366F1'
+            }}>
+              hexagon
+            </span>
+          </div>
+        );
+      case 'pentagon':
+        return (
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="material-icons" style={{ 
+              fontSize: `${Math.min(element.size.width, element.size.height) * 0.8}px`,
+              color: element.backgroundColor || '#6366F1'
+            }}>
+              pentagon
+            </span>
+          </div>
+        );
+      case 'diamond':
+        return (
+          <div className="w-full h-full flex items-center justify-center">
+            <div 
+              style={{ 
+                width: '70%',
+                height: '70%',
+                backgroundColor: element.backgroundColor || '#6366F1',
+                transform: 'rotate(45deg)'
+              }}
+            />
+          </div>
+        );
+      case 'arrow':
+        return (
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="material-icons" style={{ 
+              fontSize: `${Math.min(element.size.width, element.size.height) * 0.8}px`,
+              color: element.backgroundColor || '#6366F1'
+            }}>
+              arrow_forward
+            </span>
+          </div>
+        );
+      case 'rectangle':
+      default:
         return (
           <div 
             className="w-full h-full" 
             style={{ 
               backgroundColor: element.backgroundColor || '#6366F1',
-              borderRadius: element.shape === 'circle' ? '50%' : (element.borderRadius || '0'),
+              borderRadius: element.borderRadius || '0',
             }}
           />
         );
-      default:
-        // Default rendering for unknown element types
-        return (
-          <div className="w-full h-full flex items-center justify-center bg-gray-200">
-            <p>Unknown Element</p>
-          </div>
-        );
     }
+  };
+
+  // Render symbol based on symbol type
+  const renderSymbol = (element: any) => {
+    const symbolType = element.shape || 'heart';
+    let iconName = 'favorite'; // default heart icon
+    
+    switch (symbolType) {
+      case 'heart':
+        iconName = 'favorite';
+        break;
+      case 'cloud':
+        iconName = 'cloud';
+        break;
+      case 'lightning':
+        iconName = 'bolt';
+        break;
+      case 'music':
+        iconName = 'music_note';
+        break;
+      case 'check':
+        iconName = 'check_circle';
+        break;
+      case 'cross':
+        iconName = 'cancel';
+        break;
+      case 'plus':
+        iconName = 'add_circle';
+        break;
+      case 'minus':
+        iconName = 'remove_circle';
+        break;
+    }
+    
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <span className="material-icons" style={{ 
+          fontSize: `${Math.min(element.size.width, element.size.height) * 0.8}px`,
+          color: element.backgroundColor || '#6366F1'
+        }}>
+          {iconName}
+        </span>
+      </div>
+    );
   };
   
   // For debugging: show element ID and timeline data
@@ -332,6 +530,7 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
       height: `${element.size.height}px`,
       opacity: element.opacity !== undefined ? element.opacity : 1,
       zIndex: element.zIndex || 0,
+      cursor: viewMode === 'editor' ? 'move' : 'default',
     };
     
     // Base transform from element properties
@@ -339,9 +538,6 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
     
     // Apply animated properties for timeline, zine, and presentation modes
     if ((viewMode === 'timeline' || viewMode === 'zine' || viewMode === 'presentation') && Object.keys(animatedProps).length > 0) {
-      // Debug log to verify animation props are being applied
-      console.log('Applying animated props for element:', element.id, animatedProps);
-      
       // Extract transform-related properties
       const transformProps: any = {};
       const otherProps: any = {};
@@ -387,13 +583,28 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
   
   return (
     <div
+      ref={elementRef}
       className={`absolute ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
       style={getAnimationStyles()}
       onClick={handleClick}
+      onMouseDown={handleMouseDown}
+      onMouseEnter={() => viewMode === 'editor' && setIsHovered(true)}
+      onMouseLeave={() => viewMode === 'editor' && setIsHovered(false)}
       data-element-id={element.id}
     >
       {renderElement()}
       {debugInfo()}
+      
+      {/* X button for removing elements - only visible on hover in editor mode */}
+      {viewMode === 'editor' && isHovered && (
+        <button
+          className="absolute -top-3 -right-3 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md z-50"
+          onClick={handleRemove}
+          title="Remove element"
+        >
+          <span className="material-icons text-sm">close</span>
+        </button>
+      )}
     </div>
   );
 };
