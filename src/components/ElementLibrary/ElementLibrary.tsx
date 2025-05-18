@@ -46,6 +46,9 @@ function ElementLibrary(): JSX.Element {
   // State for active category - default to stickers as requested
   const [activeCategory, setActiveCategory] = useState<ElementCategory>('stickers');
   
+  // Add Media Panel component
+  const MediaPanelComponent = React.lazy(() => import('./MediaPanel'));
+  
   // State for search query
   const [searchQuery, setSearchQuery] = useState<string>('');
   
@@ -279,7 +282,7 @@ function ElementLibrary(): JSX.Element {
         </button>
       </div>
       
-      {/* Category tabs with Material Design - reordered as requested */}
+       {/* Category tabs with Material Design - reordered as requested */}
       <MaterialTabs
         tabs={(['stickers', 'shapes', 'text', 'media', 'images'] as ElementCategory[]).map(category => ({
           label: category.charAt(0).toUpperCase() + category.slice(1),
@@ -297,6 +300,12 @@ function ElementLibrary(): JSX.Element {
       ) : activeCategory === 'stickers' ? (
         <div className="flex-1 overflow-y-auto">
           <TravelStickers onSelectSticker={handleAddSticker} searchQuery={searchQuery} />
+        </div>
+      ) : activeCategory === 'media' ? (
+        <div className="flex-1 overflow-y-auto">
+          <React.Suspense fallback={<div>Loading Media Panel...</div>}>
+            <MediaPanelComponent onSelectMedia={handleAddElement} />
+          </React.Suspense>
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto p-3 grid grid-cols-2 gap-3">
