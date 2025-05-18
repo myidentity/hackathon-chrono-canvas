@@ -136,7 +136,9 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
    * Select an element
    */
   const selectElement = useCallback((id: string | null) => {
+    console.log('CanvasContext selectElement called with id:', id);
     setSelectedElement(id);
+    console.log('CanvasContext selectedElement state updated to:', id);
   }, []);
   
   /**

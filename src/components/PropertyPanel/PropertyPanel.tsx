@@ -36,9 +36,12 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
   
   // Update local state when selected element changes
   useEffect(() => {
+    console.log('PropertyPanel: selectedElementData changed:', selectedElementData);
     if (selectedElementData) {
+      console.log('PropertyPanel: updating elementProperties with:', selectedElementData);
       setElementProperties({ ...selectedElementData });
     } else {
+      console.log('PropertyPanel: clearing elementProperties');
       setElementProperties(null);
     }
   }, [selectedElementData]);

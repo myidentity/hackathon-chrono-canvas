@@ -196,7 +196,10 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
   
   // Handle canvas click for selection
   const handleCanvasClick = (e: React.MouseEvent) => {
+    console.log('EnhancedCanvas handleCanvasClick called, target:', e.target);
+    console.log('contentRef.current:', contentRef.current);
     if (viewMode === 'editor' && e.target === contentRef.current) {
+      console.log('EnhancedCanvas clearing selection');
       clearSelection();
     }
   };
@@ -395,7 +398,10 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
             key={element.id}
             element={element}
             isSelected={selectedElements.includes(element.id)}
-            onSelect={() => selectElement(element.id)}
+            onSelect={() => {
+              console.log('EnhancedCanvas onSelect called for element:', element.id);
+              selectElement(element.id);
+            }}
             viewMode={viewMode}
             currentPosition={currentPosition}
             scrollPosition={scrollPosition}

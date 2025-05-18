@@ -28,6 +28,8 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
 
   // Revert to simpler handler without stopPropagation
   const handleSelect = (e: React.MouseEvent) => {
+    console.log('ElementRenderer handleSelect called for element:', element.id, element.type);
+    console.log('Current isSelected state:', isSelected);
     onSelect(e);
   };
 
@@ -57,7 +59,10 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
             cursor: 'move',
             zIndex: element.zIndex || 1
           }}
-          onClick={handleSelect}
+          onClick={(e) => {
+            console.log('Map element clicked:', element.id);
+            handleSelect(e);
+          }}
         >
           {element.component}
         </div>

@@ -7,6 +7,12 @@ interface ImageElementProps {
 }
 
 const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClick }) => {
+  const handleClick = (e: React.MouseEvent) => {
+    console.log('ImageElement clicked:', element.id);
+    console.log('Current isSelected state in ImageElement:', isSelected);
+    onClick(e);
+  };
+
   return (
     <div
       style={{
@@ -20,7 +26,7 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
         cursor: 'move',
         zIndex: element.zIndex || 1
       }}
-      onClick={onClick}
+      onClick={handleClick}
     >
       <img
         src={element.src}
