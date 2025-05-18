@@ -12,10 +12,6 @@ interface ImageElement {
   zIndex?: number;
   src: string;
   alt?: string;
-  borderWidth?: string;
-  borderStyle?: string;
-  borderColor?: string;
-  borderRadius?: string;
   rotation?: number;
   opacity?: number;
 }
@@ -80,12 +76,7 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
         top: element.position?.y || element.y || 0,
         width: element.size?.width || element.width || 200,
         height: element.size?.height || element.height || 200,
-        border: isSelected 
-          ? '2px dashed #1976d2' 
-          : (element.borderWidth && element.borderStyle && element.borderWidth !== '0px' && element.borderStyle !== 'none')
-            ? `${element.borderWidth || '0px'} ${element.borderStyle || 'none'} ${element.borderColor || '#000000'}`
-            : 'none',
-        borderRadius: element.borderRadius || '0px',
+        border: isSelected ? '2px dashed #1976d2' : 'none',
         pointerEvents: 'all',
         cursor: isSelected ? 'move' : 'pointer',
         zIndex: element.zIndex || 1,
