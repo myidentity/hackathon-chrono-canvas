@@ -46,14 +46,18 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
       e.stopPropagation(); // Prevent canvas panning when dragging element
       e.preventDefault(); // Prevent default browser behavior
       
+      // Calculate position delta since last update
       const deltaX = e.clientX - dragStart.x;
       const deltaY = e.clientY - dragStart.y;
       
-      // Update element position through context
-      updateElementPosition(element.id, deltaX, deltaY);
-      
-      // Reset drag start position
-      setDragStart({ x: e.clientX, y: e.clientY });
+      // Only update if there's actual movement
+      if (deltaX !== 0 || deltaY !== 0) {
+        // Update element position through context
+        updateElementPosition(element.id, deltaX, deltaY);
+        
+        // Reset drag start position to current mouse position
+        setDragStart({ x: e.clientX, y: e.clientY });
+      }
     }
   };
 
@@ -64,13 +68,17 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
     }
   };
 
+  // Get position from element, ensuring we have valid coordinates
+  const positionX = element.position?.x ?? element.x ?? 0;
+  const positionY = element.position?.y ?? element.y ?? 0;
+  
   return (
     <div
       ref={elementRef}
       style={{
         position: 'absolute',
-        left: element.position?.x || element.x || 0,
-        top: element.position?.y || element.y || 0,
+        left: positionX,
+        top: positionY,
         width: element.size?.width || element.width || 200,
         height: element.size?.height || element.height || 200,
         border: isSelected ? '2px dashed #1976d2' : 'none',
@@ -78,7 +86,8 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
         cursor: isSelected ? 'move' : 'pointer',
         zIndex: element.zIndex || 1,
         transform: `rotate(${element.rotation || 0}deg)`,
-        opacity: element.opacity !== undefined ? element.opacity : 1
+        opacity: element.opacity !== undefined ? element.opacity : 1,
+        willChange: isDragging ? 'left, top' : 'auto' // Optimize rendering during drag
       }}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
@@ -88,13 +97,15 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
     >
       <img
         src={element.src}
-        alt={element.alt || ""}
+        alt={element.alt || "Image"}
         style={{
           width: '100%',
           height: '100%',
           objectFit: 'contain',
-          pointerEvents: 'none' // Prevent img from capturing events
+          pointerEvents: 'none', // Prevent img from capturing events
+          userSelect: 'none' // Prevent selection during drag
         }}
+        draggable={false} // Prevent browser's native drag behavior
       />
     </div>
   );
