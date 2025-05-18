@@ -23,30 +23,19 @@ interface ImageElementProps {
 }
 
 const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClick }) => {
-  const { updateElementPosition, setDraggingState } = useCanvas();
+  const { updateElementPosition, setDraggingState, initializeEventSystem } = useCanvas();
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const elementRef = useRef<HTMLDivElement>(null);
   
-  // Force event system initialization on mount
+  // Force event system initialization on mount and cleanup on unmount
   useEffect(() => {
-    // This effect ensures React properly initializes event handlers
-    // for this component, regardless of element addition sequence
-    const node = elementRef.current;
-    if (node) {
-      // Create and dispatch synthetic events to ensure event system is fully initialized
-      const events = ['mousemove', 'mousedown', 'mouseup', 'click'];
-      events.forEach(eventType => {
-        const event = new MouseEvent(eventType, {
-          bubbles: true,
-          cancelable: true,
-          view: window
-        });
-        node.dispatchEvent(event);
-      });
-      
-      // Add a class to help with debugging
-      node.classList.add('image-element-initialized');
+    // Initialize event system when component mounts
+    initializeEventSystem();
+    
+    // Add a class to help with debugging
+    if (elementRef.current) {
+      elementRef.current.classList.add('image-element-initialized');
     }
     
     // Clean up function
@@ -57,7 +46,7 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
         document.body.classList.remove('element-dragging');
       }
     };
-  }, []);
+  }, [initializeEventSystem, isDragging, setDraggingState]);
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent event from bubbling to canvas
@@ -78,12 +67,7 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
       
       // Force the browser to acknowledge this element is being interacted with
       if (elementRef.current) {
-        elementRef.current.style.zIndex = `${(parseInt(elementRef.current.style.zIndex || '1') + 1)}`;
-        setTimeout(() => {
-          if (elementRef.current) {
-            elementRef.current.style.zIndex = `${element.zIndex || 1}`;
-          }
-        }, 0);
+        elementRef.current.style.willChange = 'transform, left, top';
       }
     }
   };
@@ -118,6 +102,11 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
       
       // Remove the dragging class from body
       document.body.classList.remove('element-dragging');
+      
+      // Reset will-change to avoid unnecessary memory consumption
+      if (elementRef.current) {
+        elementRef.current.style.willChange = 'auto';
+      }
     }
   };
 
@@ -140,7 +129,7 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
         zIndex: element.zIndex || 1,
         transform: `rotate(${element.rotation || 0}deg)`,
         opacity: element.opacity !== undefined ? element.opacity : 1,
-        willChange: isDragging ? 'left, top, transform' : 'auto', // Optimize rendering during drag
+        willChange: isDragging ? 'transform, left, top' : 'auto', // Optimize rendering during drag
         touchAction: 'none', // Prevent browser handling of touch events
         userSelect: 'none' // Prevent text selection during drag
       }}

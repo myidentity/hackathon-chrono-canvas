@@ -71,6 +71,7 @@ export interface CanvasContextValue {
   updateElementVisibility: (id: string, isVisible: boolean, properties?: Partial<CanvasElement>) => void;
   setDraggingState: (isDragging: boolean) => void; // Method to update drag state
   clearCanvas: () => void;
+  initializeEventSystem: () => void; // New method to initialize event system
 }
 
 // Create context with default values
@@ -88,7 +89,21 @@ const CanvasContext = createContext<CanvasContextValue>({
   updateElementVisibility: () => {},
   setDraggingState: () => {},
   clearCanvas: () => {},
+  initializeEventSystem: () => {}, // Default implementation
 });
+
+// Utility function to create and dispatch synthetic events
+const dispatchSyntheticEvents = (target: EventTarget) => {
+  const events = ['mousemove', 'mousedown', 'mouseup', 'click', 'mouseover', 'mouseout'];
+  events.forEach(eventType => {
+    const event = new MouseEvent(eventType, {
+      bubbles: true,
+      cancelable: true,
+      view: window
+    });
+    target.dispatchEvent(event);
+  });
+};
 
 /**
  * Canvas context provider component
@@ -106,38 +121,69 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Global dragging state to track if any element is being dragged
   const [isDraggingAny, setIsDraggingAny] = useState<boolean>(false);
   
-  // Force event system initialization on first render
+  // Track initialization status
   const isInitialized = useRef<boolean>(false);
   
-  // Initialize event system
-  useEffect(() => {
-    if (!isInitialized.current) {
-      // Create and dispatch synthetic events to ensure event system is fully initialized
-      const events = ['mousemove', 'mousedown', 'mouseup', 'click'];
-      events.forEach(eventType => {
-        const event = new MouseEvent(eventType, {
-          bubbles: true,
-          cancelable: true,
-          view: window
-        });
-        document.dispatchEvent(event);
-      });
-      
-      // Add a global style for dragging
-      const style = document.createElement('style');
-      style.innerHTML = `
-        .element-dragging {
-          cursor: grabbing !important;
-        }
-        [data-element-type="image"] {
-          will-change: transform, left, top;
-        }
-      `;
-      document.head.appendChild(style);
-      
-      isInitialized.current = true;
+  // Reference to the canvas container element
+  const canvasContainerRef = useRef<HTMLDivElement | null>(null);
+  
+  /**
+   * Initialize event system - can be called multiple times safely
+   */
+  const initializeEventSystem = useCallback(() => {
+    // Create and dispatch synthetic events to ensure event system is fully initialized
+    dispatchSyntheticEvents(document);
+    
+    // If we have a canvas container reference, initialize events on it too
+    if (canvasContainerRef.current) {
+      dispatchSyntheticEvents(canvasContainerRef.current);
     }
+    
+    // Mark as initialized
+    isInitialized.current = true;
   }, []);
+  
+  // Initialize event system on first render
+  useEffect(() => {
+    // Add global styles for dragging and element optimization
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .element-dragging {
+        cursor: grabbing !important;
+      }
+      [data-element-type] {
+        will-change: transform, left, top;
+        touch-action: none;
+        user-select: none;
+      }
+      [data-element-type="image"] img {
+        -webkit-user-drag: none;
+        user-select: none;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Initialize event system
+    initializeEventSystem();
+    
+    // Set up a MutationObserver to detect when new elements are added to the DOM
+    const observer = new MutationObserver((mutations) => {
+      // Re-initialize event system when DOM changes
+      initializeEventSystem();
+    });
+    
+    // Start observing the document with the configured parameters
+    observer.observe(document.body, { 
+      childList: true, 
+      subtree: true 
+    });
+    
+    // Clean up
+    return () => {
+      observer.disconnect();
+      document.head.removeChild(style);
+    };
+  }, [initializeEventSystem]);
   
   /**
    * Add a new element to the canvas
@@ -157,8 +203,14 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       elements: [...prev.elements, newElement],
     }));
     
+    // Re-initialize event system when adding new elements
+    // This ensures proper event binding regardless of element type
+    setTimeout(() => {
+      initializeEventSystem();
+    }, 0);
+    
     return id;
-  }, []);
+  }, [initializeEventSystem]);
   
   /**
    * Update an existing element
@@ -351,6 +403,7 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     updateElementVisibility,
     setDraggingState,
     clearCanvas,
+    initializeEventSystem,
   };
   
   return (
