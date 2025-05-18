@@ -1,25 +1,58 @@
 import React, { useState, useRef } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 
+interface TextElementData {
+  id: string;
+  position?: { x: number; y: number };
+  x?: number;
+  y?: number;
+  size?: { width: number; height: number };
+  width?: number;
+  height?: number;
+  zIndex?: number;
+  color?: string;
+  backgroundColor?: string;
+  fontSize?: string;
+  fontWeight?: string;
+  textAlign?: string;
+  content?: string;
+}
+
 interface TextElementProps {
-  element: any;
+  element: TextElementData;
   isSelected: boolean;
   onClick: (e: React.MouseEvent) => void;
 }
 
+/**
+ * TextElement component
+ * Renders a text element on the canvas
+ * 
+ * @param {TextElementProps} props - Component properties
+ * @returns {JSX.Element} Rendered component
+ */
 const TextElement: React.FC<TextElementProps> = ({ element, isSelected, onClick }) => {
   const { updateElementPosition } = useCanvas();
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const elementRef = useRef<HTMLDivElement>(null);
 
-  const handleClick = (e: React.MouseEvent) => {
-    console.log('TextElement clicked:', element.id);
+  /**
+   * Handle element click
+   * 
+   * @param {React.MouseEvent<HTMLDivElement>} e - Mouse event
+   */
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>): void => {
     e.stopPropagation(); // Prevent event from bubbling to canvas
     onClick(e);
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  /**
+   * Handle mouse down for dragging
+   * 
+   * @param {React.MouseEvent<HTMLDivElement>} e - Mouse event
+   */
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>): void => {
     if (isSelected) {
       e.stopPropagation(); // Prevent canvas panning when dragging element
       setIsDragging(true);
@@ -27,7 +60,12 @@ const TextElement: React.FC<TextElementProps> = ({ element, isSelected, onClick 
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  /**
+   * Handle mouse move for dragging
+   * 
+   * @param {React.MouseEvent<HTMLDivElement>} e - Mouse event
+   */
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>): void => {
     if (isDragging && isSelected) {
       e.stopPropagation(); // Prevent canvas panning when dragging element
       const deltaX = e.clientX - dragStart.x;
@@ -41,7 +79,12 @@ const TextElement: React.FC<TextElementProps> = ({ element, isSelected, onClick 
     }
   };
 
-  const handleMouseUp = (e: React.MouseEvent) => {
+  /**
+   * Handle mouse up to end dragging
+   * 
+   * @param {React.MouseEvent<HTMLDivElement>} e - Mouse event
+   */
+  const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>): void => {
     if (isDragging) {
       e.stopPropagation(); // Prevent canvas panning when dragging element
       setIsDragging(false);
@@ -62,11 +105,11 @@ const TextElement: React.FC<TextElementProps> = ({ element, isSelected, onClick 
         pointerEvents: 'all',
         cursor: isSelected ? 'move' : 'pointer',
         zIndex: element.zIndex || 1,
-        color: element.color || '#333',
+        color: element.color || '#333333',
         backgroundColor: element.backgroundColor || 'transparent',
         fontSize: element.fontSize || '16px',
         fontWeight: element.fontWeight || 'normal',
-        textAlign: element.textAlign || 'left',
+        textAlign: element.textAlign as React.CSSProperties['textAlign'] || 'left',
         overflow: 'hidden'
       }}
       onClick={handleClick}
