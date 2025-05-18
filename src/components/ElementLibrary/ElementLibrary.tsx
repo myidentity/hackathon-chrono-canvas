@@ -46,8 +46,8 @@ const ElementLibrary = (): JSX.Element => {
   // State for active category - default to stickers as requested
   const [activeCategory, setActiveCategory] = useState<ElementCategory>('stickers');
   
-  // Add Media Panel component
-  const MediaPanelComponent = React.lazy(() => import('./MediaPanel'));
+  // Add Images Panel component
+  const ImagesPanelComponent = React.lazy(() => import('./ImagesPanel'));
   
   // State for search query
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -223,22 +223,7 @@ const ElementLibrary = (): JSX.Element => {
         properties: { content: 'Lorem ipsum dolor sit amet', fontSize: '16px', fontWeight: 'normal', color: '#000000' },
       },
     ],
-    media: [
-      {
-        id: 'media-1',
-        type: 'media',
-        name: 'Audio Clip',
-        thumbnail: 'placeholder',
-        properties: { media: 'audio', src: 'placeholder.mp3' },
-      },
-      {
-        id: 'media-2',
-        type: 'media',
-        name: 'Map',
-        thumbnail: 'placeholder',
-        properties: { media: 'map', location: 'New York' },
-      },
-    ],
+    media: [], // Removed media elements
     images: imageElements, // Use images from ImageLibraryContext
   };
   
@@ -276,7 +261,7 @@ const ElementLibrary = (): JSX.Element => {
           { label: 'Stickers', value: 'stickers' },
           { label: 'Shapes', value: 'shapes' },
           { label: 'Text', value: 'text' },
-          { label: 'Media', value: 'media' }
+          { label: 'Images', value: 'images' }
         ]}
         value={activeCategory}
         onChange={handleCategoryChange}
@@ -291,10 +276,10 @@ const ElementLibrary = (): JSX.Element => {
         <div className="flex-1 overflow-y-auto">
           <TravelStickers onSelectSticker={handleAddSticker} searchQuery={searchQuery} />
         </div>
-      ) : activeCategory === 'media' ? (
+      ) : activeCategory === 'images' ? (
         <div className="flex-1 overflow-y-auto">
-          <React.Suspense fallback={<div>Loading Media Panel...</div>}>
-            <MediaPanelComponent onSelectMedia={handleAddElement} />
+          <React.Suspense fallback={<div>Loading Images Panel...</div>}>
+            <ImagesPanelComponent onSelectImage={handleAddElement} />
           </React.Suspense>
         </div>
       ) : (
