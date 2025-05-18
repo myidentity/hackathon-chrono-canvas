@@ -284,10 +284,13 @@ const ElementLibrary = (): JSX.Element => {
       
        {/* Category tabs with Material Design - reordered as requested */}
       <MaterialTabs
-        tabs={(['stickers', 'shapes', 'text', 'media', 'images'] as ElementCategory[]).map(category => ({
-          label: category.charAt(0).toUpperCase() + category.slice(1),
-          value: category
-        }))}
+        tabs={[
+          { label: 'Stickers', value: 'stickers' },
+          { label: 'Shapes', value: 'shapes' },
+          { label: 'Text', value: 'text' },
+          { label: 'Media', value: 'media' },
+          { label: 'Images', value: 'images' }
+        ]}
         value={activeCategory}
         onChange={handleCategoryChange}
       />
