@@ -40,7 +40,7 @@ interface PropertyPanelProps {
 const PropertyPanel: React.FC<PropertyPanelProps> = () => {
   // Get canvas and timeline context
   const { canvas, selectedElement, updateElement, removeElement } = useCanvas();
-  const { currentPosition, addMarker, setPosition } = useTimeline();
+  const { currentPosition, addMarker, removeMarker, setPosition } = useTimeline();
   
   // State for property editing
   const [elementProperties, setElementProperties] = useState<Partial<CanvasElement> | null>(null);
@@ -183,7 +183,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
       id: `keyframe-${selectedElement}-${Date.now()}`,
       position: currentPosition,
       name: `${elementProperties.type || 'Element'} Keyframe`,
-      color: '#3b82f6'
+      color: '#F26D5B'
     };
     
     addMarker(newMarker);
@@ -207,6 +207,9 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
     
     if (!elementProperties || !selectedElement || !elementProperties.timelineData?.keyframes) return;
     
+    // Get the keyframe time before removing it (for marker removal)
+    const keyframeTime = elementProperties.timelineData.keyframes[index].time;
+    
     // Create a copy of the keyframes array without the deleted keyframe
     const updatedKeyframes = [...elementProperties.timelineData.keyframes];
     updatedKeyframes.splice(index, 1);
@@ -225,6 +228,20 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
     
     // Update element in canvas context
     updateElement(selectedElement, { timelineData: timelineData as any });
+    
+    // Remove the corresponding marker from the timeline
+    // Find and remove any markers that correspond to this keyframe
+    const markersToRemove = [`keyframe-${selectedElement}-`];
+    markersToRemove.forEach(prefix => {
+      // Find markers with matching prefix and position
+      const matchingMarkers = document.querySelectorAll(`[data-testid^="marker-${prefix}"]`);
+      matchingMarkers.forEach(marker => {
+        const markerId = marker.getAttribute('data-testid')?.replace('marker-', '');
+        if (markerId) {
+          removeMarker(markerId);
+        }
+      });
+    });
   };
   
   // If no element is selected, show empty state
