@@ -115,5 +115,3 @@ const ImagesPanel: React.FC<ImagesPanelProps> = ({ onSelectImage }) => {
 };
 
 export default ImagesPanel;
-
-export default ImagesPanel;
