@@ -199,15 +199,28 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     // Update the element
     updateElement(selectedElement, { timelineData });
     
-    // Add a marker for this keyframe
+    // Generate a stable marker ID based on element ID and time
+    const markerId = `keyframe-${selectedElement}-${currentPosition.toFixed(1)}`;
+    
+    // Add a marker for this keyframe with the stable ID
     const marker: TimelineMarker = {
-      id: `keyframe-${selectedElement}-${Date.now()}`,
+      id: markerId,
       position: currentPosition,
       name: `${element.type} Keyframe`,
-      color: '#3b82f6'
+      color: '#F26D5B'
     };
     
+    // Check if a marker with this ID already exists
+    const existingMarker = markers.find(m => m.id === markerId);
+    if (existingMarker) {
+      // If it exists, remove it first to avoid duplicates
+      removeMarker(markerId);
+    }
+    
+    // Add the marker
     addMarker(marker);
+    
+    console.log(`Added keyframe marker with ID: ${markerId} at position: ${currentPosition}`);
   };
   
   /**
