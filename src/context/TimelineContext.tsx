@@ -214,29 +214,38 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     if (!isPlaying) return;
     
-    const now = Date.now();
-    const elapsed = (now - lastUpdateTime) / 1000; // Convert to seconds
-    const newPosition = currentPosition + elapsed * playbackSpeed;
+    let animationFrameId: number;
     
-    // Update position and reset last update time
-    if (newPosition >= duration) {
-      setCurrentPosition(0);
-    } else {
-      setCurrentPosition(newPosition);
-    }
-    setLastUpdateTime(now);
+    const updateFrame = () => {
+      const now = Date.now();
+      const elapsed = (now - lastUpdateTime) / 1000; // Convert to seconds
+      const newPosition = currentPosition + elapsed * playbackSpeed;
+      
+      // Update position and reset last update time
+      if (newPosition >= duration) {
+        setCurrentPosition(0);
+      } else {
+        setCurrentPosition(newPosition);
+      }
+      setLastUpdateTime(now);
+      
+      // Update elements based on new position
+      updateElementAtCurrentTime();
+      
+      // Continue animation loop
+      animationFrameId = requestAnimationFrame(updateFrame);
+    };
     
-    // Update elements based on new position
-    updateElementAtCurrentTime();
+    // Start animation loop
+    animationFrameId = requestAnimationFrame(updateFrame);
     
-    // Set up animation frame for smooth playback
-    const animationFrame = requestAnimationFrame(() => {
-      // This will trigger the effect again
-      setLastUpdateTime(Date.now());
-    });
-    
-    return () => cancelAnimationFrame(animationFrame);
-  }, [isPlaying, currentPosition, playbackSpeed, duration, lastUpdateTime, updateElementAtCurrentTime]);
+    // Cleanup on unmount or when playback stops
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [isPlaying, playbackSpeed, duration, updateElementAtCurrentTime]);
   
   // Update elements when position changes manually
   useEffect(() => {
