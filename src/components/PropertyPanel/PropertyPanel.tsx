@@ -216,7 +216,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
           title="Delete element"
           aria-label="Delete element"
         >
-          <span className="material-icons" style={{ fontSize: '20px' }}>delete</span>
+          <span className="material-icons">delete</span>
         </button>
       </div>
       
