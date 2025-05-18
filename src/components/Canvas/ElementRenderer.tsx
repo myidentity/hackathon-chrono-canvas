@@ -26,9 +26,8 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
   const { canvas } = useCanvas();
   const isEditor = viewMode === 'editor';
 
-  // Ensure we're passing the correct handler to child components
+  // Revert to simpler handler without stopPropagation
   const handleSelect = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent event bubbling
     onSelect(e);
   };
 
