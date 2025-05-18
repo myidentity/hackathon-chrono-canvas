@@ -29,9 +29,6 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
   const elementRef = useRef<HTMLDivElement>(null);
 
   const handleClick = (e: React.MouseEvent) => {
-    // Remove console logs for production
-    // console.log('ImageElement clicked:', element.id);
-    // console.log('Current isSelected state in ImageElement:', isSelected);
     e.stopPropagation(); // Prevent event from bubbling to canvas
     onClick(e);
   };
@@ -91,7 +88,7 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
     >
       <img
         src={element.src}
-        alt=""
+        alt={element.alt || ""}
         style={{
           width: '100%',
           height: '100%',

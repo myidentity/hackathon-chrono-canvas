@@ -13,6 +13,8 @@ interface ShapeElement {
   color?: string;
   backgroundColor?: string;
   svg?: string;
+  rotation?: number;
+  opacity?: number;
 }
 
 interface ShapeElementProps {
@@ -28,8 +30,6 @@ const ShapeElement: React.FC<ShapeElementProps> = ({ element, isSelected, onClic
   const elementRef = useRef<HTMLDivElement>(null);
 
   const handleClick = (e: React.MouseEvent) => {
-    // Remove console log for production
-    // console.log('ShapeElement clicked:', element.id);
     e.stopPropagation(); // Prevent event from bubbling to canvas
     onClick(e);
   };
@@ -88,10 +88,20 @@ const ShapeElement: React.FC<ShapeElementProps> = ({ element, isSelected, onClic
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      dangerouslySetInnerHTML={{ 
-        __html: element.svg ? element.svg.replace('currentColor', element.color || '#333333') : '' 
-      }}
-    />
+    >
+      {element.svg && (
+        <div 
+          dangerouslySetInnerHTML={{ 
+            __html: element.svg.replace('currentColor', element.color || '#333333')
+          }}
+          style={{
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none'
+          }}
+        />
+      )}
+    </div>
   );
 };
 
