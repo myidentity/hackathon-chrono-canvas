@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 
 interface ImageElement {
@@ -27,6 +27,22 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const elementRef = useRef<HTMLDivElement>(null);
+  
+  // Force event optimization on mount
+  useEffect(() => {
+    // This empty effect ensures React properly initializes event handlers
+    // for this component, regardless of element addition sequence
+    const node = elementRef.current;
+    if (node) {
+      // Trigger a synthetic event to ensure event system is initialized
+      const event = new MouseEvent('mousemove', {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      });
+      node.dispatchEvent(event);
+    }
+  }, []);
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent event from bubbling to canvas
@@ -38,6 +54,9 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
       e.stopPropagation(); // Prevent canvas panning when dragging element
       setIsDragging(true);
       setDragStart({ x: e.clientX, y: e.clientY });
+      
+      // Add a class to the body to indicate dragging is active
+      document.body.classList.add('element-dragging');
     }
   };
 
@@ -65,6 +84,9 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
     if (isDragging) {
       e.stopPropagation(); // Prevent canvas panning when dragging element
       setIsDragging(false);
+      
+      // Remove the dragging class from body
+      document.body.classList.remove('element-dragging');
     }
   };
 
@@ -87,13 +109,15 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
         zIndex: element.zIndex || 1,
         transform: `rotate(${element.rotation || 0}deg)`,
         opacity: element.opacity !== undefined ? element.opacity : 1,
-        willChange: isDragging ? 'left, top' : 'auto' // Optimize rendering during drag
+        willChange: isDragging ? 'left, top' : 'auto', // Optimize rendering during drag
+        touchAction: 'none' // Prevent browser handling of touch events
       }}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      data-element-type="image"
     >
       <img
         src={element.src}

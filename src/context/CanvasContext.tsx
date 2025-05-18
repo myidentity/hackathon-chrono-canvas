@@ -5,7 +5,7 @@
  * and element manipulation.
  */
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 // Type definitions
@@ -60,6 +60,7 @@ export interface CanvasState {
 export interface CanvasContextValue {
   canvas: CanvasState;
   selectedElement: string | null;
+  isDraggingAny: boolean; // Added global drag state
   addElement: (element: Partial<CanvasElement>) => string;
   updateElement: (id: string, updates: Partial<CanvasElement>) => void;
   removeElement: (id: string) => void;
@@ -68,6 +69,7 @@ export interface CanvasContextValue {
   updateElementSize: (id: string, width: number, height: number) => void;
   updateElementRotation: (id: string, rotation: number) => void;
   updateElementVisibility: (id: string, isVisible: boolean, properties?: Partial<CanvasElement>) => void;
+  setDraggingState: (isDragging: boolean) => void; // Added method to update drag state
   clearCanvas: () => void;
 }
 
@@ -75,6 +77,7 @@ export interface CanvasContextValue {
 const CanvasContext = createContext<CanvasContextValue>({
   canvas: { elements: [], viewBox: { x: 0, y: 0, width: 1000, height: 1000 } },
   selectedElement: null,
+  isDraggingAny: false, // Initialize global drag state
   addElement: () => '',
   updateElement: () => {},
   removeElement: () => {},
@@ -83,6 +86,7 @@ const CanvasContext = createContext<CanvasContextValue>({
   updateElementSize: () => {},
   updateElementRotation: () => {},
   updateElementVisibility: () => {},
+  setDraggingState: () => {}, // Initialize drag state setter
   clearCanvas: () => {},
 });
 
@@ -98,6 +102,23 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   
   // Selected element
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  
+  // Global dragging state to track if any element is being dragged
+  const [isDraggingAny, setIsDraggingAny] = useState<boolean>(false);
+  
+  // Force event system initialization on first render
+  const isInitialized = useRef<boolean>(false);
+  
+  if (!isInitialized.current) {
+    // Create a dummy event to ensure React's event system is fully initialized
+    const event = new MouseEvent('mousemove', {
+      bubbles: true,
+      cancelable: true,
+      view: window
+    });
+    document.dispatchEvent(event);
+    isInitialized.current = true;
+  }
   
   /**
    * Add a new element to the canvas
@@ -157,8 +178,6 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             }
           });
           
-          // Remove console log for production
-          // console.log('Updating element with:', updatedElement);
           return updatedElement;
         }
         return element;
@@ -184,10 +203,7 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
    * Select an element
    */
   const selectElement = useCallback((id: string | null) => {
-    // Remove console logs for production
-    // console.log('CanvasContext selectElement called with id:', id);
     setSelectedElement(id);
-    // console.log('CanvasContext selectedElement state updated to:', id);
   }, []);
   
   /**
@@ -277,6 +293,13 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
   
   /**
+   * Set global dragging state
+   */
+  const setDraggingState = useCallback((isDragging: boolean) => {
+    setIsDraggingAny(isDragging);
+  }, []);
+  
+  /**
    * Clear all elements from the canvas
    */
   const clearCanvas = useCallback(() => {
@@ -291,6 +314,7 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const contextValue: CanvasContextValue = {
     canvas,
     selectedElement,
+    isDraggingAny,
     addElement,
     updateElement,
     removeElement,
@@ -299,6 +323,7 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     updateElementSize,
     updateElementRotation,
     updateElementVisibility,
+    setDraggingState,
     clearCanvas,
   };
   
