@@ -210,42 +210,63 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return result;
   };
   
-  // Update timeline position during playback
+  // Use a ref to track animation frame ID
+  const animationFrameRef = useRef<number | null>(null);
+  
+  // Use a ref to track the last position to avoid dependency on currentPosition
+  const positionRef = useRef(currentPosition);
+  
+  // Update the ref when currentPosition changes
   useEffect(() => {
-    if (!isPlaying) return;
+    positionRef.current = currentPosition;
+  }, [currentPosition]);
+  
+  // Update timeline position during playback - completely refactored to avoid infinite loops
+  useEffect(() => {
+    // Only run animation when playing
+    if (!isPlaying) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      return;
+    }
     
-    let animationFrameId: number;
+    // Store the last time for calculating elapsed time
+    let lastTime = Date.now();
     
-    const updateFrame = () => {
+    // Animation frame callback
+    const animate = () => {
       const now = Date.now();
-      const elapsed = (now - lastUpdateTime) / 1000; // Convert to seconds
-      const newPosition = currentPosition + elapsed * playbackSpeed;
+      const elapsed = (now - lastTime) / 1000; // Convert to seconds
+      lastTime = now; // Update for next frame
       
-      // Update position and reset last update time
+      // Calculate new position based on current ref value
+      const newPosition = positionRef.current + (elapsed * playbackSpeed);
+      
+      // Handle looping
       if (newPosition >= duration) {
         setCurrentPosition(0);
       } else {
         setCurrentPosition(newPosition);
       }
-      setLastUpdateTime(now);
       
-      // Update elements based on new position
-      updateElementAtCurrentTime();
-      
-      // Continue animation loop
-      animationFrameId = requestAnimationFrame(updateFrame);
+      // Schedule next frame
+      animationFrameRef.current = requestAnimationFrame(animate);
     };
     
-    // Start animation loop
-    animationFrameId = requestAnimationFrame(updateFrame);
+    // Start animation
+    lastTime = Date.now(); // Initialize before starting
+    animationFrameRef.current = requestAnimationFrame(animate);
     
-    // Cleanup on unmount or when playback stops
+    // Cleanup
     return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
     };
-  }, [isPlaying, playbackSpeed, duration, updateElementAtCurrentTime]);
+  }, [isPlaying, playbackSpeed, duration]); // Removed dependencies that cause loops
   
   // Update elements when position changes manually
   useEffect(() => {
