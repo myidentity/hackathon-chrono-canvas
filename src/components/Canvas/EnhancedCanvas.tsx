@@ -61,20 +61,22 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
   const zineContainerRef = useRef<HTMLDivElement>(null);
   
   // State for tracking mouse position and drag
-  const [isDragging, setIsDragging] = useState(false);
+  const [isCanvasDragging, setIsCanvasDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   
-  // Handle mouse down for panning
+  // Handle mouse down for panning - only when clicking directly on the canvas background
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 0 && viewMode === 'editor') {
-      setIsDragging(true);
+    // Only initiate canvas dragging if clicking directly on the canvas background (not on elements)
+    if (e.button === 0 && viewMode === 'editor' && e.target === contentRef.current) {
+      console.log('Canvas background clicked, initiating canvas panning');
+      setIsCanvasDragging(true);
       setDragStart({ x: e.clientX, y: e.clientY });
     }
   };
   
-  // Handle mouse move for panning
+  // Handle mouse move for panning - only affects canvas, not elements
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging && viewMode === 'editor') {
+    if (isCanvasDragging && viewMode === 'editor') {
       const deltaX = e.clientX - dragStart.x;
       const deltaY = e.clientY - dragStart.y;
       
@@ -90,7 +92,7 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
   
   // Handle mouse up to end panning
   const handleMouseUp = () => {
-    setIsDragging(false);
+    setIsCanvasDragging(false);
   };
   
   // Handle zoom in
