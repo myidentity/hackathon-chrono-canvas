@@ -23,18 +23,24 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
   currentPosition = 0,
   scrollPosition = 0
 }) => {
-  const { mode } = useCanvas();
-  const isEditor = mode === 'editor' || viewMode === 'editor';
+  const { canvas } = useCanvas();
+  const isEditor = viewMode === 'editor';
+
+  // Ensure we're passing the correct handler to child components
+  const handleSelect = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
+    onSelect(e);
+  };
 
   switch (element.type) {
     case 'image':
-      return <ImageElement element={element} isSelected={isSelected} onClick={onSelect} />;
+      return <ImageElement element={element} isSelected={isSelected} onClick={handleSelect} />;
     case 'text':
-      return <TextElement element={element} isSelected={isSelected} onClick={onSelect} />;
+      return <TextElement element={element} isSelected={isSelected} onClick={handleSelect} />;
     case 'shape':
-      return <ShapeElement element={element} isSelected={isSelected} onClick={onSelect} />;
+      return <ShapeElement element={element} isSelected={isSelected} onClick={handleSelect} />;
     case 'sticker':
-      return <StickerElement element={element} isSelected={isSelected} onClick={onSelect} />;
+      return <StickerElement element={element} isSelected={isSelected} onClick={handleSelect} />;
     case 'audio':
       return <AudioElement element={element} isEditor={isEditor} />;
     case 'map':
@@ -43,16 +49,16 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
         <div
           style={{
             position: 'absolute',
-            left: element.x,
-            top: element.y,
-            width: element.width || 400,
-            height: element.height || 600,
+            left: element.position?.x || 0,
+            top: element.position?.y || 0,
+            width: element.size?.width || 400,
+            height: element.size?.height || 600,
             border: isSelected ? '2px dashed #1976d2' : 'none',
             pointerEvents: 'all',
             cursor: 'move',
             zIndex: element.zIndex || 1
           }}
-          onClick={onSelect}
+          onClick={handleSelect}
         >
           {element.component}
         </div>
