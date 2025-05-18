@@ -189,6 +189,13 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
     addMarker(newMarker);
   };
   
+  // Handle element deletion
+  const handleDeleteElement = () => {
+    if (selectedElement) {
+      removeElement(selectedElement);
+    }
+  };
+  
   // If no element is selected, show empty state
   if (!elementProperties || !selectedElementData) {
     return (
@@ -201,7 +208,17 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
   
   return (
     <div className="w-64 bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 p-4 h-full overflow-y-auto">
-      <h2 className="text-lg font-semibold mb-4 dark:text-gray-100">Properties</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold dark:text-gray-100">Properties</h2>
+        <button 
+          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+          onClick={handleDeleteElement}
+          title="Delete element"
+          aria-label="Delete element"
+        >
+          <span className="material-icons" style={{ fontSize: '20px' }}>delete</span>
+        </button>
+      </div>
       
       {/* Element ID */}
       <div className="mb-4">
@@ -413,77 +430,51 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
       {/* Timeline Data */}
       <div className="mb-4">
         <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Timeline Data
+          Timeline
         </h3>
-        
-        {/* Entry Point */}
-        <div className="mb-2">
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-            Entry Point (seconds)
-          </label>
-          <input 
-            type="number"
-            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
-            value={elementProperties.timelineData?.entryPoint || 0}
-            onChange={(e) => handleTimelineDataChange('entryPoint', parseInt(e.target.value) || 0)}
-          />
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Entry Point</label>
+            <input 
+              type="number"
+              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
+              value={elementProperties.timelineData?.entryPoint || 0}
+              onChange={(e) => handleTimelineDataChange('entryPoint', parseFloat(e.target.value) || 0)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Exit Point</label>
+            <input 
+              type="number"
+              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
+              value={elementProperties.timelineData?.exitPoint || 30}
+              onChange={(e) => handleTimelineDataChange('exitPoint', parseFloat(e.target.value) || 30)}
+            />
+          </div>
         </div>
-        
-        {/* Exit Point */}
-        <div className="mb-2">
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-            Exit Point (seconds)
+        <div className="mt-2">
+          <label className="flex items-center">
+            <input 
+              type="checkbox"
+              className="mr-2 accent-blue-600 dark:accent-blue-400"
+              checked={elementProperties.timelineData?.persist || false}
+              onChange={(e) => handleTimelineDataChange('persist', e.target.checked)}
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">Persist after exit</span>
           </label>
-          <input 
-            type="number"
-            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
-            value={elementProperties.timelineData?.exitPoint || 0}
-            onChange={(e) => {
-              // Convert to number or use 0 as fallback
-              const value = parseInt(e.target.value) || 0;
-              handleTimelineDataChange('exitPoint', value);
-            }}
-          />
         </div>
-        
-        {/* Persist */}
-        <div className="mb-2 flex items-center">
-          <input 
-            type="checkbox"
-            className="mr-2 accent-blue-600 dark:accent-blue-400"
-            checked={elementProperties.timelineData?.persist || false}
-            onChange={(e) => handleTimelineDataChange('persist', e.target.checked)}
-            id="persist-checkbox"
-          />
-          <label 
-            htmlFor="persist-checkbox"
-            className="text-sm text-gray-700 dark:text-gray-300"
+        <div className="mt-4">
+          <button 
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm flex items-center"
+            onClick={handleAddKeyframe}
           >
-            Persist after exit point
-          </label>
+            <span className="material-icons mr-1" style={{ fontSize: '16px' }}>add_circle</span>
+            Add Keyframe
+          </button>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Keyframes: {elementProperties.timelineData?.keyframes?.length || 0}
+          </div>
         </div>
-        
-        {/* Add Keyframe Button */}
-        <button
-          className="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded text-sm font-medium"
-          onClick={handleAddKeyframe}
-        >
-          Add Keyframe at Current Position
-        </button>
-      </div>
-      
-      {/* Delete Button */}
-      <div className="mt-6">
-        <button
-          className="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded text-sm font-medium"
-          onClick={() => {
-            if (selectedElement) {
-              removeElement(selectedElement);
-            }
-          }}
-        >
-          Delete Element
-        </button>
       </div>
     </div>
   );
