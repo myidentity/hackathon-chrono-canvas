@@ -581,22 +581,25 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
             // Check if this is a keyframe marker (by ID prefix)
             const isKeyframe = marker.id.startsWith('keyframe-');
             
-            return (
-              <div 
-                key={marker.id}
-                className={`absolute top-0 ${isKeyframe ? 'w-4 h-4 -ml-2 -mt-2 rotate-45 transform' : 'w-2 h-12 -ml-1'} cursor-pointer`}
-                style={{ 
-                  left: `${position}%`,
-                  backgroundColor: marker.color || '#3b82f6',
-                  top: isKeyframe ? '6px' : '0'
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  seekToMarker(marker.id);
-                }}
-                title={marker.name}
-                data-testid={`marker-${marker.id}`}
-              >
+            // For keyframe markers, only show them if they belong to the selected element
+            // or if they are not keyframe markers (regular markers)
+            if (!isKeyframe || (isKeyframe && selectedElement && marker.id.includes(selectedElement))) {
+              return (
+                <div 
+                  key={marker.id}
+                  className={`absolute top-0 ${isKeyframe ? 'w-4 h-4 -ml-2 -mt-2 rotate-45 transform' : 'w-2 h-12 -ml-1'} cursor-pointer`}
+                  style={{ 
+                    left: `${position}%`,
+                    backgroundColor: marker.color || '#3b82f6',
+                    top: isKeyframe ? '6px' : '0'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    seekToMarker(marker.id);
+                  }}
+                  title={marker.name}
+                  data-testid={`marker-${marker.id}`}
+                >
                 <div className="absolute -bottom-5 left-0 transform -translate-x-1/2 text-xs text-gray-400 whitespace-nowrap">
                   {marker.name}
                 </div>
