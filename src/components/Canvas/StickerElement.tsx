@@ -48,6 +48,8 @@ const StickerElement: React.FC<StickerElementProps> = ({ element, isSelected, on
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging && isSelected) {
       e.stopPropagation(); // Prevent canvas panning when dragging element
+      e.preventDefault(); // Prevent default browser behavior
+      
       const deltaX = e.clientX - dragStart.x;
       const deltaY = e.clientY - dragStart.y;
       
@@ -82,7 +84,9 @@ const StickerElement: React.FC<StickerElementProps> = ({ element, isSelected, on
         backgroundColor: element.color || 'transparent',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        transform: `rotate(${element.rotation || 0}deg)`,
+        opacity: element.opacity !== undefined ? element.opacity : 1
       }}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
