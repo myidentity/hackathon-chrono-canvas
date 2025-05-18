@@ -45,6 +45,8 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging && isSelected) {
       e.stopPropagation(); // Prevent canvas panning when dragging element
+      e.preventDefault(); // Prevent default browser behavior
+      
       const deltaX = e.clientX - dragStart.x;
       const deltaY = e.clientY - dragStart.y;
       
