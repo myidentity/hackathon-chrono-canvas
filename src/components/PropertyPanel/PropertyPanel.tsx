@@ -229,18 +229,19 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
     // Update element in canvas context
     updateElement(selectedElement, { timelineData: timelineData as any });
     
-    // Remove the corresponding marker from the timeline
-    // Find and remove any markers that correspond to this keyframe
-    const markersToRemove = [`keyframe-${selectedElement}-`];
-    markersToRemove.forEach(prefix => {
-      // Find markers with matching prefix and position
-      const matchingMarkers = document.querySelectorAll(`[data-testid^="marker-${prefix}"]`);
-      matchingMarkers.forEach(marker => {
-        const markerId = marker.getAttribute('data-testid')?.replace('marker-', '');
-        if (markerId) {
+    // Find and remove only the specific marker for this keyframe
+    // This is the fix for the bug where all keyframes were being removed
+    const markers = document.querySelectorAll(`[data-testid^="marker-keyframe-${selectedElement}-"]`);
+    markers.forEach(marker => {
+      const markerId = marker.getAttribute('data-testid')?.replace('marker-', '');
+      if (markerId) {
+        // Check if this marker corresponds to the keyframe we're deleting
+        // by comparing its position with the keyframe time
+        const markerPosition = marker.getAttribute('data-position');
+        if (markerPosition && Math.abs(parseFloat(markerPosition) - keyframeTime) < 0.1) {
           removeMarker(markerId);
         }
-      });
+      }
     });
   };
   
