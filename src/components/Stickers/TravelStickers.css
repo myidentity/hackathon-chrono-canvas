@@ -34,10 +34,13 @@
 .stickers-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
+  grid-auto-rows: min-content;
   gap: 8px;
   padding: 12px;
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
+  max-height: 100%;
 }
 
 .sticker-item {
