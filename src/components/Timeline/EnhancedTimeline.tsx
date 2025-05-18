@@ -48,6 +48,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: duration });
   const [showMarkerForm, setShowMarkerForm] = useState(false);
   const [markerForm, setMarkerForm] = useState({ name: '', color: '#3b82f6' });
+  const [selectedMarker, setSelectedMarker] = useState<string | null>(null);
   
   // Refs for DOM elements
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -266,54 +267,44 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
   };
   
   /**
-   * Center and fit all elements in the timeline view
+   * Handle deleting a keyframe marker
+   * 
+   * @param {string} markerId - ID of the marker to delete
    */
-  const handleCenterAndFit = () => {
-    // Reset zoom to default
-    setZoom(1);
+  const handleDeleteKeyframe = (markerId: string) => {
+    // Find the marker
+    const marker = markers.find(m => m.id === markerId);
+    if (!marker) return;
     
-    // Find the earliest and latest points of interest
-    let earliestPoint = 0;
-    let latestPoint = duration;
+    // Only allow deleting keyframe markers
+    if (marker.id.indexOf('keyframe-') !== 0) return;
     
-    // Check markers
-    if (markers.length > 0) {
-      const markerTimes = markers.map(marker => marker.position);
-      earliestPoint = Math.min(earliestPoint, ...markerTimes);
-      latestPoint = Math.max(latestPoint, ...markerTimes);
-    }
+    // Remove the marker
+    removeMarker(markerId);
     
-    // Check elements with timeline data
-    canvas.elements.forEach(element => {
-      if (element.timelineData) {
-        if (element.timelineData.entryPoint !== undefined && element.timelineData.entryPoint !== null) {
-          earliestPoint = Math.min(earliestPoint, element.timelineData.entryPoint);
-        }
+    // Clear selected marker
+    setSelectedMarker(null);
+    
+    // If this is a keyframe, also remove it from the element's timeline data
+    if (selectedElement) {
+      const element = canvas.elements.find(el => el.id === selectedElement);
+      if (element && element.timelineData && element.timelineData.keyframes) {
+        // Extract the timestamp from the marker position
+        const keyframeTime = marker.position;
         
-        if (element.timelineData.exitPoint !== undefined && element.timelineData.exitPoint !== null) {
-          latestPoint = Math.max(latestPoint, element.timelineData.exitPoint);
-        }
+        // Filter out the keyframe at this time
+        const updatedKeyframes = element.timelineData.keyframes.filter(
+          kf => Math.abs(kf.time - keyframeTime) >= 0.1
+        );
         
-        // Check keyframes
-        if (element.timelineData.keyframes && element.timelineData.keyframes.length > 0) {
-          const keyframeTimes = element.timelineData.keyframes.map(kf => kf.time);
-          earliestPoint = Math.min(earliestPoint, ...keyframeTimes);
-          latestPoint = Math.max(latestPoint, ...keyframeTimes);
-        }
+        // Update the element with the filtered keyframes
+        updateElement(selectedElement, {
+          timelineData: {
+            ...element.timelineData,
+            keyframes: updatedKeyframes
+          }
+        });
       }
-    });
-    
-    // Add some padding
-    const padding = (latestPoint - earliestPoint) * 0.1;
-    earliestPoint = Math.max(0, earliestPoint - padding);
-    latestPoint = Math.min(duration, latestPoint + padding);
-    
-    // If there are no elements or markers, show the full timeline
-    if (earliestPoint === 0 && latestPoint === duration) {
-      setVisibleRange({ start: 0, end: duration });
-    } else {
-      // Set the visible range to include all points of interest
-      setVisibleRange({ start: earliestPoint, end: latestPoint });
     }
   };
   
@@ -528,18 +519,37 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
             return (
               <div 
                 key={marker.id}
-                className="absolute top-0 w-2 h-12 -ml-1 cursor-pointer"
+                className={`absolute top-0 ${isKeyframe ? 'w-4 h-4 -ml-2 -mt-2 rotate-45 transform' : 'w-2 h-12 -ml-1'} cursor-pointer`}
                 style={{ 
                   left: `${position}%`,
-                  backgroundColor: marker.color || '#3b82f6'
+                  backgroundColor: marker.color || '#3b82f6',
+                  top: isKeyframe ? '6px' : '0'
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  seekToMarker(marker.id);
+                  if (isKeyframe) {
+                    setSelectedMarker(selectedMarker === marker.id ? null : marker.id);
+                  } else {
+                    seekToMarker(marker.id);
+                  }
                 }}
                 title={marker.name}
                 data-testid={`marker-${marker.id}`}
               >
+                {isKeyframe && selectedMarker === marker.id && (
+                  <div className="absolute -top-8 left-0 transform -translate-x-1/2 bg-red-600 text-white p-1 rounded shadow-lg z-20">
+                    <button 
+                      className="flex items-center justify-center"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteKeyframe(marker.id);
+                      }}
+                      title="Delete keyframe"
+                    >
+                      <i className="material-icons text-sm">delete</i>
+                    </button>
+                  </div>
+                )}
                 <div className="absolute -bottom-5 left-0 transform -translate-x-1/2 text-xs text-gray-400 whitespace-nowrap">
                   {marker.name}
                 </div>
