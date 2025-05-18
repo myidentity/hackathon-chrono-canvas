@@ -210,14 +210,16 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
     <div className="w-64 bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 p-4 h-full overflow-y-auto">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold dark:text-gray-100">Properties</h2>
-        <button 
-          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-          onClick={handleDeleteElement}
-          title="Delete element"
-          aria-label="Delete element"
-        >
-          <span className="material-icons">delete</span>
-        </button>
+        {selectedElement && (
+          <button 
+            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+            onClick={handleDeleteElement}
+            title="Delete element"
+            aria-label="Delete element"
+          >
+            <span className="material-icons">delete</span>
+          </button>
+        )}
       </div>
       
       {/* Element ID */}
