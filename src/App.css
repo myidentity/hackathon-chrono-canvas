@@ -1,0 +1,306 @@
+/* App.css */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.app.dark {
+  background-color: #1a1a1a;
+  color: #f5f5f5;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  height: 60px;
+}
+
+.app.dark .app-header {
+  background-color: #2a2a2a;
+  border-bottom: 1px solid #444;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tabs button {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  background-color: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.tabs button:hover {
+  background-color: #f0f0f0;
+}
+
+.app.dark .tabs button:hover {
+  background-color: #3a3a3a;
+}
+
+.tabs button.active {
+  background-color: #e0e0ff;
+  color: #4040ff;
+}
+
+.app.dark .tabs button.active {
+  background-color: #3a3a4a;
+  color: #8080ff;
+}
+
+.controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.controls button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background-color: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.controls button:hover {
+  background-color: #f0f0f0;
+}
+
+.app.dark .controls button:hover {
+  background-color: #3a3a3a;
+}
+
+.app-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 280px;
+  border-right: 1px solid #e0e0e0;
+  overflow-y: auto;
+  background-color: #ffffff;
+}
+
+.app.dark .sidebar {
+  background-color: #2a2a2a;
+  border-right: 1px solid #444;
+}
+
+.canvas-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.properties-panel {
+  width: 280px;
+  border-left: 1px solid #e0e0e0;
+  overflow-y: auto;
+  background-color: #ffffff;
+}
+
+.app.dark .properties-panel {
+  background-color: #2a2a2a;
+  border-left: 1px solid #444;
+}
+
+.app-footer {
+  border-top: 1px solid #e0e0e0;
+  background-color: #ffffff;
+}
+
+.app.dark .app-footer {
+  background-color: #2a2a2a;
+  border-top: 1px solid #444;
+}
+
+/* Grid background */
+.bg-grid {
+  background-image: linear-gradient(to right, #f0f0f0 1px, transparent 1px),
+                    linear-gradient(to bottom, #f0f0f0 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.app.dark .bg-grid {
+  background-image: linear-gradient(to right, #333 1px, transparent 1px),
+                    linear-gradient(to bottom, #333 1px, transparent 1px);
+}
+
+/* Timeline styles */
+.timeline-panel {
+  padding: 1rem;
+}
+
+.timeline-container {
+  height: 60px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  position: relative;
+}
+
+.app.dark .timeline-container {
+  background-color: #333;
+}
+
+/* Element library styles */
+.element-library {
+  padding: 1rem;
+}
+
+.element-library-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.element-library-tabs button {
+  flex: 1;
+  padding: 0.5rem;
+  border: none;
+  background-color: #f0f0f0;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+}
+
+.app.dark .element-library-tabs button {
+  background-color: #333;
+}
+
+.element-library-tabs button.active {
+  background-color: #e0e0ff;
+  color: #4040ff;
+}
+
+.app.dark .element-library-tabs button.active {
+  background-color: #3a3a4a;
+  color: #8080ff;
+}
+
+.element-library-content {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.element-item {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.app.dark .element-item {
+  background-color: #222;
+}
+
+.element-item:hover {
+  transform: scale(1.05);
+}
+
+/* Property panel styles */
+.property-panel {
+  padding: 1rem;
+}
+
+.property-group {
+  margin-bottom: 1rem;
+}
+
+.property-group h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  color: #666;
+}
+
+.app.dark .property-group h3 {
+  color: #aaa;
+}
+
+.property-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.property-label {
+  width: 80px;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.app.dark .property-label {
+  color: #aaa;
+}
+
+.property-value {
+  flex: 1;
+}
+
+.property-value input,
+.property-value select {
+  width: 100%;
+  padding: 0.25rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.app.dark .property-value input,
+.app.dark .property-value select {
+  background-color: #333;
+  border-color: #555;
+  color: #eee;
+}
+
+/* Utility classes */
+.material-icons {
+  font-size: 20px;
+}
+
+/* Animation keyframes */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.animate-pulse {
+  animation: pulse 0.5s ease-in-out;
+}
