@@ -431,55 +431,107 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
       
       {/* Timeline Data */}
       <div className="mb-4">
-        <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Timeline
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 border-b border-gray-300 dark:border-gray-600 pb-1">
+          Timeline Data
         </h3>
-        <div className="grid grid-cols-2 gap-2">
+        
+        {/* Entry and Exit Points */}
+        <div className="grid grid-cols-2 gap-2 mb-2">
           <div>
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Entry Point</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Entry (sec)</label>
             <input 
               type="number"
               className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
               value={elementProperties.timelineData?.entryPoint || 0}
               onChange={(e) => handleTimelineDataChange('entryPoint', parseFloat(e.target.value) || 0)}
+              step="0.1"
+              min="0"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Exit Point</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Exit (sec)</label>
             <input 
               type="number"
               className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
-              value={elementProperties.timelineData?.exitPoint || 30}
-              onChange={(e) => handleTimelineDataChange('exitPoint', parseFloat(e.target.value) || 30)}
+              value={elementProperties.timelineData?.exitPoint || 0}
+              onChange={(e) => handleTimelineDataChange('exitPoint', parseFloat(e.target.value) || 0)}
+              step="0.1"
+              min="0"
             />
           </div>
         </div>
-        <div className="mt-2">
-          <label className="flex items-center">
-            <input 
-              type="checkbox"
-              className="mr-2 accent-blue-600 dark:accent-blue-400"
-              checked={elementProperties.timelineData?.persist || false}
-              onChange={(e) => handleTimelineDataChange('persist', e.target.checked)}
-            />
-            <span className="text-sm text-gray-700 dark:text-gray-300">Persist after exit</span>
+        
+        {/* Persist checkbox */}
+        <div className="flex items-center mb-2">
+          <input 
+            type="checkbox"
+            className="mr-2 accent-blue-600 dark:accent-blue-400"
+            checked={elementProperties.timelineData?.persist || false}
+            onChange={(e) => handleTimelineDataChange('persist', e.target.checked)}
+            id="persist-checkbox"
+          />
+          <label htmlFor="persist-checkbox" className="text-xs text-gray-700 dark:text-gray-300">
+            Persist after exit point
           </label>
         </div>
+        
+        {/* Keyframes List */}
         <div className="mt-4">
-          <button 
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm flex items-center"
-            onClick={handleAddKeyframe}
-          >
-            <span className="material-icons mr-1" style={{ fontSize: '16px' }}>add_circle</span>
-            Add Keyframe
-          </button>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Keyframes: {elementProperties.timelineData?.keyframes?.length || 0}
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+              Keyframes
+            </label>
+            <button 
+              className="text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded flex items-center"
+              onClick={handleAddKeyframe}
+            >
+              <i className="material-icons text-xs mr-1">add</i>
+              Add
+            </button>
+          </div>
+          
+          {/* List of keyframes */}
+          <div className="bg-gray-200 dark:bg-gray-700 rounded p-2 max-h-40 overflow-y-auto">
+            {elementProperties.timelineData?.keyframes && elementProperties.timelineData.keyframes.length > 0 ? (
+              <ul className="divide-y divide-gray-300 dark:divide-gray-600">
+                {elementProperties.timelineData.keyframes.map((keyframe, index) => (
+                  <li key={index} className="py-1 flex justify-between items-center">
+                    <span className="text-xs text-gray-700 dark:text-gray-300">
+                      {keyframe.time.toFixed(2)}s
+                    </span>
+                    <button 
+                      className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                      onClick={() => {
+                        // Remove this keyframe
+                        if (elementProperties.timelineData?.keyframes && selectedElement) {
+                          const updatedKeyframes = elementProperties.timelineData.keyframes.filter((_, i) => i !== index);
+                          const updatedTimelineData = {
+                            ...elementProperties.timelineData,
+                            keyframes: updatedKeyframes
+                          };
+                          
+                          // Update element in canvas context
+                          updateElement(selectedElement, { timelineData: updatedTimelineData as any });
+                          
+                          // Update local state
+                          setElementProperties({
+                            ...elementProperties,
+                            timelineData: updatedTimelineData
+                          });
+                        }
+                      }}
+                      title="Delete keyframe"
+                    >
+                      <i className="material-icons text-xs">delete</i>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-2">
+                No keyframes added yet
+              </p>
+            )}
           </div>
         </div>
       </div>
-    </div>
-  );
-};
-
-export default PropertyPanel;
