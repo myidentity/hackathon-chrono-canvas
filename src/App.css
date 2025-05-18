@@ -39,6 +39,20 @@
   margin: 0;
 }
 
+/* Version number styling - small and inconspicuous */
+.version-number {
+  font-size: 0.6rem;
+  font-weight: normal;
+  color: #999;
+  opacity: 0.7;
+  vertical-align: super;
+  margin-left: 2px;
+}
+
+.app.dark .version-number {
+  color: #777;
+}
+
 .tabs {
   display: flex;
   gap: 0.5rem;
