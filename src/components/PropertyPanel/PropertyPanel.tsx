@@ -271,7 +271,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
   
   return (
     <div className="w-64 bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 p-4 h-full overflow-y-auto">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 sticky top-0 bg-gray-100 dark:bg-gray-800 z-10 pb-2">
         <h2 className="text-lg font-semibold dark:text-gray-100">Properties</h2>
         {selectedElement && (
           <button 
@@ -411,6 +411,30 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
       </div>
       
       {/* Type-specific properties */}
+      {elementProperties.type === 'shape' && (
+        <div className="mb-4">
+          <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Shape Properties
+          </h3>
+          <div className="grid grid-cols-1 gap-4 mt-2">
+            <div>
+              <ColorPicker
+                color={elementProperties.color || '#333333'}
+                onChange={(color) => handlePropertyChange('color', color)}
+                label="Stroke Color"
+              />
+            </div>
+            <div>
+              <ColorPicker
+                color={elementProperties.backgroundColor || 'transparent'}
+                onChange={(color) => handlePropertyChange('backgroundColor', color)}
+                label="Fill Color"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      
       {elementProperties.type === 'image' && (
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
