@@ -68,6 +68,8 @@ const TextElement: React.FC<TextElementProps> = ({ element, isSelected, onClick 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>): void => {
     if (isDragging && isSelected) {
       e.stopPropagation(); // Prevent canvas panning when dragging element
+      e.preventDefault(); // Prevent default browser behavior
+      
       const deltaX = e.clientX - dragStart.x;
       const deltaY = e.clientY - dragStart.y;
       
@@ -89,16 +91,14 @@ const TextElement: React.FC<TextElementProps> = ({ element, isSelected, onClick 
       e.stopPropagation(); // Prevent canvas panning when dragging element
       setIsDragging(false);
     }
-  };
-
-  return (
+  };  return (
     <div
       ref={elementRef}
       style={{
         position: 'absolute',
         left: element.position?.x || element.x || 0,
         top: element.position?.y || element.y || 0,
-        width: element.size?.width || element.width || 200,
+        width: element.size?.width || element.width || 'auto',
         height: element.size?.height || element.height || 'auto',
         padding: '8px',
         border: isSelected ? '2px dashed #1976d2' : 'none',
@@ -110,7 +110,9 @@ const TextElement: React.FC<TextElementProps> = ({ element, isSelected, onClick 
         fontSize: element.fontSize || '16px',
         fontWeight: element.fontWeight || 'normal',
         textAlign: element.textAlign as React.CSSProperties['textAlign'] || 'left',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        transform: `rotate(${element.rotation || 0}deg)`,
+        opacity: element.opacity !== undefined ? element.opacity : 1
       }}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
@@ -120,7 +122,6 @@ const TextElement: React.FC<TextElementProps> = ({ element, isSelected, onClick 
     >
       {element.content || 'Text Element'}
     </div>
-  );
-};
+  );};
 
 export default TextElement;
