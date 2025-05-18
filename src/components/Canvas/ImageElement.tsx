@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 
 interface ImageElement {
@@ -27,11 +27,19 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const elementRef = useRef<HTMLDivElement>(null);
+  
+  // Track the last position to prevent jumps
+  const lastPositionRef = useRef({ x: element.position?.x || element.x || 0, y: element.position?.y || element.y || 0 });
+  
+  // Update lastPositionRef when element position changes
+  useEffect(() => {
+    lastPositionRef.current = { 
+      x: element.position?.x || element.x || 0, 
+      y: element.position?.y || element.y || 0 
+    };
+  }, [element.position, element.x, element.y]);
 
   const handleClick = (e: React.MouseEvent) => {
-    // Remove console logs for production
-    // console.log('ImageElement clicked:', element.id);
-    // console.log('Current isSelected state in ImageElement:', isSelected);
     e.stopPropagation(); // Prevent event from bubbling to canvas
     onClick(e);
   };
