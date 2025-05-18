@@ -15,6 +15,11 @@
   border-bottom: 1px solid #ddd;
 }
 
+.dark .sticker-categories {
+  background-color: #2d3748;
+  border-bottom: 1px solid #4a5568;
+}
+
 .category-button {
   padding: 4px 8px;
   border: 1px solid #ccc;
@@ -25,10 +30,22 @@
   transition: all 0.2s ease;
 }
 
+.dark .category-button {
+  background-color: #4a5568;
+  border-color: #2d3748;
+  color: #e2e8f0;
+}
+
 .category-button.active {
   background-color: #4a90e2;
   color: white;
   border-color: #2a70c2;
+}
+
+.dark .category-button.active {
+  background-color: #3182ce;
+  color: white;
+  border-color: #2c5282;
 }
 
 .stickers-grid {
@@ -55,9 +72,17 @@
   aspect-ratio: 1;
 }
 
+.dark .sticker-item {
+  background-color: #2d3748;
+}
+
 .sticker-item:hover {
   transform: scale(1.05);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dark .sticker-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 .sticker-emoji {

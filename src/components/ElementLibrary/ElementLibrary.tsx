@@ -226,10 +226,10 @@ function ElementLibrary(): JSX.Element {
   return (
     <div className="h-full flex flex-col">
       {/* Search input */}
-      <div className="p-3 border-b border-gray-200">
+      <div className="p-3 border-b border-gray-200 dark:border-gray-700">
         <input
           type="text"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 dark:text-gray-200"
           placeholder="Search elements..."
           value={searchQuery}
           onChange={handleSearchChange}
@@ -260,18 +260,18 @@ function ElementLibrary(): JSX.Element {
           {filteredElements.map(element => (
             <div
               key={element.id}
-              className="border border-gray-200 rounded-md p-2 cursor-grab hover:border-blue-300 hover:shadow-sm transition-all"
+              className="border border-gray-200 dark:border-gray-700 rounded-md p-2 cursor-grab hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-sm transition-all dark:bg-gray-800"
               draggable
               onDragStart={(e) => handleDragStart(e, element)}
               onClick={() => handleAddElement(element)}
             >
               {/* Element thumbnail */}
-              <div className="bg-gray-100 h-20 flex items-center justify-center rounded mb-2">
+              <div className="bg-gray-100 dark:bg-gray-700 h-20 flex items-center justify-center rounded mb-2">
                 {element.type === 'text' && (
                   <span style={{ 
                     fontSize: element.properties.fontSize.replace('px', '') / 2 + 'px', 
                     fontWeight: element.properties.fontWeight 
-                  }}>
+                  }} className="dark:text-gray-200">
                     {element.properties.content}
                   </span>
                 )}
@@ -293,14 +293,14 @@ function ElementLibrary(): JSX.Element {
                   />
                 )}
                 {element.type === 'media' && (
-                  <div className="text-gray-400 text-xs">
+                  <div className="text-gray-400 dark:text-gray-300 text-xs">
                     {element.name}
                   </div>
                 )}
               </div>
               
               {/* Element name */}
-              <div className="text-xs text-center text-gray-700 truncate">
+              <div className="text-xs text-center text-gray-700 dark:text-gray-300 truncate">
                 {element.name}
               </div>
             </div>

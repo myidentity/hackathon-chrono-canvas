@@ -88,3 +88,6 @@ const App: React.FC = () => {
       </CanvasProvider>
     </ThemeProvider>
   );
+};
+
+export default App;
