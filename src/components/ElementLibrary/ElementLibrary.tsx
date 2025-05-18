@@ -7,7 +7,7 @@
  * @module ElementLibrary
  */
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 import { useImageLibrary } from '../../context/ImageLibraryContext';
 import ToolsPalette from '../UI/ToolsPalette';
