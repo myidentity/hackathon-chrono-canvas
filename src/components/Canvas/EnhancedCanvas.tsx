@@ -34,6 +34,7 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ mode = 'editor' }) => {
   
   // State for canvas interaction
   const [isPanning, setIsPanning] = useState(false);
+  const [isDragging, setIsDragging] = useState(false); // New state for tracking element dragging
   const [startPanPosition, setStartPanPosition] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [showGrid, setShowGrid] = useState(true);
@@ -68,6 +69,9 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ mode = 'editor' }) => {
       // Select the element
       console.log('EnhancedCanvas: Element clicked:', elementId);
       handleElementSelect(elementId);
+      
+      // Start dragging if clicking on a selected element
+      setIsDragging(true);
     } else {
       // Start panning
       setIsPanning(true);
@@ -88,8 +92,8 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ mode = 'editor' }) => {
       canvasRef.current.scrollTop -= dy;
       
       setStartPanPosition({ x: e.clientX, y: e.clientY });
-    } else if (selectedElement) {
-      // Move the selected element
+    } else if (isDragging && selectedElement) {
+      // Move the selected element only when dragging is active
       const dx = e.movementX / zoom;
       const dy = e.movementY / zoom;
       
@@ -102,6 +106,7 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ mode = 'editor' }) => {
     if (mode !== 'editor') return;
     
     setIsPanning(false);
+    setIsDragging(false); // Stop dragging on mouse up
   };
   
   // Handle zoom in/out
@@ -141,7 +146,7 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ mode = 'editor' }) => {
         ref={canvasRef}
         className={`w-full h-full overflow-auto ${showGrid ? 'bg-grid' : 'bg-white'}`}
         style={{ 
-          cursor: isPanning ? 'grabbing' : 'default',
+          cursor: isPanning ? 'grabbing' : isDragging ? 'grabbing' : 'default',
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
