@@ -6,6 +6,7 @@
  */
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { useTimeline } from './TimelineContext';
 
 // Type definitions
 export interface KeyframeProperty {
@@ -165,19 +166,46 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }));
   }, []);
   
+  // Get timeline context for keyframe cleanup
+  const timeline = useTimeline();
+  
   /**
-   * Remove an element from the canvas
+   * Remove an element from the canvas and clean up associated keyframes
    */
   const removeElement = useCallback((id: string) => {
+    // Get the element before removing it to check for timeline data
+    const elementToRemove = canvas.elements.find(element => element.id === id);
+    
+    // Remove the element from canvas
     setCanvas(prev => ({
       ...prev,
       elements: prev.elements.filter(element => element.id !== id),
     }));
     
+    // Clear selection if the removed element was selected
     if (selectedElement === id) {
       setSelectedElement(null);
     }
-  }, [selectedElement]);
+    
+    // Clean up any associated keyframes or timeline markers
+    if (elementToRemove && elementToRemove.timelineData) {
+      // If the element had keyframes, we need to clean them up
+      console.log(`Cleaning up timeline data for element ${id}`);
+      
+      // Remove any markers associated with this element
+      // This assumes markers might be associated with elements by ID
+      const markersToRemove = timeline.markers.filter(marker => 
+        marker.id.includes(id) || marker.name.includes(id)
+      );
+      
+      markersToRemove.forEach(marker => {
+        timeline.removeMarker(marker.id);
+      });
+      
+      // Additional cleanup could be added here if the timeline has other
+      // element-specific data that needs to be removed
+    }
+  }, [selectedElement, canvas.elements, timeline]);
   
   /**
    * Select an element
