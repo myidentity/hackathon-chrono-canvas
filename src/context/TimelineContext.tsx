@@ -172,11 +172,11 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           // Interpolate between keyframes
           const progress = (currentPosition - prevKeyframe.time) / (nextKeyframe.time - prevKeyframe.time);
           
-          // Apply interpolated properties
+            // Apply interpolated properties
           const interpolatedProps = interpolateProperties(prevKeyframe.properties, nextKeyframe.properties, progress);
           
           // Update element with interpolated properties
-          console.log('Applying interpolated properties to element:', element.id, interpolatedProps);
+          console.log('Applying interpolated properties to element:', element.id, interpolatedProps);;
         } else if (prevKeyframe) {
           // Use properties from the last keyframe
           console.log('Applying last keyframe properties to element:', element.id, prevKeyframe.properties);
