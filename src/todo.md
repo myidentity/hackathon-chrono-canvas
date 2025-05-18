@@ -24,6 +24,15 @@
 - [x] Remove labels below images in the image panel
 - [ ] Verify media panel contains audio files and Thailand maps
 
+## README Feature Testing
+- [ ] Test Editor Mode features (element placement, selection, properties panel)
+- [ ] Test Timeline Mode features (keyframes, animations, playback controls)
+- [ ] Test Zine View Mode features (scroll-triggered animations, vertical layout)
+- [ ] Test Presentation Mode features (clean view, playback controls)
+- [ ] Test theme switching (light, dark, system)
+- [ ] Test image upload and drag-and-drop functionality
+- [ ] Test responsive design on different viewport sizes
+
 ## Final Testing
 - [ ] Comprehensive testing of all fixed features
 - [ ] Report and send test summary to user
