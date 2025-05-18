@@ -114,6 +114,11 @@ const Canvas: React.FC<CanvasProps> = ({ mode = 'editor' }) => {
         className={`w-full h-full overflow-auto ${showGrid ? 'bg-grid' : 'bg-white'}`}
         style={{ 
           cursor: isPanning ? 'grabbing' : 'default',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -127,6 +132,9 @@ const Canvas: React.FC<CanvasProps> = ({ mode = 'editor' }) => {
             height: '3000px',
             transform: `scale(${zoom})`,
             transformOrigin: '0 0',
+            position: 'absolute',
+            top: 0,
+            left: 0
           }}
         >
           {/* Render all elements */}
