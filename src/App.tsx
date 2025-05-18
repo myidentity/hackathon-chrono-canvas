@@ -1,72 +1,104 @@
-/**
- * Main App component for ChronoCanvas
- * 
- * This component serves as the entry point for the application and
- * provides the overall layout and context providers.
- */
-
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { CanvasProvider } from './context/CanvasContext';
 import { TimelineProvider } from './context/TimelineContext';
-import { ThemeProvider } from './context/ThemeContext';
-import { ImageLibraryProvider } from './context/ImageLibraryContext';
-import Header from './components/UI/Header';
-import ResizableElementLibrary from './components/ElementLibrary/ResizableElementLibrary';
+import Canvas from './components/Canvas/Canvas';
 import EnhancedCanvas from './components/Canvas/EnhancedCanvas';
-import PropertyPanel from './components/PropertyPanel/PropertyPanel';
 import EnhancedTimeline from './components/Timeline/EnhancedTimeline';
+import PropertyPanel from './components/PropertyPanel/PropertyPanel';
+import ElementLibrary from './components/ElementLibrary/ElementLibrary';
+import './App.css';
 
-/**
- * View mode type
- */
-type ViewMode = 'editor' | 'timeline' | 'zine' | 'presentation';
-
-/**
- * Main App component
- */
 function App() {
-  // State for view mode
-  const [viewMode, setViewMode] = useState<ViewMode>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'timeline' | 'zine' | 'presentation'>('editor');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
   
   return (
-    <ThemeProvider>
+    <CanvasProvider>
       <TimelineProvider>
-        <CanvasProvider>
-          <ImageLibraryProvider>
-            <div className="flex flex-col h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-              {/* Header */}
-              <Header viewMode={viewMode} onViewModeChange={setViewMode} />
-              
-              {/* Main content */}
-              <div className="flex flex-1 overflow-hidden">
-                {/* Left sidebar - Element library with resizable functionality */}
-                {viewMode === 'editor' && (
-                  <ResizableElementLibrary defaultWidth={280} minWidth={200} maxWidth={500} />
-                )}
-                
-                {/* Main canvas area */}
-                <div className="flex-1 overflow-hidden">
-                  <EnhancedCanvas viewMode={viewMode} />
-                </div>
-                
-                {/* Right sidebar - Property panel */}
-                {viewMode === 'editor' && (
-                  <div className="w-64 border-l border-gray-200 dark:border-gray-700 overflow-y-auto">
-                    <PropertyPanel mode={viewMode} />
-                  </div>
-                )}
-              </div>
-              
-              {/* Timeline panel - Adjusted to match canvas width */}
-              <div className="border-t border-gray-200 dark:border-gray-700 overflow-hidden" 
-                   style={{ height: viewMode === 'zine' ? '180px' : '200px' }}>
-                <EnhancedTimeline mode={viewMode} />
-              </div>
+        <div className={`app ${theme}`}>
+          <header className="app-header">
+            <div className="logo">
+              <span className="material-icons text-indigo-600">dashboard</span>
+              <h1>ChronoCanvas</h1>
             </div>
-          </ImageLibraryProvider>
-        </CanvasProvider>
+            
+            <div className="tabs">
+              <button 
+                className={activeTab === 'editor' ? 'active' : ''}
+                onClick={() => setActiveTab('editor')}
+              >
+                <span className="material-icons">edit</span>
+                Editor
+              </button>
+              <button 
+                className={activeTab === 'timeline' ? 'active' : ''}
+                onClick={() => setActiveTab('timeline')}
+              >
+                <span className="material-icons">timeline</span>
+                Timeline
+              </button>
+              <button 
+                className={activeTab === 'zine' ? 'active' : ''}
+                onClick={() => setActiveTab('zine')}
+              >
+                <span className="material-icons">view_carousel</span>
+                Zine View
+              </button>
+              <button 
+                className={activeTab === 'presentation' ? 'active' : ''}
+                onClick={() => setActiveTab('presentation')}
+              >
+                <span className="material-icons">slideshow</span>
+                Presentation
+              </button>
+            </div>
+            
+            <div className="controls">
+              <button onClick={toggleTheme} title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}>
+                <span className="material-icons">
+                  {theme === 'light' ? 'light_mode' : 'dark_mode'}
+                </span>
+              </button>
+              <button title="Settings">
+                <span className="material-icons">settings_suggest</span>
+              </button>
+              <button title="Save Project">
+                <span className="material-icons">save</span>
+              </button>
+              <button title="Share Project">
+                <span className="material-icons">share</span>
+              </button>
+              <button title="Settings">
+                <span className="material-icons">more_vert</span>
+              </button>
+            </div>
+          </header>
+          
+          <main className="app-content">
+            <div className="sidebar">
+              <ElementLibrary />
+            </div>
+            
+            <div className="canvas-container">
+              {/* Use EnhancedCanvas instead of Canvas for better selection handling */}
+              <EnhancedCanvas mode={activeTab} />
+            </div>
+            
+            <div className="properties-panel">
+              <PropertyPanel />
+            </div>
+          </main>
+          
+          <footer className="app-footer">
+            <EnhancedTimeline mode={activeTab} />
+          </footer>
+        </div>
       </TimelineProvider>
-    </ThemeProvider>
+    </CanvasProvider>
   );
 }
 
