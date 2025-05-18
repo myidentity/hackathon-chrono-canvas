@@ -55,42 +55,70 @@ const ToolsPalette: React.FC<ToolsPaletteProps> = ({ className = '', searchQuery
   
   // Handle adding a shape to the canvas
   const handleAddShape = (shape: string, color: string) => {
-    // Create a new shape element
-    const newElement = {
-      id: `shape-${uuidv4().substring(0, 8)}`,
-      type: 'shape',
-      position: { x: 100, y: 100 },
-      size: { width: 100, height: 100 },
-      rotation: 0,
-      backgroundColor: color,
-      shape: shape,
-      opacity: 1,
-      zIndex: 1,
-      timelineData: {
-        entryPoint: 0,
-        exitPoint: null,
-        persist: true,
-        keyframes: [
-          {
-            time: 0,
-            properties: {
-              opacity: 0,
-              scale: 0.8,
-            },
-          },
-          {
-            time: 1,
-            properties: {
-              opacity: 1,
-              scale: 1,
-            },
-          },
-        ],
-      },
-    };
+    // Find matching shape from MD3Shapes or AdditionalShapes
+    let svgContent = '';
     
-    // Add the shape to the canvas
-    addElement(newElement);
+    // Import MD3Shapes and AdditionalShapes
+    import('../../utils/MD3Shapes').then(module => {
+      const MD3Shapes = module.default;
+      import('../../utils/AdditionalShapes').then(additionalModule => {
+        const AdditionalShapes = additionalModule.default;
+        
+        // Try to find matching shape in MD3Shapes
+        const md3Shape = MD3Shapes.find(s => s.id.includes(shape) || s.name.toLowerCase().includes(shape.toLowerCase()));
+        // Try to find matching shape in AdditionalShapes
+        const additionalShape = AdditionalShapes.find(s => s.id.includes(shape) || s.name.toLowerCase().includes(shape.toLowerCase()));
+        
+        // Use the found shape or a default
+        const foundShape = md3Shape || additionalShape;
+        if (foundShape) {
+          svgContent = foundShape.svg;
+        }
+        
+        // Create a new shape element
+        const newElement = {
+          id: `shape-${uuidv4().substring(0, 8)}`,
+          type: 'shape',
+          position: { x: 100, y: 100 },
+          size: { width: 100, height: 100 },
+          rotation: 0,
+          backgroundColor: color,
+          color: color,
+          shape: shape,
+          opacity: 1,
+          zIndex: 1,
+          // Add the SVG content if found
+          svg: svgContent || `<svg viewBox="0 0 24 24" width="100%" height="100%">
+            <rect x="2" y="2" width="20" height="20" fill="currentColor" />
+          </svg>`,
+          timelineData: {
+            entryPoint: 0,
+            exitPoint: null,
+            persist: true,
+            keyframes: [
+              {
+                time: 0,
+                properties: {
+                  opacity: 0,
+                  scale: 0.8,
+                },
+              },
+              {
+                time: 1,
+                properties: {
+                  opacity: 1,
+                  scale: 1,
+                },
+              },
+            ],
+          },
+        };
+        
+        // Add the shape to the canvas
+        addElement(newElement);
+      });
+    });
+    
   };
   
   return (
