@@ -583,7 +583,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
             
             // For keyframe markers, only show them if they belong to the selected element
             // or if they are not keyframe markers (regular markers)
-            if (!isKeyframe || (isKeyframe && selectedElement && marker.id.includes(selectedElement))) {
+            if (!isKeyframe || (isKeyframe && selectedElement && marker.id.indexOf(selectedElement) !== -1)) {
               return (
                 <div 
                   key={marker.id}
