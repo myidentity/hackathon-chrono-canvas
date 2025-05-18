@@ -90,7 +90,7 @@ const ElementLibrary = (): JSX.Element => {
    */
   const handleAddElement = (element: LibraryElement): void => {
     // Create a new canvas element from the library element
-    const newElement = {
+    let newElement = {
       id: `${element.type}-${uuidv4().substring(0, 8)}`,
       type: element.type,
       position: { x: 100, y: 100 },
@@ -121,6 +121,18 @@ const ElementLibrary = (): JSX.Element => {
         ],
       } as TimelineData,
     };
+    
+    // For image elements, ensure src is at the top level
+    if (element.type === 'image') {
+      // If src is in properties, move it to the top level
+      if (element.properties && element.properties.src) {
+        newElement = {
+          ...newElement,
+          src: element.properties.src,
+          alt: element.properties.alt || ''
+        };
+      }
+    }
     
     // Add the element to the canvas
     addElement(newElement);
