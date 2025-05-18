@@ -50,7 +50,8 @@
 
 .stickers-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  /* Use auto-fill to automatically adjust columns based on container width */
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
   grid-auto-rows: min-content;
   gap: 8px;
   padding: 12px;
@@ -90,16 +91,37 @@
   margin-bottom: 4px;
 }
 
-/* Responsive adjustments */
+/* Responsive adjustments based on container width */
+@container (min-width: 350px) {
+  .stickers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  }
+  
+  .sticker-emoji {
+    font-size: 26px;
+  }
+}
+
+@container (min-width: 450px) {
+  .stickers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  }
+  
+  .sticker-emoji {
+    font-size: 28px;
+  }
+}
+
+/* Legacy media queries as fallback */
 @media (max-width: 768px) {
   .stickers-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
   }
 }
 
 @media (max-width: 480px) {
   .stickers-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
   }
   
   .sticker-emoji {

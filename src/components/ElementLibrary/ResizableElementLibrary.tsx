@@ -94,17 +94,41 @@ const ResizableElementLibrary: React.FC<ResizableElementLibraryProps> = ({
       {/* Element Library */}
       <ElementLibrary />
       
-      {/* Resizer handle */}
+      {/* Resizer handle with improved visual cues */}
       <div
-        className={`absolute top-0 right-0 w-2 h-full cursor-col-resize ${
-          isResizing ? 'bg-blue-500 opacity-50' : 'hover:bg-blue-300 hover:opacity-50'
+        className={`absolute top-0 right-0 h-full flex items-center justify-center ${
+          isResizing ? 'z-50' : 'z-10'
         }`}
-        onMouseDown={handleMouseDown}
         style={{ 
+          width: '8px',
           cursor: 'col-resize',
-          zIndex: 10
         }}
-      />
+        onMouseDown={handleMouseDown}
+        title="Drag to resize panel"
+      >
+        {/* Visual divider with grip dots */}
+        <div 
+          className={`h-full w-1 ${
+            isResizing ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
+          }`}
+        />
+        
+        {/* Grip dots for better visual indication */}
+        <div className="absolute inset-y-0 flex flex-col justify-center items-center pointer-events-none">
+          <div className="flex flex-col space-y-1">
+            {[...Array(5)].map((_, i) => (
+              <div 
+                key={i} 
+                className={`w-1.5 h-1.5 rounded-full ${
+                  isResizing 
+                    ? 'bg-blue-600' 
+                    : 'bg-gray-400 dark:bg-gray-500'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

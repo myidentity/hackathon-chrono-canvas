@@ -8,10 +8,42 @@
 import { v4 as uuidv4 } from 'uuid';
 
 // Shape types
-export type ShapeType = 'rectangle' | 'circle' | 'triangle' | 'star' | 'hexagon' | 'pentagon' | 'diamond' | 'arrow';
+export type ShapeType = 
+  'rectangle' | 
+  'circle' | 
+  'triangle' | 
+  'star' | 
+  'hexagon' | 
+  'pentagon' | 
+  'diamond' | 
+  'arrow' | 
+  'octagon' | 
+  'trapezoid' | 
+  'parallelogram' | 
+  'rhombus' | 
+  'heart' | 
+  'oval' | 
+  'crescent' | 
+  'cross';
 
 // Symbol types
-export type SymbolType = 'heart' | 'cloud' | 'lightning' | 'music' | 'check' | 'cross' | 'plus' | 'minus';
+export type SymbolType = 
+  'heart' | 
+  'cloud' | 
+  'lightning' | 
+  'music' | 
+  'check' | 
+  'cross' | 
+  'plus' | 
+  'minus' | 
+  'star' | 
+  'flag' | 
+  'pin' | 
+  'location' | 
+  'speech' | 
+  'thought' | 
+  'sun' | 
+  'moon';
 
 // Element interface
 export interface CanvasElement {
@@ -62,6 +94,11 @@ export const getRandomColor = (): string => {
     '#FF9F1C', // Amber
     '#8338EC', // Indigo
     '#06D6A0', // Mint
+    '#FB5607', // Burnt Orange
+    '#3A0CA3', // Deep Purple
+    '#4361EE', // Royal Blue
+    '#B5179E', // Magenta
+    '#560BAD', // Violet Purple
   ];
   
   return colors[Math.floor(Math.random() * colors.length)];
@@ -250,6 +287,14 @@ export const generateRandomElements = (
     'pentagon',
     'diamond',
     'arrow',
+    'octagon',
+    'trapezoid',
+    'parallelogram',
+    'rhombus',
+    'heart',
+    'oval',
+    'crescent',
+    'cross'
   ];
   
   // Available symbol types
@@ -262,6 +307,14 @@ export const generateRandomElements = (
     'cross',
     'plus',
     'minus',
+    'star',
+    'flag',
+    'pin',
+    'location',
+    'speech',
+    'thought',
+    'sun',
+    'moon'
   ];
   
   for (let i = 0; i < count; i++) {
@@ -279,6 +332,54 @@ export const generateRandomElements = (
   return elements;
 };
 
+/**
+ * Get all available shape types
+ */
+export const getAllShapeTypes = (): ShapeType[] => {
+  return [
+    'rectangle',
+    'circle',
+    'triangle',
+    'star',
+    'hexagon',
+    'pentagon',
+    'diamond',
+    'arrow',
+    'octagon',
+    'trapezoid',
+    'parallelogram',
+    'rhombus',
+    'heart',
+    'oval',
+    'crescent',
+    'cross'
+  ];
+};
+
+/**
+ * Get all available symbol types
+ */
+export const getAllSymbolTypes = (): SymbolType[] => {
+  return [
+    'heart',
+    'cloud',
+    'lightning',
+    'music',
+    'check',
+    'cross',
+    'plus',
+    'minus',
+    'star',
+    'flag',
+    'pin',
+    'location',
+    'speech',
+    'thought',
+    'sun',
+    'moon'
+  ];
+};
+
 export default {
   getRandomColor,
   getRandomPosition,
@@ -287,4 +388,6 @@ export default {
   createShapeElement,
   createSymbolElement,
   generateRandomElements,
+  getAllShapeTypes,
+  getAllSymbolTypes
 };

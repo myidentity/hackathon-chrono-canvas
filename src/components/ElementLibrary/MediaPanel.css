@@ -1,0 +1,55 @@
+.media-panel {
+  padding: 10px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.media-section {
+  margin-bottom: 20px;
+}
+
+.media-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.media-item {
+  width: 80px;
+  height: 80px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.media-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.map-item {
+  width: 120px;
+  height: 150px;
+}
+
+.audio-item {
+  background-color: #f0f8ff;
+  color: #4a90e2;
+}
+
+.audio-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
