@@ -6,6 +6,7 @@
  */
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 // Type definitions
 export interface KeyframeProperty {
@@ -102,7 +103,7 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
    * Add a new element to the canvas
    */
   const addElement = useCallback((element: Partial<CanvasElement>) => {
-    const id = `element-${Date.now()}`;
+    const id = `element-${uuidv4()}`;
     const newElement: CanvasElement = {
       id,
       type: element.type || 'shape',
