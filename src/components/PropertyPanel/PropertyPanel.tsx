@@ -40,7 +40,7 @@ interface PropertyPanelProps {
 const PropertyPanel: React.FC<PropertyPanelProps> = () => {
   // Get canvas and timeline context
   const { canvas, selectedElement, updateElement, removeElement } = useCanvas();
-  const { currentPosition, addMarker } = useTimeline();
+  const { currentPosition, addMarker, setPosition } = useTimeline();
   
   // State for property editing
   const [elementProperties, setElementProperties] = useState<Partial<CanvasElement> | null>(null);
@@ -194,6 +194,11 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
     if (selectedElement) {
       removeElement(selectedElement);
     }
+  };
+
+  // Handle keyframe click to navigate to that position
+  const handleKeyframeClick = (time: number) => {
+    setPosition(time);
   };
   
   // If no element is selected, show empty state
@@ -473,9 +478,41 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
             <span className="material-icons mr-1" style={{ fontSize: '16px' }}>add_circle</span>
             Add Keyframe
           </button>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Keyframes: {elementProperties.timelineData?.keyframes?.length || 0}
-          </div>
+        </div>
+        
+        {/* Keyframe List */}
+        <div className="mt-4">
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Keyframes
+          </h4>
+          {(!elementProperties.timelineData?.keyframes || elementProperties.timelineData.keyframes.length === 0) ? (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              No keyframes added yet
+            </p>
+          ) : (
+            <div className="border border-gray-300 dark:border-gray-600 rounded overflow-hidden">
+              <div className="max-h-40 overflow-y-auto">
+                {elementProperties.timelineData.keyframes.map((keyframe, index) => (
+                  <div 
+                    key={`keyframe-${index}`}
+                    className={`flex justify-between items-center p-2 text-sm border-b border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer ${
+                      Math.abs(keyframe.time - currentPosition) < 0.1 ? 'bg-blue-100 dark:bg-blue-900' : ''
+                    }`}
+                    onClick={() => handleKeyframeClick(keyframe.time)}
+                  >
+                    <div className="flex items-center">
+                      <span className="material-icons text-blue-500 mr-2" style={{ fontSize: '16px' }}>
+                        diamond
+                      </span>
+                      <span className="text-gray-800 dark:text-gray-200">
+                        {keyframe.time.toFixed(1)}s
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
