@@ -92,7 +92,9 @@ const ShapeElement: React.FC<ShapeElementProps> = ({ element, isSelected, onClic
       {element.svg && (
         <div 
           dangerouslySetInnerHTML={{ 
-            __html: element.svg.replace('currentColor', element.color || '#333333')
+            __html: element.svg.includes('<svg') 
+              ? element.svg.replace('currentColor', element.color || '#333333')
+              : `<svg viewBox="0 0 100 100" width="100%" height="100%"><path d="${element.svg}" fill="${element.color || '#333333'}" /></svg>`
           }}
           style={{
             width: '100%',
