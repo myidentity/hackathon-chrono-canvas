@@ -201,6 +201,32 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
     setPosition(time);
   };
   
+  // Handle keyframe deletion
+  const handleDeleteKeyframe = (e: React.MouseEvent, index: number) => {
+    e.stopPropagation(); // Prevent triggering the click event on the parent div
+    
+    if (!elementProperties || !selectedElement || !elementProperties.timelineData?.keyframes) return;
+    
+    // Create a copy of the keyframes array without the deleted keyframe
+    const updatedKeyframes = [...elementProperties.timelineData.keyframes];
+    updatedKeyframes.splice(index, 1);
+    
+    // Create updated timeline data
+    const timelineData: TimelineDataType = {
+      ...elementProperties.timelineData,
+      keyframes: updatedKeyframes,
+    };
+    
+    // Update local state
+    setElementProperties({
+      ...elementProperties,
+      timelineData,
+    });
+    
+    // Update element in canvas context
+    updateElement(selectedElement, { timelineData: timelineData as any });
+  };
+  
   // If no element is selected, show empty state
   if (!elementProperties || !selectedElementData) {
     return (
@@ -508,6 +534,14 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
                         {keyframe.time.toFixed(1)}s
                       </span>
                     </div>
+                    <button
+                      className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                      onClick={(e) => handleDeleteKeyframe(e, index)}
+                      title="Delete keyframe"
+                      aria-label="Delete keyframe"
+                    >
+                      <span className="material-icons" style={{ fontSize: '16px' }}>delete</span>
+                    </button>
                   </div>
                 ))}
               </div>
