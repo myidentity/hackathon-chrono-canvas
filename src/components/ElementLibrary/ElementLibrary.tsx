@@ -36,7 +36,7 @@ interface LibraryElement {
  * 
  * @returns {JSX.Element} The rendered ElementLibrary component
  */
-function ElementLibrary(): JSX.Element {
+const ElementLibrary = (): JSX.Element => {
   // Get canvas context
   const { addElement, clearCanvas } = useCanvas();
   
@@ -387,6 +387,6 @@ function ElementLibrary(): JSX.Element {
       )}
     </div>
   );
-}
+};
 
 export default ElementLibrary;
