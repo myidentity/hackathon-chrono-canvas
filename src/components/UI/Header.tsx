@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import ThemeSwitcher from './ThemeSwitcher';
 
 // Type definitions
 interface HeaderProps {
@@ -89,6 +90,9 @@ const Header: React.FC<HeaderProps> = ({ viewMode, onViewModeChange, 'data-testi
         
         {/* Right actions */}
         <div className="flex items-center space-x-2">
+          {/* Theme Switcher */}
+          <ThemeSwitcher className="mr-4" />
+          
           <button
             className="p-2 rounded-md text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
             title="Save Project"
