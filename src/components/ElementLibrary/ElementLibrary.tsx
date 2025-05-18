@@ -288,8 +288,7 @@ const ElementLibrary = (): JSX.Element => {
           { label: 'Stickers', value: 'stickers' },
           { label: 'Shapes', value: 'shapes' },
           { label: 'Text', value: 'text' },
-          { label: 'Media', value: 'media' },
-          { label: 'Images', value: 'images' }
+          { label: 'Media', value: 'media' }
         ]}
         value={activeCategory}
         onChange={handleCategoryChange}
