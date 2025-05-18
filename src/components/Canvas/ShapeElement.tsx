@@ -45,6 +45,8 @@ const ShapeElement: React.FC<ShapeElementProps> = ({ element, isSelected, onClic
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging && isSelected) {
       e.stopPropagation(); // Prevent canvas panning when dragging element
+      e.preventDefault(); // Prevent default browser behavior
+      
       const deltaX = e.clientX - dragStart.x;
       const deltaY = e.clientY - dragStart.y;
       
@@ -77,7 +79,9 @@ const ShapeElement: React.FC<ShapeElementProps> = ({ element, isSelected, onClic
         cursor: isSelected ? 'move' : 'pointer',
         zIndex: element.zIndex || 1,
         color: element.color || '#333333',
-        backgroundColor: element.backgroundColor || 'transparent'
+        backgroundColor: element.backgroundColor || 'transparent',
+        transform: `rotate(${element.rotation || 0}deg)`,
+        opacity: element.opacity !== undefined ? element.opacity : 1
       }}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
