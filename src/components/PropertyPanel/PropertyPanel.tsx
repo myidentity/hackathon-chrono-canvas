@@ -8,6 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCanvas, CanvasElement } from '../../context/CanvasContext';
 import { useTimeline, TimelineMarker } from '../../context/TimelineContext';
+import ColorPicker from '../UI/ColorPicker';
 
 interface PropertyPanelProps {
   mode?: 'editor' | 'timeline' | 'zine' | 'presentation';
@@ -157,25 +158,25 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
   // If no element is selected, show empty state
   if (!elementProperties || !selectedElementData) {
     return (
-      <div className="w-64 bg-gray-100 border-l border-gray-200 p-4 overflow-y-auto">
-        <h2 className="text-lg font-semibold mb-4">Properties</h2>
-        <p className="text-gray-500 text-sm">No element selected</p>
+      <div className="w-64 bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 p-4 overflow-y-auto">
+        <h2 className="text-lg font-semibold mb-4 dark:text-gray-100">Properties</h2>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">No element selected</p>
       </div>
     );
   }
   
   return (
-    <div className="w-64 bg-gray-100 border-l border-gray-200 p-4 overflow-y-auto">
-      <h2 className="text-lg font-semibold mb-4">Properties</h2>
+    <div className="w-64 bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 p-4 overflow-y-auto">
+      <h2 className="text-lg font-semibold mb-4 dark:text-gray-100">Properties</h2>
       
       {/* Element ID */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Element ID
         </label>
         <input 
           type="text"
-          className="w-full bg-gray-200 border border-gray-300 rounded px-3 py-2 text-sm"
+          className="w-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm dark:text-gray-200"
           value={elementProperties.id}
           disabled
         />
@@ -183,12 +184,12 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
       
       {/* Element Type */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Type
         </label>
         <input 
           type="text"
-          className="w-full bg-gray-200 border border-gray-300 rounded px-3 py-2 text-sm"
+          className="w-full bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm dark:text-gray-200"
           value={elementProperties.type}
           disabled
         />
@@ -196,24 +197,24 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
       
       {/* Position */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Position
         </label>
         <div className="flex space-x-2">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">X</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">X</label>
             <input 
               type="number"
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
               value={elementProperties.position?.x || 0}
               onChange={(e) => handlePropertyChange('position.x', parseInt(e.target.value) || 0)}
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Y</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Y</label>
             <input 
               type="number"
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
               value={elementProperties.position?.y || 0}
               onChange={(e) => handlePropertyChange('position.y', parseInt(e.target.value) || 0)}
             />
@@ -223,24 +224,24 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
       
       {/* Size */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Size
         </label>
         <div className="flex space-x-2">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Width</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Width</label>
             <input 
               type="number"
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
               value={elementProperties.size?.width || 0}
               onChange={(e) => handlePropertyChange('size.width', parseInt(e.target.value) || 0)}
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Height</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Height</label>
             <input 
               type="number"
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
               value={elementProperties.size?.height || 0}
               onChange={(e) => handlePropertyChange('size.height', parseInt(e.target.value) || 0)}
             />
@@ -250,12 +251,12 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
       
       {/* Rotation */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Rotation (degrees)
         </label>
         <input 
           type="number"
-          className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+          className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
           value={elementProperties.rotation || 0}
           onChange={(e) => handlePropertyChange('rotation', parseInt(e.target.value) || 0)}
         />
@@ -263,31 +264,31 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
       
       {/* Opacity */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Opacity
         </label>
         <input 
           type="range"
-          className="w-full"
+          className="w-full accent-blue-600 dark:accent-blue-400"
           min="0"
           max="1"
           step="0.01"
           value={elementProperties.opacity !== undefined ? elementProperties.opacity : 1}
           onChange={(e) => handlePropertyChange('opacity', parseFloat(e.target.value))}
         />
-        <div className="text-xs text-gray-500 text-right">
+        <div className="text-xs text-gray-500 dark:text-gray-400 text-right">
           {((elementProperties.opacity !== undefined ? elementProperties.opacity : 1) * 100).toFixed(0)}%
         </div>
       </div>
       
       {/* Z-Index */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Z-Index
         </label>
         <input 
           type="number"
-          className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+          className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
           value={elementProperties.zIndex || 0}
           onChange={(e) => handlePropertyChange('zIndex', parseInt(e.target.value) || 0)}
         />
@@ -319,29 +320,29 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
       
       {elementProperties.type === 'text' && (
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Text Content
           </label>
           <textarea 
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
             value={elementProperties.content || ''}
             onChange={(e) => handlePropertyChange('content', e.target.value)}
             rows={3}
           />
           <div className="grid grid-cols-2 gap-2 mt-2">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Font Size</label>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Font Size</label>
               <input 
                 type="text"
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
                 value={elementProperties.fontSize || '16px'}
                 onChange={(e) => handlePropertyChange('fontSize', e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Font Weight</label>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Font Weight</label>
               <select 
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
                 value={elementProperties.fontWeight || 'normal'}
                 onChange={(e) => handlePropertyChange('fontWeight', e.target.value)}
               >
@@ -351,19 +352,15 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
                 <option value="bolder">Bolder</option>
               </select>
             </div>
+            <ColorPicker
+              color={elementProperties.color || '#000000'}
+              onChange={(color) => handlePropertyChange('color', color)}
+              label="Text Color"
+            />
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Color</label>
-              <input 
-                type="color"
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm h-10"
-                value={elementProperties.color || '#000000'}
-                onChange={(e) => handlePropertyChange('color', e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Text Align</label>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Text Align</label>
               <select 
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
                 value={elementProperties.textAlign || 'left'}
                 onChange={(e) => handlePropertyChange('textAlign', e.target.value)}
               >

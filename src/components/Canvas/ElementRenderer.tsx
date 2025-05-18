@@ -261,7 +261,7 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
   const debugInfo = () => {
     if (viewMode === 'editor' || viewMode === 'timeline') {
       return (
-        <div className="absolute -top-6 left-0 text-xs bg-white bg-opacity-80 px-1 rounded">
+        <div className="absolute -top-6 left-0 text-xs bg-white dark:bg-gray-800 bg-opacity-80 dark:bg-opacity-80 px-1 rounded text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600">
           ID: {element.id.substring(0, 4)}
           {element.timelineData && (
             <>
