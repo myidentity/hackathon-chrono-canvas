@@ -2,11 +2,52 @@
  * TravelStickers component for providing a rich collection of travel-themed stickers
  * Includes comprehensive categories covering all aspects of travel experiences
  */
-import React from 'react';
+import React, { useState } from 'react';
 import './TravelStickers.css';
 
+/**
+ * Interface for sticker item
+ */
+interface StickerItem {
+  id: string;
+  emoji: string;
+  name: string;
+  color: string;
+}
+
+/**
+ * Interface for sticker data passed to parent component
+ */
+export interface StickerData {
+  type: 'sticker';
+  stickerType: string;
+  emoji: string;
+  name: string;
+  color: string;
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+  rotation: number;
+  opacity: number;
+  zIndex: number;
+}
+
+/**
+ * Interface for TravelStickers props
+ */
+interface TravelStickersProps {
+  onSelectSticker: (stickerData: StickerData) => void;
+  searchQuery?: string;
+}
+
+/**
+ * Type for sticker categories
+ */
+type StickerCategories = Record<string, StickerItem[]>;
+
 // Sticker data structure with categories and items
-const travelStickers = {
+const travelStickers: StickerCategories = {
   happiness: [
     { id: 'happy-sun', emoji: '☀️', name: 'Happy Sun', color: '#FFD700' },
     { id: 'beach', emoji: '🏖️', name: 'Beach Scene', color: '#87CEEB' },
@@ -249,10 +290,46 @@ const travelStickers = {
   ]
 };
 
-const TravelStickers = ({ onSelectSticker }) => {
-  const [activeCategory, setActiveCategory] = React.useState('happiness');
+/**
+ * TravelStickers component that provides a rich collection of travel-themed stickers
+ * 
+ * @param {TravelStickersProps} props - Component props
+ * @returns {JSX.Element} The rendered TravelStickers component
+ */
+const TravelStickers: React.FC<TravelStickersProps> = ({ onSelectSticker, searchQuery = '' }) => {
+  const [activeCategory, setActiveCategory] = useState<string>('happiness');
 
-  const handleStickerClick = (sticker) => {
+  // Filter stickers based on search query
+  const filteredStickers = searchQuery 
+    ? Object.entries(travelStickers).reduce((acc, [category, stickers]) => {
+        const filtered = stickers.filter(sticker => 
+          sticker.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        if (filtered.length > 0) {
+          acc[category] = filtered;
+        }
+        return acc;
+      }, {} as StickerCategories)
+    : travelStickers;
+
+  // Get categories to display
+  const categoriesToDisplay = searchQuery 
+    ? Object.keys(filteredStickers)
+    : Object.keys(travelStickers);
+
+  // Set active category if current one is not in filtered results
+  React.useEffect(() => {
+    if (searchQuery && categoriesToDisplay.length > 0 && !categoriesToDisplay.includes(activeCategory)) {
+      setActiveCategory(categoriesToDisplay[0]);
+    }
+  }, [searchQuery, categoriesToDisplay, activeCategory]);
+
+  /**
+   * Handle sticker click
+   * 
+   * @param {StickerItem} sticker - The clicked sticker
+   */
+  const handleStickerClick = (sticker: StickerItem) => {
     if (onSelectSticker) {
       onSelectSticker({
         type: 'sticker',
@@ -271,10 +348,26 @@ const TravelStickers = ({ onSelectSticker }) => {
     }
   };
 
+  // If no categories to display, show message
+  if (categoriesToDisplay.length === 0) {
+    return (
+      <div className="travel-stickers-container">
+        <div className="no-results">
+          No stickers found matching "{searchQuery}"
+        </div>
+      </div>
+    );
+  }
+
+  // Get current stickers to display
+  const currentStickers = searchQuery 
+    ? filteredStickers[activeCategory] || []
+    : travelStickers[activeCategory];
+
   return (
     <div className="travel-stickers-container">
       <div className="sticker-categories">
-        {Object.keys(travelStickers).map((category) => (
+        {categoriesToDisplay.map((category) => (
           <button
             key={category}
             className={`category-button ${activeCategory === category ? 'active' : ''}`}
@@ -286,7 +379,7 @@ const TravelStickers = ({ onSelectSticker }) => {
       </div>
       
       <div className="stickers-grid">
-        {travelStickers[activeCategory].map((sticker) => (
+        {currentStickers.map((sticker) => (
           <div
             key={sticker.id}
             className="sticker-item"
@@ -295,7 +388,7 @@ const TravelStickers = ({ onSelectSticker }) => {
             title={sticker.name}
           >
             <span className="sticker-emoji">{sticker.emoji}</span>
-            {/* Labels removed as per user request */}
+            <span className="sticker-name">{sticker.name}</span>
           </div>
         ))}
       </div>

@@ -5,7 +5,15 @@
  */
 
 import React, { useState } from 'react';
-import { useTimeline, TimelineMarker } from '../../context/TimelineContext';
+import { useTimeline } from '../../context/TimelineContext';
+
+// Define TimelineMarker interface
+interface TimelineMarker {
+  id: string;
+  position: number;
+  name: string;
+  color: string;
+}
 
 interface TimelineProps {
   mode?: 'editor' | 'timeline' | 'zine' | 'presentation';
@@ -15,7 +23,7 @@ interface TimelineProps {
  * Timeline component
  * Renders timeline controls and markers
  */
-const Timeline: React.FC<TimelineProps> = ({ mode = 'timeline' }) => {
+const Timeline: React.FC<TimelineProps> = () => {
   // Get timeline context
   const { 
     currentPosition, 
@@ -27,38 +35,45 @@ const Timeline: React.FC<TimelineProps> = ({ mode = 'timeline' }) => {
     setPosition,
     setPlaybackSpeed,
     addMarker,
-    removeMarker,
-    setCurrentPosition,
-    play,
-    pause,
     seekToMarker
   } = useTimeline();
   
   // State for marker creation
-  const [showAddMarker, setShowAddMarker] = useState(false);
-  const [markerName, setMarkerName] = useState('');
-  const [markerColor, setMarkerColor] = useState('#3b82f6');
+  const [showAddMarker, setShowAddMarker] = useState<boolean>(false);
+  const [markerName, setMarkerName] = useState<string>('');
+  const [markerColor, setMarkerColor] = useState<string>('#3b82f6');
   
-  // Format time as MM:SS
-  const formatTime = (seconds: number) => {
+  /**
+   * Format time as MM:SS
+   * 
+   * @param {number} seconds - Time in seconds
+   * @returns {string} Formatted time string
+   */
+  const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
-  // Handle timeline click for seeking
-  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  /**
+   * Handle timeline click for seeking
+   * 
+   * @param {React.MouseEvent<HTMLDivElement>} e - Mouse event
+   */
+  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>): void => {
     const timeline = e.currentTarget;
     const rect = timeline.getBoundingClientRect();
     const clickPosition = e.clientX - rect.left;
     const percentage = clickPosition / rect.width;
-    const newPosition = percentage * duration;
+    const newPosition = percentage * (duration || 60);
     
     setPosition(newPosition);
   };
   
-  // Handle marker creation
-  const handleAddMarker = () => {
+  /**
+   * Handle marker creation
+   */
+  const handleAddMarker = (): void => {
     if (markerName.trim()) {
       const newMarker: TimelineMarker = {
         id: `marker-${Date.now()}`,
@@ -73,6 +88,9 @@ const Timeline: React.FC<TimelineProps> = ({ mode = 'timeline' }) => {
     }
   };
   
+  // Calculate timeline progress percentage safely
+  const progressPercentage = duration ? (currentPosition / duration) * 100 : (currentPosition / 60) * 100;
+  
   return (
     <div className="w-full bg-gray-100 border-t border-gray-200 p-4">
       {/* Timeline track */}
@@ -83,31 +101,35 @@ const Timeline: React.FC<TimelineProps> = ({ mode = 'timeline' }) => {
         {/* Timeline progress */}
         <div 
           className="h-full bg-indigo-500 rounded-full"
-          style={{ width: `${(currentPosition / duration) * 100}%` }}
+          style={{ width: `${progressPercentage}%` }}
         />
         
         {/* Current position indicator */}
         <div 
           className="absolute top-0 w-4 h-8 bg-indigo-700 rounded-full -ml-2"
-          style={{ left: `${(currentPosition / duration) * 100}%` }}
+          style={{ left: `${progressPercentage}%` }}
         />
         
         {/* Markers */}
-        {markers.map(marker => (
-          <div 
-            key={marker.id}
-            className="absolute top-0 w-2 h-8 -ml-1 cursor-pointer"
-            style={{ 
-              left: `${(marker.position / duration) * 100}%`,
-              backgroundColor: marker.color || '#3b82f6'
-            }}
-            title={marker.name}
-            onClick={(e) => {
-              e.stopPropagation();
-              seekToMarker(marker.id);
-            }}
-          />
-        ))}
+        {markers.map((marker) => {
+          const markerPosition = duration ? (marker.position / duration) * 100 : (marker.position / 60) * 100;
+          
+          return (
+            <div 
+              key={marker.id}
+              className="absolute top-0 w-2 h-8 -ml-1 cursor-pointer"
+              style={{ 
+                left: `${markerPosition}%`,
+                backgroundColor: marker.color || '#3b82f6'
+              }}
+              title={marker.name}
+              onClick={(e) => {
+                e.stopPropagation();
+                seekToMarker(marker.id);
+              }}
+            />
+          );
+        })}
       </div>
       
       {/* Controls */}
@@ -115,13 +137,13 @@ const Timeline: React.FC<TimelineProps> = ({ mode = 'timeline' }) => {
         <div className="flex items-center space-x-2">
           {/* Time display */}
           <div className="text-sm font-mono">
-            {formatTime(currentPosition)} / {formatTime(duration)}
+            {formatTime(currentPosition)} / {formatTime(duration || 60)}
           </div>
           
           {/* Playback speed */}
           <select 
             className="ml-4 bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-            value={playbackSpeed}
+            value={playbackSpeed.toString()}
             onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
           >
             <option value="0.5">0.5x</option>

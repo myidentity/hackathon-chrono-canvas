@@ -1,9 +1,18 @@
 import React from 'react';
-import { useCanvas } from '../../context/CanvasContext';
-import { useTimeline } from '../../context/TimelineContext';
+// Remove unused imports to fix TypeScript errors
+// import { useCanvas } from '../../context/CanvasContext';
+// import { useTimeline } from '../../context/TimelineContext';
 
 interface AudioElementProps {
-  element: any;
+  element: {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    zIndex?: number;
+    name?: string;
+    position?: { x: number; y: number };
+  };
   isEditor: boolean;
 }
 
@@ -13,12 +22,16 @@ const AudioElement: React.FC<AudioElementProps> = ({ element, isEditor }) => {
     return null;
   }
 
+  // Handle both x/y and position.x/position.y formats
+  const xPos = element.position ? element.position.x : (element.x || 0);
+  const yPos = element.position ? element.position.y : (element.y || 0);
+
   return (
     <div
       style={{
         position: 'absolute',
-        left: element.x,
-        top: element.y,
+        left: xPos,
+        top: yPos,
         width: element.width || 200,
         height: element.height || 50,
         border: '1px solid #1976d2',

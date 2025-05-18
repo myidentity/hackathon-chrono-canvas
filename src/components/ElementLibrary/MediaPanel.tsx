@@ -18,8 +18,8 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ onSelectMedia }) => {
       '/audio/thailand-travel.mp3',
       '/audio/asia-travel.mp3',
       '/audio/bali-nature.mp3',
-      '/audio/upbeat-travel.mp3',
-      '/audio/nature-sounds.mp3'
+      '/audio/music-tour-in-countryside.mp3',
+      '/audio/thailand-rnb-soulful-music.mp3'
     ];
     setAudioClips(audioFiles);
 

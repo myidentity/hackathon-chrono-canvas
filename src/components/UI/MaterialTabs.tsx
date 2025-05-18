@@ -5,7 +5,7 @@
  * and other areas of the application.
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import './MaterialTabs.css';
 
 interface TabProps {
@@ -17,12 +17,19 @@ interface TabProps {
 
 /**
  * Individual Tab component with Material Design styling
+ * 
+ * @param {TabProps} props - Component properties
+ * @returns {JSX.Element} Rendered component
  */
 const Tab: React.FC<TabProps> = ({ label, value, active, onClick }) => {
   const tabRef = useRef<HTMLButtonElement>(null);
   
-  // Handle ripple effect on click
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  /**
+   * Handle ripple effect on click
+   * 
+   * @param {React.MouseEvent<HTMLButtonElement>} e - Mouse event
+   */
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>): void => {
     const button = tabRef.current;
     if (!button) return;
     
@@ -78,6 +85,9 @@ interface MaterialTabsProps {
 /**
  * MaterialTabs component
  * Provides Material Design styled tabs
+ * 
+ * @param {MaterialTabsProps} props - Component properties
+ * @returns {JSX.Element} Rendered component
  */
 const MaterialTabs: React.FC<MaterialTabsProps> = ({ 
   tabs, 

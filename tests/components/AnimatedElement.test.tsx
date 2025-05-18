@@ -4,10 +4,34 @@
  * This file contains tests for the AnimatedElement component.
  */
 
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import AnimatedElement from '../../src/components/Animation/AnimatedElement';
 import { TimelineProvider } from '../../src/context/TimelineContext';
+
+// Define element type for testing
+interface TestElement {
+  id: string;
+  type: string;
+  position: { x: number; y: number; z?: number };
+  size: { width: number; height: number };
+  rotation: number;
+  opacity: number;
+  properties?: Record<string, any>;
+  timelineData?: {
+    entryPoint?: number;
+    exitPoint?: number | null;
+    persist?: boolean;
+    keyframes?: Array<{
+      time: number;
+      properties: {
+        opacity?: number;
+        position?: { x: number; y: number };
+        rotation?: number;
+        [key: string]: any;
+      };
+    }>;
+  };
+}
 
 // Mock the useTimeline hook
 jest.mock('../../src/context/TimelineContext', () => {
@@ -22,7 +46,7 @@ jest.mock('../../src/context/TimelineContext', () => {
 });
 
 describe('AnimatedElement', () => {
-  const defaultElement = {
+  const defaultElement: TestElement = {
     id: 'test-element',
     type: 'text',
     position: { x: 100, y: 100, z: 1 },
@@ -66,7 +90,7 @@ describe('AnimatedElement', () => {
   test('should render element with correct content', () => {
     render(
       <TimelineProvider>
-        <AnimatedElement element={defaultElement}>
+        <AnimatedElement element={defaultElement as any}>
           <div>Element Content</div>
         </AnimatedElement>
       </TimelineProvider>
@@ -78,7 +102,7 @@ describe('AnimatedElement', () => {
   test('should apply correct styles based on timeline position', () => {
     render(
       <TimelineProvider>
-        <AnimatedElement element={defaultElement} data-testid="animated-element">
+        <AnimatedElement element={defaultElement as any} data-testid="animated-element">
           <div>Element Content</div>
         </AnimatedElement>
       </TimelineProvider>
@@ -99,7 +123,7 @@ describe('AnimatedElement', () => {
     
     const { container } = render(
       <TimelineProvider>
-        <AnimatedElement element={defaultElement}>
+        <AnimatedElement element={defaultElement as any}>
           <div>Element Content</div>
         </AnimatedElement>
       </TimelineProvider>
@@ -117,7 +141,7 @@ describe('AnimatedElement', () => {
     
     const { container } = render(
       <TimelineProvider>
-        <AnimatedElement element={defaultElement}>
+        <AnimatedElement element={defaultElement as any}>
           <div>Element Content</div>
         </AnimatedElement>
       </TimelineProvider>
@@ -144,7 +168,7 @@ describe('AnimatedElement', () => {
     
     render(
       <TimelineProvider>
-        <AnimatedElement element={persistentElement}>
+        <AnimatedElement element={persistentElement as any}>
           <div>Element Content</div>
         </AnimatedElement>
       </TimelineProvider>
@@ -168,7 +192,7 @@ describe('AnimatedElement', () => {
     
     render(
       <TimelineProvider>
-        <AnimatedElement element={elementWithoutKeyframes} data-testid="animated-element">
+        <AnimatedElement element={elementWithoutKeyframes as any} data-testid="animated-element">
           <div>Element Content</div>
         </AnimatedElement>
       </TimelineProvider>

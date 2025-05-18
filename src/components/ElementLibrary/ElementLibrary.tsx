@@ -7,11 +7,11 @@
  * @module ElementLibrary
  */
 
-import React, { useState, useEffect } from 'react';
-import { useCanvas } from '../../context/CanvasContext';
+import React, { useState } from 'react';
+import { useCanvas, TimelineData } from '../../context/CanvasContext';
 import { useImageLibrary } from '../../context/ImageLibraryContext';
 import ToolsPalette from '../UI/ToolsPalette';
-import TravelStickers from '../Stickers/TravelStickers';
+import TravelStickers, { StickerData } from '../Stickers/TravelStickers';
 import MaterialTabs from '../UI/MaterialTabs';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -25,7 +25,7 @@ type ElementCategory = 'stickers' | 'shapes' | 'text' | 'media' | 'images';
  */
 interface LibraryElement {
   id: string;
-  type: 'image' | 'text' | 'shape' | 'sticker' | 'color' | 'media';
+  type: 'image' | 'text' | 'shape' | 'sticker' | 'media' | 'audio' | 'map';
   name: string;
   thumbnail: string;
   properties: Record<string, any>;
@@ -52,22 +52,16 @@ const ElementLibrary = (): JSX.Element => {
   // State for search query
   const [searchQuery, setSearchQuery] = useState<string>('');
   
-  // State for filtered stickers
-  const [filteredStickers, setFilteredStickers] = useState<any[]>([]);
-  
-  // State for filtered shapes
-  const [filteredShapes, setFilteredShapes] = useState<boolean>(false);
-  
   // State for clear canvas confirmation
   const [showClearConfirm, setShowClearConfirm] = useState<boolean>(false);
   
   /**
    * Handle category change
    * 
-   * @param {ElementCategory} category - The category to switch to
+   * @param {string} category - The category to switch to
    */
-  const handleCategoryChange = (category: ElementCategory) => {
-    setActiveCategory(category);
+  const handleCategoryChange = (category: string): void => {
+    setActiveCategory(category as ElementCategory);
   };
   
   /**
@@ -75,7 +69,7 @@ const ElementLibrary = (): JSX.Element => {
    * 
    * @param {React.ChangeEvent<HTMLInputElement>} e - The change event
    */
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     setSearchQuery(e.target.value);
   };
   
@@ -85,7 +79,7 @@ const ElementLibrary = (): JSX.Element => {
    * @param {React.DragEvent} e - The drag event
    * @param {LibraryElement} element - The element being dragged
    */
-  const handleDragStart = (e: React.DragEvent, element: LibraryElement) => {
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, element: LibraryElement): void => {
     e.dataTransfer.setData('application/json', JSON.stringify(element));
   };
   
@@ -94,7 +88,7 @@ const ElementLibrary = (): JSX.Element => {
    * 
    * @param {LibraryElement} element - The element to add
    */
-  const handleAddElement = (element: LibraryElement) => {
+  const handleAddElement = (element: LibraryElement): void => {
     // Create a new canvas element from the library element
     const newElement = {
       id: `${element.type}-${uuidv4().substring(0, 8)}`,
@@ -107,7 +101,7 @@ const ElementLibrary = (): JSX.Element => {
       ...element.properties,
       timelineData: {
         entryPoint: 0,
-        exitPoint: null,
+        exitPoint: undefined,
         persist: true,
         keyframes: [
           {
@@ -125,7 +119,7 @@ const ElementLibrary = (): JSX.Element => {
             },
           },
         ],
-      },
+      } as TimelineData,
     };
     
     // Add the element to the canvas
@@ -135,25 +129,25 @@ const ElementLibrary = (): JSX.Element => {
   /**
    * Handle adding sticker to canvas
    * 
-   * @param {any} stickerData - The sticker data to add
+   * @param {StickerData} stickerData - The sticker data to add
    */
-  const handleAddSticker = (stickerData: any) => {
+  const handleAddSticker = (stickerData: StickerData): void => {
     // Create a new sticker element
     const newSticker = {
       id: `sticker-${uuidv4().substring(0, 8)}`,
-      type: 'sticker',
-      position: { x: stickerData.x, y: stickerData.y },
-      size: { width: stickerData.width, height: stickerData.height },
-      rotation: stickerData.rotation,
-      opacity: stickerData.opacity,
-      zIndex: stickerData.zIndex,
-      emoji: stickerData.emoji,
-      name: stickerData.name,
-      color: stickerData.color,
-      stickerType: stickerData.stickerType,
+      type: 'sticker' as const,
+      position: { x: stickerData.x || 100, y: stickerData.y || 100 },
+      size: { width: stickerData.width || 100, height: stickerData.height || 100 },
+      rotation: stickerData.rotation || 0,
+      opacity: stickerData.opacity || 1,
+      zIndex: stickerData.zIndex || 1,
+      emoji: stickerData.emoji || '',
+      name: stickerData.name || 'Sticker',
+      color: stickerData.color || '#000000',
+      stickerType: stickerData.stickerType || 'emoji',
       timelineData: {
         entryPoint: 0,
-        exitPoint: null,
+        exitPoint: undefined,
         persist: true,
         keyframes: [
           {
@@ -171,7 +165,7 @@ const ElementLibrary = (): JSX.Element => {
             },
           },
         ],
-      },
+      } as TimelineData,
     };
     
     // Add the sticker to the canvas
@@ -181,14 +175,14 @@ const ElementLibrary = (): JSX.Element => {
   /**
    * Handle clear canvas with confirmation
    */
-  const handleClearCanvas = () => {
+  const handleClearCanvas = (): void => {
     setShowClearConfirm(true);
   };
   
   /**
    * Confirm and clear canvas
    */
-  const confirmClearCanvas = () => {
+  const confirmClearCanvas = (): void => {
     clearCanvas();
     setShowClearConfirm(false);
   };
@@ -196,7 +190,7 @@ const ElementLibrary = (): JSX.Element => {
   /**
    * Cancel clear canvas
    */
-  const cancelClearCanvas = () => {
+  const cancelClearCanvas = (): void => {
     setShowClearConfirm(false);
   };
   
@@ -204,9 +198,9 @@ const ElementLibrary = (): JSX.Element => {
   const imageElements: LibraryElement[] = images.map(image => ({
     id: image.id,
     type: 'image',
-    name: image.name,
-    thumbnail: image.thumbnail,
-    properties: { src: image.src, alt: image.alt },
+    name: image.name || 'Image',
+    thumbnail: image.thumbnail || '',
+    properties: { src: image.src, alt: image.alt || '' },
   }));
   
   // Mock library elements for each category
@@ -219,14 +213,14 @@ const ElementLibrary = (): JSX.Element => {
         type: 'text',
         name: 'Heading',
         thumbnail: 'placeholder',
-        properties: { content: 'Heading', fontSize: '32px', fontWeight: 'bold', color: '#000' },
+        properties: { content: 'Heading', fontSize: '32px', fontWeight: 'bold', color: '#000000' },
       },
       {
         id: 'text-2',
         type: 'text',
         name: 'Paragraph',
         thumbnail: 'placeholder',
-        properties: { content: 'Lorem ipsum dolor sit amet', fontSize: '16px', fontWeight: 'normal', color: '#000' },
+        properties: { content: 'Lorem ipsum dolor sit amet', fontSize: '16px', fontWeight: 'normal', color: '#000000' },
       },
     ],
     media: [
@@ -254,12 +248,6 @@ const ElementLibrary = (): JSX.Element => {
         element.name.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : libraryElements[activeCategory];
-  
-  // Update filtered state when search query changes
-  useEffect(() => {
-    // Signal to child components that search is active
-    setFilteredShapes(searchQuery.length > 0);
-  }, [searchQuery]);
   
   return (
     <div className="h-full flex flex-col">
@@ -323,17 +311,17 @@ const ElementLibrary = (): JSX.Element => {
               <div className="bg-gray-100 dark:bg-gray-700 h-20 flex items-center justify-center rounded mb-2">
                 {element.type === 'text' && (
                   <span style={{ 
-                    fontSize: element.properties.fontSize.replace('px', '') / 2 + 'px', 
-                    fontWeight: element.properties.fontWeight 
+                    fontSize: element.properties.fontSize ? element.properties.fontSize.replace('px', '') / 2 + 'px' : '16px', 
+                    fontWeight: element.properties.fontWeight || 'normal'
                   }} className="dark:text-gray-200">
-                    {element.properties.content}
+                    {element.properties.content || 'Text'}
                   </span>
                 )}
                 {element.type === 'shape' && (
                   <div
                     className={`${element.properties.shape === 'circle' ? 'rounded-full' : 'rounded'}`}
                     style={{ 
-                      backgroundColor: element.properties.backgroundColor,
+                      backgroundColor: element.properties.backgroundColor || '#cccccc',
                       width: '40px',
                       height: '40px',
                     }}
@@ -342,7 +330,7 @@ const ElementLibrary = (): JSX.Element => {
                 {element.type === 'image' && (
                   <img 
                     src={element.properties.src} 
-                    alt={element.properties.alt} 
+                    alt={element.properties.alt || ''} 
                     className="max-h-full max-w-full object-contain"
                   />
                 )}

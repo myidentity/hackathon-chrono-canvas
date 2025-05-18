@@ -33,10 +33,10 @@ const ThailandMap: React.FC<ThailandMapProps> = ({ width = 400, height = 600 }) 
       <path
         d="M150,100 L180,80 L220,90 L240,120 L220,150 L190,160 L160,150 L140,130 Z"
         fill={northColor}
-        stroke="#333"
+        stroke="#333333"
         strokeWidth="2"
       />
-      <text x="190" y="120" fontFamily="Arial" fontSize="12" fontWeight="bold" textAnchor="middle" fill="#333">
+      <text x="190" y="120" fontFamily="Arial" fontSize="12" fontWeight="bold" textAnchor="middle" fill="#333333">
         CHIANG MAI
       </text>
       <circle cx="190" cy="120" r="5" fill="#f44336" />
@@ -45,7 +45,7 @@ const ThailandMap: React.FC<ThailandMapProps> = ({ width = 400, height = 600 }) 
       <path
         d="M240,120 L280,110 L300,130 L290,170 L260,190 L230,180 L220,150 Z"
         fill={northeastColor}
-        stroke="#333"
+        stroke="#333333"
         strokeWidth="2"
       />
 
@@ -53,10 +53,10 @@ const ThailandMap: React.FC<ThailandMapProps> = ({ width = 400, height = 600 }) 
       <path
         d="M160,150 L190,160 L220,150 L230,180 L220,220 L190,240 L160,230 L150,200 Z"
         fill={centralColor}
-        stroke="#333"
+        stroke="#333333"
         strokeWidth="2"
       />
-      <text x="190" y="200" fontFamily="Arial" fontSize="12" fontWeight="bold" textAnchor="middle" fill="#333">
+      <text x="190" y="200" fontFamily="Arial" fontSize="12" fontWeight="bold" textAnchor="middle" fill="#333333">
         BANGKOK
       </text>
       <circle cx="190" cy="200" r="5" fill="#f44336" />
@@ -65,10 +65,10 @@ const ThailandMap: React.FC<ThailandMapProps> = ({ width = 400, height = 600 }) 
       <path
         d="M220,220 L260,190 L270,210 L260,240 L230,250 L210,240 Z"
         fill={eastColor}
-        stroke="#333"
+        stroke="#333333"
         strokeWidth="2"
       />
-      <text x="240" y="220" fontFamily="Arial" fontSize="12" fontWeight="bold" textAnchor="middle" fill="#333">
+      <text x="240" y="220" fontFamily="Arial" fontSize="12" fontWeight="bold" textAnchor="middle" fill="#333333">
         PATTAYA
       </text>
       <circle cx="240" cy="220" r="5" fill="#f44336" />
@@ -77,7 +77,7 @@ const ThailandMap: React.FC<ThailandMapProps> = ({ width = 400, height = 600 }) 
       <path
         d="M150,200 L160,230 L150,260 L120,270 L100,250 L110,220 L130,210 Z"
         fill={westColor}
-        stroke="#333"
+        stroke="#333333"
         strokeWidth="2"
       />
 
@@ -85,7 +85,7 @@ const ThailandMap: React.FC<ThailandMapProps> = ({ width = 400, height = 600 }) 
       <path
         d="M150,260 L190,240 L210,240 L230,250 L220,280 L200,300 L170,310 L150,290 Z"
         fill={southColor}
-        stroke="#333"
+        stroke="#333333"
         strokeWidth="2"
       />
 
@@ -93,10 +93,10 @@ const ThailandMap: React.FC<ThailandMapProps> = ({ width = 400, height = 600 }) 
       <path
         d="M170,310 L200,300 L210,320 L200,350 L210,380 L200,410 L180,440 L160,470 L150,500 L170,520 L160,540 L140,530 L130,500 L140,470 L130,440 L140,410 L150,380 L140,350 L150,320 Z"
         fill={southColor}
-        stroke="#333"
+        stroke="#333333"
         strokeWidth="2"
       />
-      <text x="170" y="450" fontFamily="Arial" fontSize="12" fontWeight="bold" textAnchor="middle" fill="#333">
+      <text x="170" y="450" fontFamily="Arial" fontSize="12" fontWeight="bold" textAnchor="middle" fill="#333333">
         PHUKET
       </text>
       <circle cx="150" cy="470" r="5" fill="#f44336" />
@@ -145,26 +145,26 @@ const ThailandMap: React.FC<ThailandMapProps> = ({ width = 400, height = 600 }) 
       {/* Legend */}
       <rect x="50" y="540" width="300" height="50" fill="rgba(255,255,255,0.7)" rx="5" />
       
-      <rect x="60" y="550" width="15" height="10" fill={northColor} stroke="#333" />
-      <text x="85" y="558" fontFamily="Arial" fontSize="10" fill="#333">North</text>
+      <rect x="60" y="550" width="15" height="10" fill={northColor} stroke="#333333" />
+      <text x="85" y="558" fontFamily="Arial" fontSize="10" fill="#333333">North</text>
       
-      <rect x="120" y="550" width="15" height="10" fill={northeastColor} stroke="#333" />
-      <text x="145" y="558" fontFamily="Arial" fontSize="10" fill="#333">Northeast</text>
+      <rect x="120" y="550" width="15" height="10" fill={northeastColor} stroke="#333333" />
+      <text x="145" y="558" fontFamily="Arial" fontSize="10" fill="#333333">Northeast</text>
       
-      <rect x="200" y="550" width="15" height="10" fill={centralColor} stroke="#333" />
-      <text x="225" y="558" fontFamily="Arial" fontSize="10" fill="#333">Central</text>
+      <rect x="200" y="550" width="15" height="10" fill={centralColor} stroke="#333333" />
+      <text x="225" y="558" fontFamily="Arial" fontSize="10" fill="#333333">Central</text>
       
-      <rect x="270" y="550" width="15" height="10" fill={eastColor} stroke="#333" />
-      <text x="295" y="558" fontFamily="Arial" fontSize="10" fill="#333">East</text>
+      <rect x="270" y="550" width="15" height="10" fill={eastColor} stroke="#333333" />
+      <text x="295" y="558" fontFamily="Arial" fontSize="10" fill="#333333">East</text>
       
-      <rect x="60" y="570" width="15" height="10" fill={westColor} stroke="#333" />
-      <text x="85" y="578" fontFamily="Arial" fontSize="10" fill="#333">West</text>
+      <rect x="60" y="570" width="15" height="10" fill={westColor} stroke="#333333" />
+      <text x="85" y="578" fontFamily="Arial" fontSize="10" fill="#333333">West</text>
       
-      <rect x="120" y="570" width="15" height="10" fill={southColor} stroke="#333" />
-      <text x="145" y="578" fontFamily="Arial" fontSize="10" fill="#333">South</text>
+      <rect x="120" y="570" width="15" height="10" fill={southColor} stroke="#333333" />
+      <text x="145" y="578" fontFamily="Arial" fontSize="10" fill="#333333">South</text>
       
       <circle cx="200" cy="575" r="5" fill="#f44336" />
-      <text x="215" y="578" fontFamily="Arial" fontSize="10" fill="#333">Tourist Spot</text>
+      <text x="215" y="578" fontFamily="Arial" fontSize="10" fill="#333333">Tourist Spot</text>
 
       {/* Decorative elements */}
       <path d="M30,30 Q50,10 70,30 Q90,50 110,30" stroke="#03A9F4" strokeWidth="2" fill="none" />

@@ -1,14 +1,29 @@
 import React, { useState, useRef } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 
+interface StickerElement {
+  id: string;
+  position?: { x: number; y: number };
+  x?: number;
+  y?: number;
+  size?: { width: number; height: number };
+  width?: number;
+  height?: number;
+  zIndex?: number;
+  color?: string;
+  emoji?: string;
+  src?: string;
+}
+
 interface StickerElementProps {
-  element: any;
+  element: StickerElement;
   isSelected: boolean;
   onClick: (e: React.MouseEvent) => void;
 }
 
 const StickerElement: React.FC<StickerElementProps> = ({ element, isSelected, onClick }) => {
-  console.log('Rendering StickerElement with data:', element);
+  // Remove console log for production
+  // console.log('Rendering StickerElement with data:', element);
   
   const { updateElementPosition } = useCanvas();
   const [isDragging, setIsDragging] = useState(false);
@@ -16,7 +31,8 @@ const StickerElement: React.FC<StickerElementProps> = ({ element, isSelected, on
   const elementRef = useRef<HTMLDivElement>(null);
 
   const handleClick = (e: React.MouseEvent) => {
-    console.log('StickerElement clicked:', element.id);
+    // Remove console log for production
+    // console.log('StickerElement clicked:', element.id);
     e.stopPropagation(); // Prevent event from bubbling to canvas
     onClick(e);
   };
@@ -88,7 +104,7 @@ const StickerElement: React.FC<StickerElementProps> = ({ element, isSelected, on
           }}
         />
       ) : (
-        <div style={{ fontSize: '1rem', color: '#666' }}>Sticker</div>
+        <div style={{ fontSize: '1rem', color: '#666666' }}>Sticker</div>
       )}
     </div>
   );

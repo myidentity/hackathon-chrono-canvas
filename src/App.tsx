@@ -15,11 +15,7 @@ import ResizableElementLibrary from './components/ElementLibrary/ResizableElemen
 import EnhancedCanvas from './components/Canvas/EnhancedCanvas';
 import PropertyPanel from './components/PropertyPanel/PropertyPanel';
 import EnhancedTimeline from './components/Timeline/EnhancedTimeline';
-
-/**
- * View mode type
- */
-type ViewMode = 'editor' | 'timeline' | 'zine' | 'presentation';
+import { ViewMode } from './types/ViewMode';
 
 /**
  * Main App component

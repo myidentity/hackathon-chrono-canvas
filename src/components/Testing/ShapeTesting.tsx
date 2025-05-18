@@ -3,16 +3,28 @@ import { useCanvas } from '../../context/CanvasContext';
 import MD3Shapes from '../../utils/MD3Shapes';
 import AdditionalShapes from '../../utils/AdditionalShapes';
 
+interface ShapeData {
+  svg?: string;
+  [key: string]: any;
+}
+
+/**
+ * ShapeTesting component
+ * Tests all shapes from different sources for proper rendering
+ * 
+ * @returns {JSX.Element} Rendered component
+ */
 const ShapeTesting: React.FC = () => {
-  const { shapes } = useCanvas();
+  // Remove the shapes property which doesn't exist in CanvasContextValue
+  const { } = useCanvas();
   const [testResults, setTestResults] = useState<Record<string, boolean>>({});
   
   useEffect(() => {
     // Test all shapes from different sources
-    const allShapes = {
-      ...MD3Shapes,
-      ...AdditionalShapes,
-      ...(shapes || {})
+    const allShapes: Record<string, ShapeData> = {
+      ...getMD3ShapesForTesting(),
+      ...getAdditionalShapesForTesting(),
+      // Remove the shapes reference as it doesn't exist
     };
     
     const results: Record<string, boolean> = {};
@@ -26,11 +38,46 @@ const ShapeTesting: React.FC = () => {
         !shape.svg.includes('rect width="100%" height="100%"') &&
         !shape.svg.includes('rect x="0" y="0" width="100" height="100"');
       
-      results[id] = isValid;
+      // Ensure isValid is always a boolean
+      results[id] = isValid === true;
     });
     
     setTestResults(results);
-  }, [shapes]);
+  }, []);
+  
+  /**
+   * Get MD3Shapes for testing, excluding the generateId function
+   * 
+   * @returns {Record<string, ShapeData>} MD3 shapes for testing
+   */
+  const getMD3ShapesForTesting = (): Record<string, ShapeData> => {
+    const shapesForTesting: Record<string, ShapeData> = {};
+    
+    Object.entries(MD3Shapes).forEach(([key, value]) => {
+      if (key !== 'generateId' && typeof value === 'function') {
+        shapesForTesting[key] = { svg: value(100) };
+      }
+    });
+    
+    return shapesForTesting;
+  };
+  
+  /**
+   * Get AdditionalShapes for testing, excluding the generateId function
+   * 
+   * @returns {Record<string, ShapeData>} Additional shapes for testing
+   */
+  const getAdditionalShapesForTesting = (): Record<string, ShapeData> => {
+    const shapesForTesting: Record<string, ShapeData> = {};
+    
+    Object.entries(AdditionalShapes).forEach(([key, value]) => {
+      if (key !== 'generateId' && typeof value === 'function') {
+        shapesForTesting[key] = { svg: value(100) };
+      }
+    });
+    
+    return shapesForTesting;
+  };
   
   return (
     <div style={{ padding: '20px' }}>

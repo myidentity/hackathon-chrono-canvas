@@ -1,8 +1,22 @@
 import React, { useState, useRef } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 
+interface ShapeElement {
+  id: string;
+  position?: { x: number; y: number };
+  x?: number;
+  y?: number;
+  size?: { width: number; height: number };
+  width?: number;
+  height?: number;
+  zIndex?: number;
+  color?: string;
+  backgroundColor?: string;
+  svg?: string;
+}
+
 interface ShapeElementProps {
-  element: any;
+  element: ShapeElement;
   isSelected: boolean;
   onClick: (e: React.MouseEvent) => void;
 }
@@ -14,7 +28,8 @@ const ShapeElement: React.FC<ShapeElementProps> = ({ element, isSelected, onClic
   const elementRef = useRef<HTMLDivElement>(null);
 
   const handleClick = (e: React.MouseEvent) => {
-    console.log('ShapeElement clicked:', element.id);
+    // Remove console log for production
+    // console.log('ShapeElement clicked:', element.id);
     e.stopPropagation(); // Prevent event from bubbling to canvas
     onClick(e);
   };
@@ -61,7 +76,7 @@ const ShapeElement: React.FC<ShapeElementProps> = ({ element, isSelected, onClic
         pointerEvents: 'all',
         cursor: isSelected ? 'move' : 'pointer',
         zIndex: element.zIndex || 1,
-        color: element.color || '#333',
+        color: element.color || '#333333',
         backgroundColor: element.backgroundColor || 'transparent'
       }}
       onClick={handleClick}
@@ -70,7 +85,7 @@ const ShapeElement: React.FC<ShapeElementProps> = ({ element, isSelected, onClic
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       dangerouslySetInnerHTML={{ 
-        __html: element.svg ? element.svg.replace('currentColor', element.color || '#333') : '' 
+        __html: element.svg ? element.svg.replace('currentColor', element.color || '#333333') : '' 
       }}
     />
   );

@@ -235,8 +235,8 @@ const ZineView: React.FC<ZineViewProps> = ({ className = '' }) => {
                   <p style={{ 
                     fontSize: element.fontSize || '16px',
                     fontWeight: element.fontWeight || 'normal',
-                    color: element.color || '#000',
-                    textAlign: element.textAlign || 'center',
+                    color: element.color || '#000000',
+                    textAlign: (element.textAlign as React.CSSProperties['textAlign']) || 'center',
                   }}>
                     {element.content || 'Text Element'}
                   </p>

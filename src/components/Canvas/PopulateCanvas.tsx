@@ -16,18 +16,28 @@ interface PopulateCanvasProps {
 /**
  * PopulateCanvas component
  * Adds a button to populate the canvas with random shapes and symbols
+ * 
+ * @param {PopulateCanvasProps} props - Component properties
+ * @returns {JSX.Element} Rendered component
  */
 const PopulateCanvas: React.FC<PopulateCanvasProps> = ({ className = '' }) => {
   const { addElement } = useCanvas();
   
-  // Handle populating the canvas with random elements
-  const handlePopulate = () => {
+  /**
+   * Handle populating the canvas with random elements
+   */
+  const handlePopulate = (): void => {
     // Generate random elements (adjust count as needed)
     const elements = generateRandomElements(20, 800, 600);
     
     // Add each element to the canvas
     elements.forEach(element => {
-      addElement(element);
+      // Ensure the element type is properly typed as a const to match the expected union
+      const typedElement = {
+        ...element,
+        type: element.type as 'image' | 'text' | 'shape' | 'sticker' | 'media' | 'audio' | 'map'
+      };
+      addElement(typedElement);
     });
     
     // Show confirmation

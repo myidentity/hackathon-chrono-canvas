@@ -2,7 +2,7 @@
 .material-tabs {
   display: flex;
   position: relative;
-  background-color: #fff;
+  background-color: #ffffff;
   border-radius: 4px 4px 0 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   overflow-x: visible;
@@ -17,36 +17,32 @@
 }
 
 .material-tab {
-  flex: 0 0 auto;
-  min-width: 100px;
-  padding: 12px 8px;
-  text-align: center;
-  font-family: 'Roboto', 'Inter', sans-serif;
+  flex: 1;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: rgba(0, 0, 0, 0.6);
   font-size: 14px;
   font-weight: 500;
+  text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: rgba(0, 0, 0, 0.6);
-  background-color: transparent;
-  border: none;
   cursor: pointer;
-  transition: color 0.3s ease, background-color 0.3s ease;
   position: relative;
   overflow: hidden;
-  text-transform: uppercase;
-  outline: none;
+  transition: color 0.3s;
   white-space: nowrap;
-  text-overflow: ellipsis;
+  min-width: 80px;
 }
 
 .material-tab:hover {
+  color: rgba(0, 0, 0, 0.8);
   background-color: rgba(0, 0, 0, 0.04);
 }
 
 .material-tab.active {
-  color: #6200ee; /* Material Design primary color */
+  color: #1976d2;
 }
 
-/* Indicator line for active tab */
 .material-tab.active::after {
   content: '';
   position: absolute;
@@ -54,18 +50,17 @@
   left: 0;
   width: 100%;
   height: 2px;
-  background-color: #6200ee; /* Material Design primary color */
-  transform-origin: bottom center;
-  transition: transform 0.3s ease;
+  background-color: #1976d2;
 }
 
 /* Ripple effect */
-.material-tab .ripple {
+.ripple {
   position: absolute;
   border-radius: 50%;
-  background-color: rgba(98, 0, 238, 0.1); /* Material Design primary color with opacity */
+  background-color: rgba(0, 0, 0, 0.1);
   transform: scale(0);
   animation: ripple 0.6s linear;
+  pointer-events: none;
 }
 
 @keyframes ripple {
@@ -75,35 +70,36 @@
   }
 }
 
-/* Dark mode support */
+/* Dark mode */
 .dark .material-tabs {
-  background-color: #121212;
+  background-color: #1e1e1e;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .dark .material-tab {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .dark .material-tab:hover {
-  background-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.04);
 }
 
 .dark .material-tab.active {
-  color: #bb86fc; /* Material Design dark theme primary color */
+  color: #64b5f6;
 }
 
 .dark .material-tab.active::after {
-  background-color: #bb86fc; /* Material Design dark theme primary color */
+  background-color: #64b5f6;
 }
 
-.dark .material-tab .ripple {
-  background-color: rgba(187, 134, 252, 0.2); /* Material Design dark theme primary color with opacity */
+.dark .ripple {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  .material-tab {
-    padding: 10px 8px;
-    font-size: 12px;
-  }
+/* Make sure Media tab is visible */
+.material-tab[role="tab"] {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }

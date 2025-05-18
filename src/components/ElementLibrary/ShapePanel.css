@@ -7,7 +7,7 @@
 .shape-categories {
   display: flex;
   margin-bottom: 15px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #eeeeee;
 }
 
 .shape-categories button {
@@ -16,7 +16,7 @@
   padding: 8px 12px;
   cursor: pointer;
   font-size: 14px;
-  color: #666;
+  color: #666666;
   position: relative;
 }
 
@@ -44,7 +44,7 @@
 .shape-item {
   width: 60px;
   height: 60px;
-  border: 1px solid #ddd;
+  border: 1px solid #dddddd;
   border-radius: 4px;
   display: flex;
   align-items: center;

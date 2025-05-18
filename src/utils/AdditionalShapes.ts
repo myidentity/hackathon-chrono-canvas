@@ -1,112 +1,92 @@
-import React from 'react';
+// Remove unused React import
+import { v4 as uuidv4 } from 'uuid';
 
-// Additional shapes to restore and expand the shape library
-const AdditionalShapes = [
-  {
-    id: 'speech-bubble',
-    name: 'Speech Bubble',
-    svg: `<svg viewBox="0 0 24 24" width="100%" height="100%">
-      <path d="M20,2H4C2.9,2 2,2.9 2,4V16C2,17.1 2.9,18 4,18H8L12,22L16,18H20C21.1,18 22,17.1 22,16V4C22,2.9 21.1,2 20,2Z" fill="currentColor" />
-    </svg>`
+// Additional shapes for the ChronoCanvas application
+const AdditionalShapes = {
+  // Basic shapes
+  star: (size: number) => {
+    const outerRadius = size / 2;
+    const innerRadius = outerRadius * 0.4;
+    const points = 5;
+    let path = '';
+    
+    for (let i = 0; i < points * 2; i++) {
+      const radius = i % 2 === 0 ? outerRadius : innerRadius;
+      const angle = (Math.PI / points) * i;
+      const x = outerRadius + radius * Math.sin(angle);
+      const y = outerRadius - radius * Math.cos(angle);
+      
+      path += (i === 0 ? 'M' : 'L') + `${x},${y}`;
+    }
+    
+    path += 'Z';
+    
+    return path;
   },
-  {
-    id: 'cloud',
-    name: 'Cloud',
-    svg: `<svg viewBox="0 0 24 24" width="100%" height="100%">
-      <path d="M19.35,10.03C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.03C2.34,8.36 0,10.9 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.03Z" fill="currentColor" />
-    </svg>`
+  
+  heart: (size: number) => {
+    const width = size;
+    const height = size;
+    
+    // Create a heart shape path
+    return `M ${width/2} ${height/4} C ${width/2} ${height/5}, ${width/5} ${height/5}, ${width/5} ${height/2.5} C ${width/5} ${height/1.5}, ${width/2} ${height/1.25}, ${width/2} ${height} C ${width/2} ${height/1.25}, ${width*4/5} ${height/1.5}, ${width*4/5} ${height/2.5} C ${width*4/5} ${height/5}, ${width/2} ${height/5}, ${width/2} ${height/4} Z`;
   },
-  {
-    id: 'wave',
-    name: 'Wave',
-    svg: `<svg viewBox="0 0 24 24" width="100%" height="100%">
-      <path d="M20,12C18.61,12 17.22,11.53 16,10.67C13.56,12.38 10.44,12.38 8,10.67C6.78,11.53 5.39,12 4,12H2V14H4C5.37,14 6.74,13.65 8,13C10.5,14.3 13.5,14.3 16,13C17.26,13.65 18.62,14 20,14H22V12" fill="currentColor" />
-    </svg>`
+  
+  cloud: (size: number) => {
+    const width = size;
+    const height = size * 0.6;
+    
+    // Create a cloud shape path
+    return `M ${width*0.2} ${height*0.6} C ${width*0.15} ${height*0.4}, ${width*0.3} ${height*0.3}, ${width*0.4} ${height*0.4} C ${width*0.4} ${height*0.2}, ${width*0.6} ${height*0.2}, ${width*0.7} ${height*0.4} C ${width*0.8} ${height*0.3}, ${width*0.9} ${height*0.4}, ${width*0.85} ${height*0.6} Z`;
   },
-  {
-    id: 'lightning',
-    name: 'Lightning',
-    svg: `<svg viewBox="0 0 24 24" width="100%" height="100%">
-      <path d="M7,2V13H10V22L17,10H13L17,2H7Z" fill="currentColor" />
-    </svg>`
+  
+  lightning: (size: number) => {
+    const width = size;
+    const height = size;
+    
+    // Create a lightning bolt path
+    return `M ${width*0.4} ${height*0.1} L ${width*0.2} ${height*0.5} L ${width*0.4} ${height*0.5} L ${width*0.3} ${height*0.9} L ${width*0.7} ${height*0.4} L ${width*0.5} ${height*0.4} L ${width*0.6} ${height*0.1} Z`;
   },
-  {
-    id: 'leaf',
-    name: 'Leaf',
-    svg: `<svg viewBox="0 0 24 24" width="100%" height="100%">
-      <path d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z" fill="currentColor" />
-    </svg>`
+  
+  // Travel-themed shapes
+  airplane: (size: number) => {
+    const width = size;
+    const height = size * 0.5;
+    
+    // Create an airplane shape path
+    return `M ${width*0.8} ${height*0.3} L ${width*0.7} ${height*0.5} L ${width*0.1} ${height*0.5} L ${width*0.05} ${height*0.7} L ${width*0.1} ${height*0.7} L ${width*0.2} ${height*0.5} L ${width*0.7} ${height*0.5} L ${width*0.6} ${height*0.7} L ${width*0.65} ${height*0.7} L ${width*0.8} ${height*0.5} L ${width*0.9} ${height*0.5} L ${width*0.9} ${height*0.3} Z`;
   },
-  {
-    id: 'sun',
-    name: 'Sun',
-    svg: `<svg viewBox="0 0 24 24" width="100%" height="100%">
-      <path d="M3.55,18.54L4.96,19.95L6.76,18.16L5.34,16.74M11,22.45C11.32,22.45 13,22.45 13,22.45V19.5H11M12,5.5A6.5,6.5 0 0,0 5.5,12A6.5,6.5 0 0,0 12,18.5A6.5,6.5 0 0,0 18.5,12A6.5,6.5 0 0,0 12,5.5M20,12.5H23V10.5H20M17.24,18.16L19.04,19.95L20.45,18.54L18.66,16.74M20.45,5.46L19.04,4.05L17.24,5.84L18.66,7.26M13,0.55V3.5H11V0.55M4,10.5H1V12.5H4M6.76,5.84L4.96,4.05L3.55,5.46L5.34,7.26L6.76,5.84Z" fill="currentColor" />
-    </svg>`
+  
+  suitcase: (size: number) => {
+    const width = size;
+    const height = size * 0.8;
+    
+    // Create a suitcase shape path
+    return `M ${width*0.2} ${height*0.2} L ${width*0.8} ${height*0.2} L ${width*0.8} ${height*0.1} L ${width*0.2} ${height*0.1} Z M ${width*0.1} ${height*0.2} L ${width*0.9} ${height*0.2} L ${width*0.9} ${height*0.9} L ${width*0.1} ${height*0.9} Z M ${width*0.4} ${height*0.5} L ${width*0.6} ${height*0.5} L ${width*0.6} ${height*0.6} L ${width*0.4} ${height*0.6} Z`;
   },
-  {
-    id: 'moon',
-    name: 'Moon',
-    svg: `<svg viewBox="0 0 24 24" width="100%" height="100%">
-      <path d="M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z" fill="currentColor" />
-    </svg>`
+  
+  camera: (size: number) => {
+    const width = size;
+    const height = size * 0.8;
+    
+    // Create a camera shape path
+    return `M ${width*0.1} ${height*0.3} L ${width*0.3} ${height*0.3} L ${width*0.35} ${height*0.2} L ${width*0.65} ${height*0.2} L ${width*0.7} ${height*0.3} L ${width*0.9} ${height*0.3} L ${width*0.9} ${height*0.8} L ${width*0.1} ${height*0.8} Z M ${width*0.5} ${height*0.55} C ${width*0.6} ${height*0.55}, ${width*0.7} ${height*0.65}, ${width*0.7} ${height*0.75} C ${width*0.7} ${height*0.85}, ${width*0.6} ${height*0.95}, ${width*0.5} ${height*0.95} C ${width*0.4} ${height*0.95}, ${width*0.3} ${height*0.85}, ${width*0.3} ${height*0.75} C ${width*0.3} ${height*0.65}, ${width*0.4} ${height*0.55}, ${width*0.5} ${height*0.55} Z`;
   },
-  {
-    id: 'camera',
-    name: 'Camera',
-    svg: `<svg viewBox="0 0 24 24" width="100%" height="100%">
-      <path d="M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z" fill="currentColor" />
-    </svg>`
+  
+  compass: (size: number) => {
+    const width = size;
+    const height = size;
+    const radius = width / 2;
+    const center = { x: width / 2, y: height / 2 };
+    
+    // Create a compass shape path
+    return `M ${center.x} ${center.y - radius} A ${radius} ${radius} 0 0 1 ${center.x + radius} ${center.y} A ${radius} ${radius} 0 0 1 ${center.x} ${center.y + radius} A ${radius} ${radius} 0 0 1 ${center.x - radius} ${center.y} A ${radius} ${radius} 0 0 1 ${center.x} ${center.y - radius} Z M ${center.x} ${center.y - radius * 0.7} L ${center.x + radius * 0.2} ${center.y + radius * 0.7} L ${center.x} ${center.y + radius * 0.4} L ${center.x - radius * 0.2} ${center.y + radius * 0.7} Z`;
   },
-  {
-    id: 'airplane',
-    name: 'Airplane',
-    svg: `<svg viewBox="0 0 24 24" width="100%" height="100%">
-      <path d="M21,16V14L13,9V3.5A1.5,1.5 0 0,0 11.5,2A1.5,1.5 0 0,0 10,3.5V9L2,14V16L10,13.5V19L8,20.5V22L11.5,21L15,22V20.5L13,19V13.5L21,16Z" fill="currentColor" />
-    </svg>`
-  },
-  {
-    id: 'map-marker',
-    name: 'Map Marker',
-    svg: `<svg viewBox="0 0 24 24" width="100%" height="100%">
-      <path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z" fill="currentColor" />
-    </svg>`
-  },
-  {
-    id: 'palm-tree',
-    name: 'Palm Tree',
-    svg: `<svg viewBox="0 0 24 24" width="100%" height="100%">
-      <path d="M12,9C14.21,9 16,7.21 16,5C16,2.79 14.21,1 12,1C9.79,1 8,2.79 8,5C8,7.21 9.79,9 12,9M12,3C13.1,3 14,3.9 14,5C14,6.1 13.1,7 12,7C10.9,7 10,6.1 10,5C10,3.9 10.9,3 12,3M12,16.5C12,16.5 16.24,12.25 16.24,8.5C16.24,5.41 14.34,3 12,3C9.66,3 7.76,5.41 7.76,8.5C7.76,12.25 12,16.5 12,16.5M12,13C10.33,11.33 9.24,9.42 9.24,8.5C9.24,6.91 10.5,5.5 12,5.5C13.5,5.5 14.76,6.91 14.76,8.5C14.76,9.42 13.67,11.33 12,13M14,19V17H10V19H8V17H5V19H3V17A2,2 0 0,1 5,15H19A2,2 0 0,1 21,17V19H19V17H16V19H14Z" fill="currentColor" />
-    </svg>`
-  },
-  {
-    id: 'beach',
-    name: 'Beach',
-    svg: `<svg viewBox="0 0 24 24" width="100%" height="100%">
-      <path d="M15,18.54C17.13,18.21 19.5,18 22,18V22H5C5,21.35 8.2,19.86 13,18.9V12.4C12.16,12.65 11.45,13.21 11,13.95C10.39,12.93 9.27,12.25 8,12.25C6.73,12.25 5.61,12.93 5,13.95C5.03,10.37 8.5,7.43 13,7.04V7A1,1 0 0,1 14,6A1,1 0 0,1 15,7V7.04C19.5,7.43 22.96,10.37 23,13.95C22.39,12.93 21.27,12.25 20,12.25C18.73,12.25 17.61,12.93 17,13.95C16.55,13.21 15.84,12.65 15,12.39V18.54M7,2A5,5 0 0,1 2,7V2H7Z" fill="currentColor" />
-    </svg>`
-  },
-  {
-    id: 'compass',
-    name: 'Compass',
-    svg: `<svg viewBox="0 0 24 24" width="100%" height="100%">
-      <path d="M14.19,14.19L6,18L9.81,9.81L18,6M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,10.9A1.1,1.1 0 0,0 10.9,12A1.1,1.1 0 0,0 12,13.1A1.1,1.1 0 0,0 13.1,12A1.1,1.1 0 0,0 12,10.9Z" fill="currentColor" />
-    </svg>`
-  },
-  {
-    id: 'suitcase',
-    name: 'Suitcase',
-    svg: `<svg viewBox="0 0 24 24" width="100%" height="100%">
-      <path d="M9,20H5V18H9M19,18H15V20H19M21,7H3V16H21M7,7V5H17V7" fill="currentColor" />
-    </svg>`
-  },
-  {
-    id: 'mountain',
-    name: 'Mountain',
-    svg: `<svg viewBox="0 0 24 24" width="100%" height="100%">
-      <path d="M14,6L10.25,11L13.1,14.8L11.5,16C9.81,13.75 7,10 7,10L1,18H23L14,6Z" fill="currentColor" />
-    </svg>`
+  
+  // Generate a unique ID for each shape
+  generateId: () => {
+    return uuidv4();
   }
-];
+};
 
 export default AdditionalShapes;

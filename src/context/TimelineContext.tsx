@@ -56,73 +56,84 @@ const TimelineContext = createContext<TimelineContextType>({
 
 /**
  * Timeline context provider component
+ * 
+ * @param {Object} props - Component properties
+ * @param {React.ReactNode} props.children - Child components
+ * @returns {JSX.Element} Provider component
  */
 export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { canvas } = useCanvas();
   
   // Timeline state
-  const [currentPosition, setCurrentPosition] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [duration, setDuration] = useState(60); // Default duration in seconds
+  const [currentPosition, setCurrentPosition] = useState<number>(0);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [duration, setDuration] = useState<number>(60); // Default duration in seconds
   const [markers, setMarkers] = useState<TimelineMarker[]>([]);
-  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
   
   /**
    * Toggle playback state
    */
-  const togglePlayback = useCallback(() => {
+  const togglePlayback = useCallback((): void => {
     setIsPlaying(prev => !prev);
-    setLastUpdateTime(Date.now());
   }, []);
   
   /**
    * Start playback
    */
-  const play = useCallback(() => {
+  const play = useCallback((): void => {
     setIsPlaying(true);
-    setLastUpdateTime(Date.now());
   }, []);
   
   /**
    * Pause playback
    */
-  const pause = useCallback(() => {
+  const pause = useCallback((): void => {
     setIsPlaying(false);
   }, []);
   
   /**
    * Set timeline position
+   * 
+   * @param {number} position - New position in seconds
    */
-  const setPosition = useCallback((position: number) => {
+  const setPosition = useCallback((position: number): void => {
     setCurrentPosition(Math.max(0, Math.min(position, duration)));
   }, [duration]);
   
   /**
    * Set playback speed
+   * 
+   * @param {number} speed - New playback speed
    */
-  const setPlaybackSpeedValue = useCallback((speed: number) => {
+  const setPlaybackSpeedValue = useCallback((speed: number): void => {
     setPlaybackSpeed(speed);
   }, []);
   
   /**
    * Add marker to timeline
+   * 
+   * @param {TimelineMarker} marker - Marker to add
    */
-  const addMarker = useCallback((marker: TimelineMarker) => {
+  const addMarker = useCallback((marker: TimelineMarker): void => {
     setMarkers(prev => [...prev, marker]);
   }, []);
   
   /**
    * Remove marker from timeline
+   * 
+   * @param {string} id - ID of marker to remove
    */
-  const removeMarker = useCallback((id: string) => {
+  const removeMarker = useCallback((id: string): void => {
     setMarkers(prev => prev.filter(marker => marker.id !== id));
   }, []);
   
   /**
    * Seek to a specific marker
+   * 
+   * @param {string} markerId - ID of marker to seek to
    */
-  const seekToMarker = useCallback((markerId: string) => {
+  const seekToMarker = useCallback((markerId: string): void => {
     const marker = markers.find(m => m.id === markerId);
     if (marker) {
       setCurrentPosition(marker.position);
@@ -132,15 +143,11 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   /**
    * Update element visibility and properties based on current timeline position
    */
-  const updateElementAtCurrentTime = useCallback(() => {
-    // Log for debugging
-    console.log('Updating elements at time:', currentPosition);
-    
+  const updateElementAtCurrentTime = useCallback((): void => {
     // Update each element based on its timeline data
     canvas.elements.forEach(element => {
       // Skip if element has no timeline data
       if (!element.timelineData) {
-        console.log('Element has no timeline data:', element.id);
         return;
       }
       
@@ -172,33 +179,27 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           // Interpolate between keyframes
           const progress = (currentPosition - prevKeyframe.time) / (nextKeyframe.time - prevKeyframe.time);
           
-            // Apply interpolated properties
-          const interpolatedProps = interpolateProperties(prevKeyframe.properties, nextKeyframe.properties, progress);
-          
-          // Update element with interpolated properties
-          console.log('Applying interpolated properties to element:', element.id, interpolatedProps);;
-        } else if (prevKeyframe) {
-          // Use properties from the last keyframe
-          console.log('Applying last keyframe properties to element:', element.id, prevKeyframe.properties);
-        } else if (nextKeyframe) {
-          // Use properties from the first keyframe
-          console.log('Applying first keyframe properties to element:', element.id, nextKeyframe.properties);
-        } else {
-          // No applicable keyframes, just update visibility
-          console.log('Updating element visibility only:', element.id, isVisible);
+          // Apply interpolated properties
+          interpolateProperties(prevKeyframe.properties, nextKeyframe.properties, progress);
         }
-      } else {
-        // No keyframes, just update visibility
-        console.log('Updating element visibility only:', element.id, isVisible);
       }
     });
   }, [canvas.elements, currentPosition]);
   
   /**
    * Interpolate between two sets of properties
+   * 
+   * @param {Record<string, any>} prevProps - Properties from previous keyframe
+   * @param {Record<string, any>} nextProps - Properties from next keyframe
+   * @param {number} progress - Interpolation progress (0-1)
+   * @returns {Record<string, any>} Interpolated properties
    */
-  const interpolateProperties = (prevProps: any, nextProps: any, progress: number) => {
-    const result: any = { ...prevProps };
+  const interpolateProperties = (
+    prevProps: Record<string, any>, 
+    nextProps: Record<string, any>, 
+    progress: number
+  ): Record<string, any> => {
+    const result: Record<string, any> = { ...prevProps };
     
     // Interpolate numeric properties
     Object.keys(prevProps).forEach(key => {
@@ -214,7 +215,7 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const animationFrameRef = useRef<number | null>(null);
   
   // Use a ref to track the last position to avoid dependency on currentPosition
-  const positionRef = useRef(currentPosition);
+  const positionRef = useRef<number>(currentPosition);
   
   // Update the ref when currentPosition changes
   useEffect(() => {
@@ -328,5 +329,7 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
 /**
  * Hook to use timeline context
+ * 
+ * @returns {TimelineContextType} Timeline context
  */
-export const useTimeline = () => useContext(TimelineContext);
+export const useTimeline = (): TimelineContextType => useContext(TimelineContext);

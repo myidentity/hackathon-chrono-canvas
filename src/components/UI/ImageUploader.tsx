@@ -6,7 +6,6 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { useCanvas } from '../../context/CanvasContext';
 
 interface ImageUploaderProps {
   onImageUploaded?: (imageUrl: string) => void;
@@ -16,17 +15,24 @@ interface ImageUploaderProps {
 /**
  * ImageUploader component
  * Provides a simple file picker for uploading images
+ * 
+ * @param {ImageUploaderProps} props - Component properties
+ * @returns {JSX.Element} Rendered component
  */
 const ImageUploader: React.FC<ImageUploaderProps> = ({ 
   onImageUploaded,
   className = ''
 }) => {
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Handle file selection
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  /**
+   * Handle file selection
+   * 
+   * @param {React.ChangeEvent<HTMLInputElement>} event - File input change event
+   */
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
     
@@ -61,8 +67,10 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     }, 500);
   };
   
-  // Trigger file input click
-  const handleButtonClick = () => {
+  /**
+   * Trigger file input click
+   */
+  const handleButtonClick = (): void => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }

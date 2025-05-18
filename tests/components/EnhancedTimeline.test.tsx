@@ -148,7 +148,9 @@ describe('EnhancedTimeline', () => {
     );
 
     // Hover over marker to show delete button
-    fireEvent.mouseEnter(screen.getByText('Intro').parentElement);
+    // Use non-null assertion to handle potential null value
+    const markerElement = screen.getByText('Intro').parentElement!;
+    fireEvent.mouseEnter(markerElement);
     
     // Click delete button (may need to adjust selector based on actual implementation)
     const deleteButtons = document.querySelectorAll('button[title="Delete Marker"]');

@@ -8,9 +8,29 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 
 // Type definitions
+export interface KeyframeProperty {
+  opacity?: number;
+  scale?: number;
+  rotation?: number;
+  position?: { x: number; y: number };
+  [key: string]: any;
+}
+
+export interface TimelineKeyframe {
+  time: number;
+  properties: KeyframeProperty;
+}
+
+export interface TimelineData {
+  entryPoint?: number;
+  exitPoint?: number;
+  persist?: boolean;
+  keyframes?: TimelineKeyframe[];
+}
+
 export interface CanvasElement {
   id: string;
-  type: 'image' | 'text' | 'shape' | 'sticker' | 'media';
+  type: 'image' | 'text' | 'shape' | 'sticker' | 'media' | 'audio' | 'map';
   position: { x: number; y: number };
   size: { width: number; height: number };
   rotation?: number;
@@ -27,15 +47,8 @@ export interface CanvasElement {
   shape?: string;
   borderRadius?: string;
   emoji?: string;
-  timelineData?: {
-    entryPoint?: number;
-    exitPoint?: number;
-    persist?: boolean;
-    keyframes?: Array<{
-      time: number;
-      properties: any;
-    }>;
-  };
+  timelineData?: TimelineData;
+  [key: string]: any;
 }
 
 export interface CanvasState {
@@ -53,7 +66,7 @@ export interface CanvasContextValue {
   updateElementPosition: (id: string, dx: number, dy: number) => void;
   updateElementSize: (id: string, width: number, height: number) => void;
   updateElementRotation: (id: string, rotation: number) => void;
-  updateElementVisibility: (id: string, isVisible: boolean, properties?: any) => void;
+  updateElementVisibility: (id: string, isVisible: boolean, properties?: Partial<CanvasElement>) => void;
   clearCanvas: () => void;
 }
 
@@ -115,20 +128,22 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       elements: prev.elements.map(element => {
         if (element.id === id) {
           // Create a deep copy of the element
-          const updatedElement = { ...element };
+          const updatedElement = { ...element } as CanvasElement;
           
           // Process each update key
           Object.keys(updates).forEach(key => {
             if (key.includes('.')) {
               // Handle nested properties (e.g., 'position.x')
               const [parent, child] = key.split('.');
-              if (!updatedElement[parent]) {
-                updatedElement[parent] = {};
+              if (parent && child) {
+                if (!updatedElement[parent]) {
+                  updatedElement[parent] = {};
+                }
+                updatedElement[parent] = {
+                  ...updatedElement[parent],
+                  [child]: updates[key]
+                };
               }
-              updatedElement[parent] = {
-                ...updatedElement[parent],
-                [child]: updates[key]
-              };
             } else if (typeof updates[key] === 'object' && updates[key] !== null && !Array.isArray(updates[key])) {
               // Handle object updates (deep merge)
               updatedElement[key] = {
@@ -141,7 +156,8 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             }
           });
           
-          console.log('Updating element with:', updatedElement);
+          // Remove console log for production
+          // console.log('Updating element with:', updatedElement);
           return updatedElement;
         }
         return element;
@@ -167,9 +183,10 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
    * Select an element
    */
   const selectElement = useCallback((id: string | null) => {
-    console.log('CanvasContext selectElement called with id:', id);
+    // Remove console logs for production
+    // console.log('CanvasContext selectElement called with id:', id);
     setSelectedElement(id);
-    console.log('CanvasContext selectedElement state updated to:', id);
+    // console.log('CanvasContext selectedElement state updated to:', id);
   }, []);
   
   /**
@@ -232,7 +249,7 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   /**
    * Update element visibility and properties for timeline animations
    */
-  const updateElementVisibility = useCallback((id: string, isVisible: boolean, properties?: any) => {
+  const updateElementVisibility = useCallback((id: string, isVisible: boolean, properties?: Partial<CanvasElement>) => {
     setCanvas(prev => ({
       ...prev,
       elements: prev.elements.map(element => {

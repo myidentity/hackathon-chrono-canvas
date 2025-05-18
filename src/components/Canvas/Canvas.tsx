@@ -6,18 +6,22 @@
  * manipulation.
  */
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 import { useTimeline } from '../../context/TimelineContext';
 import ElementRenderer from './ElementRenderer';
+import { ViewMode } from '../../types/ViewMode';
 
 interface CanvasProps {
-  mode?: 'editor' | 'timeline' | 'zine' | 'presentation';
+  mode?: ViewMode;
 }
 
 /**
  * Canvas component
  * Renders the main canvas area with all elements
+ * 
+ * @param {CanvasProps} props - Component properties
+ * @returns {JSX.Element} Rendered component
  */
 const Canvas: React.FC<CanvasProps> = ({ mode = 'editor' }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -25,13 +29,17 @@ const Canvas: React.FC<CanvasProps> = ({ mode = 'editor' }) => {
   const { currentPosition, isPlaying } = useTimeline();
   
   // State for canvas interaction
-  const [isPanning, setIsPanning] = useState(false);
-  const [startPanPosition, setStartPanPosition] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [showGrid, setShowGrid] = useState(true);
+  const [isPanning, setIsPanning] = useState<boolean>(false);
+  const [startPanPosition, setStartPanPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState<number>(1);
+  const [showGrid, setShowGrid] = useState<boolean>(true);
   
-  // Handle mouse down for panning or element selection
-  const handleMouseDown = (e: React.MouseEvent) => {
+  /**
+   * Handle mouse down for panning or element selection
+   * 
+   * @param {React.MouseEvent<HTMLDivElement>} e - Mouse event
+   */
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>): void => {
     if (mode !== 'editor') return;
     
     // Check if clicking on an element
@@ -48,8 +56,12 @@ const Canvas: React.FC<CanvasProps> = ({ mode = 'editor' }) => {
     }
   };
   
-  // Handle mouse move for panning or element dragging
-  const handleMouseMove = (e: React.MouseEvent) => {
+  /**
+   * Handle mouse move for panning or element dragging
+   * 
+   * @param {React.MouseEvent<HTMLDivElement>} e - Mouse event
+   */
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>): void => {
     if (mode !== 'editor') return;
     
     if (isPanning && canvasRef.current) {
@@ -70,27 +82,30 @@ const Canvas: React.FC<CanvasProps> = ({ mode = 'editor' }) => {
     }
   };
   
-  // Handle mouse up to end panning or element dragging
-  const handleMouseUp = () => {
+  /**
+   * Handle mouse up to end panning or element dragging
+   */
+  const handleMouseUp = (): void => {
     if (mode !== 'editor') return;
     
     setIsPanning(false);
   };
   
-  // Handle zoom in/out
-  const handleZoom = (factor: number) => {
+  /**
+   * Handle zoom in/out
+   * 
+   * @param {number} factor - Zoom factor
+   */
+  const handleZoom = (factor: number): void => {
     setZoom(prev => Math.max(0.25, Math.min(4, prev * factor)));
   };
   
-  // Toggle grid visibility
-  const toggleGrid = () => {
+  /**
+   * Toggle grid visibility
+   */
+  const toggleGrid = (): void => {
     setShowGrid(prev => !prev);
   };
-  
-  // Log current timeline position for debugging
-  useEffect(() => {
-    console.log(`Canvas: Timeline position ${currentPosition}, Playing: ${isPlaying}`);
-  }, [currentPosition, isPlaying]);
   
   return (
     <div className="relative flex-1 overflow-hidden">
@@ -120,8 +135,8 @@ const Canvas: React.FC<CanvasProps> = ({ mode = 'editor' }) => {
               key={element.id}
               element={element}
               isSelected={selectedElement === element.id}
-              mode={mode}
-              currentTime={currentPosition}
+              viewMode={mode}
+              currentPosition={currentPosition}
             />
           ))}
           

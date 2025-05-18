@@ -10,6 +10,7 @@
 import { useState, useEffect, useRef, ReactNode } from 'react';
 import { useTimeline } from '../../context/TimelineContext';
 import { interpolate, generateTransform, Easing } from './AnimationUtils';
+import { ViewMode } from '../../types/ViewMode';
 
 /**
  * Props for the AnimatedElement component
@@ -73,7 +74,7 @@ interface AnimatedElementProps {
   /**
    * The view mode of the application
    */
-  viewMode: 'editor' | 'timeline' | 'presentation' | 'zine';
+  viewMode: ViewMode;
   
   /**
    * The scroll position (for zine mode)

@@ -109,16 +109,19 @@ describe('AnimationUtils', () => {
 
   describe('calculateParallax function', () => {
     test('should calculate correct parallax offset', () => {
-      expect(calculateParallax(100, 0.5, 1000)).toBe(-25);
+      // Fix: Remove the third argument
+      expect(calculateParallax(100, 0.5)).toBe(-25);
     });
 
     test('should limit speed to reasonable range', () => {
-      expect(calculateParallax(100, 1.5, 1000)).toBe(-50);
-      expect(calculateParallax(100, -0.5, 1000)).toBe(0);
+      // Fix: Remove the third argument
+      expect(calculateParallax(100, 1.5)).toBe(-50);
+      expect(calculateParallax(100, -0.5)).toBe(0);
     });
 
     test('should return zero for zero scroll position', () => {
-      expect(calculateParallax(0, 0.5, 1000)).toBe(0);
+      // Fix: Remove the third argument
+      expect(calculateParallax(0, 0.5)).toBe(0);
     });
   });
 });

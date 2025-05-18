@@ -9,19 +9,35 @@ import React, { useState, useEffect } from 'react';
 import { useCanvas, CanvasElement } from '../../context/CanvasContext';
 import { useTimeline, TimelineMarker } from '../../context/TimelineContext';
 import ColorPicker from '../UI/ColorPicker';
+import { ViewMode } from '../../types/ViewMode';
+
+interface KeyframeProperties {
+  position?: { x: number; y: number };
+  size?: { width: number; height: number };
+  rotation?: number;
+  opacity?: number;
+  [key: string]: any;
+}
+
+interface TimelineDataType {
+  entryPoint?: number;
+  exitPoint?: number;
+  persist?: boolean;
+  keyframes?: Array<{
+    time: number;
+    properties: KeyframeProperties;
+  }>;
+}
 
 interface PropertyPanelProps {
-  mode?: 'editor' | 'timeline' | 'zine' | 'presentation';
+  mode?: ViewMode;
 }
 
 /**
  * PropertyPanel component
  * Provides controls for editing the selected element's properties
- * 
- * @param {PropertyPanelProps} props - Component properties
- * @returns {JSX.Element} Rendered component
  */
-const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
+const PropertyPanel: React.FC<PropertyPanelProps> = () => {
   // Get canvas and timeline context
   const { canvas, selectedElement, updateElement, removeElement } = useCanvas();
   const { currentPosition, addMarker } = useTimeline();
@@ -36,32 +52,38 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
   
   // Update local state when selected element changes
   useEffect(() => {
-    console.log('PropertyPanel: selectedElementData changed:', selectedElementData);
+    // Remove console logs for production
+    // console.log('PropertyPanel: selectedElementData changed:', selectedElementData);
     if (selectedElementData) {
-      console.log('PropertyPanel: updating elementProperties with:', selectedElementData);
+      // console.log('PropertyPanel: updating elementProperties with:', selectedElementData);
       setElementProperties({ ...selectedElementData });
     } else {
-      console.log('PropertyPanel: clearing elementProperties');
+      // console.log('PropertyPanel: clearing elementProperties');
       setElementProperties(null);
     }
   }, [selectedElementData]);
   
   // Handle property change
-  const handlePropertyChange = (property: string, value: any) => {
+  const handlePropertyChange = (property: string, value: string | number | boolean | object) => {
     if (!elementProperties) return;
     
     // Create updated properties object
-    const updatedProperties = { ...elementProperties };
+    const updatedProperties = { ...elementProperties } as Partial<CanvasElement>;
     
     // Handle nested properties
     if (property.includes('.')) {
       const [parent, child] = property.split('.');
-      updatedProperties[parent] = {
-        ...updatedProperties[parent],
-        [child]: value,
-      };
+      if (parent && child) {
+        if (!updatedProperties[parent]) {
+          updatedProperties[parent] = {};
+        }
+        updatedProperties[parent] = {
+          ...updatedProperties[parent],
+          [child]: value,
+        };
+      }
     } else {
-      updatedProperties[property] = value;
+      updatedProperties[property as keyof CanvasElement] = value as any;
     }
     
     // Update local state
@@ -69,16 +91,18 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
     
     // Update element in canvas context
     if (selectedElement) {
-      updateElement(selectedElement, { [property]: value });
+      const updateObj: Record<string, any> = {};
+      updateObj[property] = value;
+      updateElement(selectedElement, updateObj);
     }
   };
   
   // Handle timeline data change
-  const handleTimelineDataChange = (property: string, value: any) => {
+  const handleTimelineDataChange = (property: string, value: string | number | boolean | object) => {
     if (!elementProperties || !selectedElement) return;
     
     // Create updated timeline data
-    const timelineData = {
+    const timelineData: TimelineDataType = {
       ...(elementProperties.timelineData || {}),
       [property]: value,
     };
@@ -90,7 +114,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
     });
     
     // Update element in canvas context
-    updateElement(selectedElement, { timelineData });
+    updateElement(selectedElement, { timelineData: timelineData as any });
   };
   
   // Handle adding a keyframe
@@ -98,15 +122,20 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
     if (!elementProperties || !selectedElement) return;
     
     // Get current properties for the keyframe
-    const keyframeProperties = {
-      position: { ...elementProperties.position },
-      size: { ...elementProperties.size },
+    const keyframeProperties: {
+      position?: { x: number; y: number };
+      size?: { width: number; height: number };
+      rotation?: number;
+      opacity?: number;
+    } = {
+      position: elementProperties.position ? { ...elementProperties.position } : undefined,
+      size: elementProperties.size ? { ...elementProperties.size } : undefined,
       rotation: elementProperties.rotation || 0,
       opacity: elementProperties.opacity !== undefined ? elementProperties.opacity : 1,
     };
     
     // Create or update timeline data with the new keyframe
-    const timelineData = elementProperties.timelineData || {
+    const timelineData: TimelineDataType = elementProperties.timelineData || {
       entryPoint: currentPosition,
       exitPoint: currentPosition + 30,
       persist: true,
@@ -136,7 +165,9 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
     }
     
     // Sort keyframes by time
-    timelineData.keyframes.sort((a, b) => a.time - b.time);
+    if (timelineData.keyframes) {
+      timelineData.keyframes.sort((a, b) => a.time - b.time);
+    }
     
     // Update local state
     setElementProperties({
@@ -145,13 +176,13 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
     });
     
     // Update element in canvas context
-    updateElement(selectedElement, { timelineData });
+    updateElement(selectedElement, { timelineData: timelineData as any });
     
     // Add a marker for this keyframe
     const newMarker: TimelineMarker = {
       id: `keyframe-${selectedElement}-${Date.now()}`,
       position: currentPosition,
-      name: `${elementProperties.type} Keyframe`,
+      name: `${elementProperties.type || 'Element'} Keyframe`,
       color: '#3b82f6'
     };
     
@@ -379,163 +410,78 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ mode = 'editor' }) => {
         </div>
       )}
       
-      {elementProperties.type === 'shape' && (
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Shape Type
-          </label>
-          <select 
-            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
-            value={elementProperties.shape || 'rectangle'}
-            onChange={(e) => handlePropertyChange('shape', e.target.value)}
-          >
-            <option value="rectangle">Rectangle</option>
-            <option value="circle">Circle</option>
-            <option value="triangle">Triangle</option>
-            <option value="star">Star</option>
-            <option value="hexagon">Hexagon</option>
-            <option value="pentagon">Pentagon</option>
-            <option value="diamond">Diamond</option>
-            <option value="arrow">Arrow</option>
-          </select>
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            <div>
-              <ColorPicker
-                color={elementProperties.backgroundColor || '#6366F1'}
-                onChange={(color) => handlePropertyChange('backgroundColor', color)}
-                label="Background Color"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Border Radius</label>
-              <input 
-                type="text"
-                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
-                value={elementProperties.borderRadius || '0'}
-                onChange={(e) => handlePropertyChange('borderRadius', e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {elementProperties.type === 'sticker' && (
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Sticker
-          </label>
-          <div className="text-center p-4 bg-gray-200 dark:bg-gray-700 rounded mb-2">
-            <span className="text-4xl">{elementProperties.emoji || '🌟'}</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Sticker Type</label>
-              <input 
-                type="text"
-                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
-                value={elementProperties.stickerType || 'emoji'}
-                disabled
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Name</label>
-              <input 
-                type="text"
-                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
-                value={elementProperties.name || ''}
-                onChange={(e) => handlePropertyChange('name', e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Timeline data */}
+      {/* Timeline Data */}
       <div className="mb-4">
-        <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">Timeline</h3>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Entry Point (s)</label>
-            <input 
-              type="number"
-              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
-              value={elementProperties.timelineData?.entryPoint || 0}
-              onChange={(e) => handleTimelineDataChange('entryPoint', parseFloat(e.target.value) || 0)}
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Exit Point (s)</label>
-            <input 
-              type="number"
-              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
-              value={elementProperties.timelineData?.exitPoint !== null ? elementProperties.timelineData?.exitPoint : ''}
-              placeholder="None"
-              onChange={(e) => {
-                const value = e.target.value === '' ? null : parseFloat(e.target.value);
-                handleTimelineDataChange('exitPoint', value);
-              }}
-            />
-          </div>
-        </div>
-        <div className="mt-2">
-          <label className="flex items-center">
-            <input 
-              type="checkbox"
-              className="mr-2 accent-blue-600 dark:accent-blue-400"
-              checked={elementProperties.timelineData?.persist || false}
-              onChange={(e) => handleTimelineDataChange('persist', e.target.checked)}
-            />
-            <span className="text-sm text-gray-700 dark:text-gray-300">Persist after exit</span>
+        <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Timeline Data
+        </h3>
+        
+        {/* Entry Point */}
+        <div className="mb-2">
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+            Entry Point (seconds)
           </label>
-        </div>
-        <div className="mt-4">
-          <button
-            onClick={handleAddKeyframe}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded flex items-center justify-center"
-          >
-            <span className="material-icons text-sm mr-1">add</span>
-            Add Keyframe at {currentPosition}s
-          </button>
+          <input 
+            type="number"
+            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
+            value={elementProperties.timelineData?.entryPoint || 0}
+            onChange={(e) => handleTimelineDataChange('entryPoint', parseInt(e.target.value) || 0)}
+          />
         </div>
         
-        {/* Keyframes list */}
-        {elementProperties.timelineData?.keyframes && elementProperties.timelineData.keyframes.length > 0 && (
-          <div className="mt-4">
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Keyframes</label>
-            <div className="border border-gray-300 dark:border-gray-600 rounded overflow-hidden">
-              {elementProperties.timelineData.keyframes.map((keyframe, index) => (
-                <div 
-                  key={index}
-                  className="flex items-center justify-between p-2 border-b border-gray-300 dark:border-gray-600 last:border-b-0 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <div className="text-sm dark:text-gray-200">{keyframe.time}s</div>
-                  <div className="flex items-center">
-                    <button
-                      onClick={() => {
-                        const updatedKeyframes = [...elementProperties.timelineData!.keyframes!];
-                        updatedKeyframes.splice(index, 1);
-                        handleTimelineDataChange('keyframes', updatedKeyframes);
-                      }}
-                      className="text-red-500 hover:text-red-600"
-                      title="Remove keyframe"
-                    >
-                      <span className="material-icons text-sm">delete</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Exit Point */}
+        <div className="mb-2">
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+            Exit Point (seconds)
+          </label>
+          <input 
+            type="number"
+            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
+            value={elementProperties.timelineData?.exitPoint || 0}
+            onChange={(e) => {
+              // Convert to number or use 0 as fallback
+              const value = parseInt(e.target.value) || 0;
+              handleTimelineDataChange('exitPoint', value);
+            }}
+          />
+        </div>
+        
+        {/* Persist */}
+        <div className="mb-2 flex items-center">
+          <input 
+            type="checkbox"
+            className="mr-2 accent-blue-600 dark:accent-blue-400"
+            checked={elementProperties.timelineData?.persist || false}
+            onChange={(e) => handleTimelineDataChange('persist', e.target.checked)}
+            id="persist-checkbox"
+          />
+          <label 
+            htmlFor="persist-checkbox"
+            className="text-sm text-gray-700 dark:text-gray-300"
+          >
+            Persist after exit point
+          </label>
+        </div>
+        
+        {/* Add Keyframe Button */}
+        <button
+          className="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded text-sm font-medium"
+          onClick={handleAddKeyframe}
+        >
+          Add Keyframe at Current Position
+        </button>
       </div>
       
-      {/* Delete button */}
+      {/* Delete Button */}
       <div className="mt-6">
         <button
-          onClick={() => removeElement(elementProperties.id)}
-          className="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded flex items-center justify-center"
+          className="w-full bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded text-sm font-medium"
+          onClick={() => {
+            if (selectedElement) {
+              removeElement(selectedElement);
+            }
+          }}
         >
-          <span className="material-icons text-sm mr-1">delete</span>
           Delete Element
         </button>
       </div>

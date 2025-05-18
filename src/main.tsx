@@ -7,7 +7,7 @@
  * @module main
  */
 
-import React, { ErrorBoundary } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
@@ -29,7 +29,7 @@ const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error, resetError
         backgroundColor: '#f8f8f8', 
         overflow: 'auto',
         maxHeight: '300px',
-        border: '1px solid #ddd',
+        border: '1px solid #dddddd',
         borderRadius: '4px'
       }}>
         {error.message}

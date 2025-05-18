@@ -13,6 +13,41 @@ interface ZineViewProps {
   mode?: 'editor' | 'timeline' | 'zine' | 'presentation';
 }
 
+interface CanvasElement {
+  id: string;
+  type: string;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  rotation?: number;
+  opacity?: number;
+  zIndex?: number;
+  src?: string;
+  alt?: string;
+  fontSize?: string;
+  fontWeight?: string;
+  color?: string;
+  textAlign?: string;
+  content?: string;
+  backgroundColor?: string;
+  shape?: string;
+  borderRadius?: string;
+  timelineData?: {
+    entryPoint?: number | null;
+    exitPoint?: number | null;
+    persist?: boolean;
+    keyframes?: Array<{
+      time: number;
+      properties: {
+        position?: { x: number; y: number };
+        opacity?: number;
+        rotation?: number;
+        [key: string]: any;
+      };
+    }>;
+  };
+  [key: string]: any;
+}
+
 /**
  * ZineView component
  * Provides a scroll-based interactive viewing experience for canvas elements
@@ -20,14 +55,14 @@ interface ZineViewProps {
  * @param {ZineViewProps} props - Component properties
  * @returns {JSX.Element} Rendered component
  */
-const ZineView: React.FC<ZineViewProps> = ({ mode = 'zine' }) => {
+const ZineView: React.FC<ZineViewProps> = () => {
   // Get canvas and timeline context
   const { canvas } = useCanvas();
   const { currentPosition, setPosition } = useTimeline();
   
   // State for scroll position and animation
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const [maxScrollHeight, setMaxScrollHeight] = useState(5000); // Default height
+  const [scrollPosition, setScrollPosition] = useState<number>(0);
+  const [maxScrollHeight, setMaxScrollHeight] = useState<number>(5000); // Default height
   const [visibleElements, setVisibleElements] = useState<string[]>([]);
   
   // Refs for DOM elements
@@ -36,7 +71,7 @@ const ZineView: React.FC<ZineViewProps> = ({ mode = 'zine' }) => {
   /**
    * Handle scroll events to update timeline position
    */
-  const handleScroll = () => {
+  const handleScroll = (): void => {
     if (!containerRef.current) return;
     
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
@@ -49,18 +84,15 @@ const ZineView: React.FC<ZineViewProps> = ({ mode = 'zine' }) => {
     // Map scroll percentage to timeline position
     const timelinePosition = scrollPercentage * 60; // Assuming 60 seconds duration
     setPosition(timelinePosition);
-    
-    // Debug info
-    console.log(`Scroll: ${scrollPercentage.toFixed(2)}, Timeline: ${timelinePosition.toFixed(2)}s`);
   };
   
   /**
    * Calculate element visibility based on timeline position
    */
-  const calculateVisibleElements = () => {
+  const calculateVisibleElements = (): void => {
     const visible: string[] = [];
     
-    canvas.elements.forEach(element => {
+    canvas.elements.forEach((element: CanvasElement) => {
       if (!element.timelineData) {
         // Elements without timeline data are always visible
         visible.push(element.id);
@@ -88,16 +120,15 @@ const ZineView: React.FC<ZineViewProps> = ({ mode = 'zine' }) => {
     });
     
     setVisibleElements(visible);
-    console.log('Visible elements:', visible.length);
   };
   
   /**
    * Calculate element styles based on timeline position and scroll
    * 
-   * @param {any} element - Canvas element
+   * @param {CanvasElement} element - Canvas element
    * @returns {React.CSSProperties} CSS properties for the element
    */
-  const getElementStyles = (element: any): React.CSSProperties => {
+  const getElementStyles = (element: CanvasElement): React.CSSProperties => {
     // Base styles
     const styles: React.CSSProperties = {
       position: 'absolute',
@@ -175,10 +206,10 @@ const ZineView: React.FC<ZineViewProps> = ({ mode = 'zine' }) => {
   /**
    * Render element based on its type
    * 
-   * @param {any} element - Canvas element
+   * @param {CanvasElement} element - Canvas element
    * @returns {JSX.Element} Rendered element
    */
-  const renderElement = (element: any) => {
+  const renderElement = (element: CanvasElement): JSX.Element => {
     switch (element.type) {
       case 'image':
         return (
@@ -196,8 +227,8 @@ const ZineView: React.FC<ZineViewProps> = ({ mode = 'zine' }) => {
             <p style={{ 
               fontSize: element.fontSize || '16px',
               fontWeight: element.fontWeight || 'normal',
-              color: element.color || '#000',
-              textAlign: element.textAlign || 'center',
+              color: element.color || '#000000',
+              textAlign: element.textAlign as React.CSSProperties['textAlign'] || 'center',
             }}>
               {element.content || 'Text Element'}
             </p>
@@ -244,7 +275,7 @@ const ZineView: React.FC<ZineViewProps> = ({ mode = 'zine' }) => {
     // Find the latest exit point in timeline data
     let maxTime = 60; // Default 60 seconds
     
-    canvas.elements.forEach(element => {
+    canvas.elements.forEach((element: CanvasElement) => {
       if (element.timelineData?.exitPoint && element.timelineData.exitPoint > maxTime) {
         maxTime = element.timelineData.exitPoint;
       }
@@ -274,8 +305,8 @@ const ZineView: React.FC<ZineViewProps> = ({ mode = 'zine' }) => {
       >
         {/* Render visible elements */}
         {canvas.elements
-          .filter(element => visibleElements.includes(element.id))
-          .map(element => (
+          .filter((element: CanvasElement) => visibleElements.includes(element.id))
+          .map((element: CanvasElement) => (
             <div
               key={element.id}
               style={getElementStyles(element)}

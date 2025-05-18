@@ -1,8 +1,21 @@
 import React, { useState, useRef } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 
+interface ImageElement {
+  id: string;
+  position?: { x: number; y: number };
+  x?: number;
+  y?: number;
+  size?: { width: number; height: number };
+  width?: number;
+  height?: number;
+  zIndex?: number;
+  src: string;
+  alt?: string;
+}
+
 interface ImageElementProps {
-  element: any;
+  element: ImageElement;
   isSelected: boolean;
   onClick: (e: React.MouseEvent) => void;
 }
@@ -14,8 +27,9 @@ const ImageElement: React.FC<ImageElementProps> = ({ element, isSelected, onClic
   const elementRef = useRef<HTMLDivElement>(null);
 
   const handleClick = (e: React.MouseEvent) => {
-    console.log('ImageElement clicked:', element.id);
-    console.log('Current isSelected state in ImageElement:', isSelected);
+    // Remove console logs for production
+    // console.log('ImageElement clicked:', element.id);
+    // console.log('Current isSelected state in ImageElement:', isSelected);
     e.stopPropagation(); // Prevent event from bubbling to canvas
     onClick(e);
   };

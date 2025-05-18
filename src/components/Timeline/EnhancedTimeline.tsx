@@ -7,12 +7,46 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useTimeline, TimelineMarker } from '../../context/TimelineContext';
-import { useCanvas } from '../../context/CanvasContext';
+import { useTimeline } from '../../context/TimelineContext';
+import { useCanvas, TimelineData as CanvasTimelineData } from '../../context/CanvasContext';
+
+// Define TimelineMarker interface
+interface TimelineMarker {
+  id: string;
+  position: number;
+  name: string;
+  color: string;
+}
 
 interface EnhancedTimelineProps {
   mode?: 'editor' | 'timeline' | 'zine' | 'presentation';
 }
+
+interface VisibleRange {
+  start: number;
+  end: number;
+}
+
+interface MarkerFormState {
+  name: string;
+  color: string;
+}
+
+interface KeyframeProperties {
+  position: {
+    x: number;
+    y: number;
+  };
+  size: {
+    width: number;
+    height: number;
+  };
+  rotation: number;
+  opacity: number;
+}
+
+// Use the TimelineData interface from CanvasContext
+type TimelineData = CanvasTimelineData;
 
 /**
  * EnhancedTimeline component
@@ -21,7 +55,7 @@ interface EnhancedTimelineProps {
  * @param {EnhancedTimelineProps} props - Component properties
  * @returns {JSX.Element} Rendered component
  */
-const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }) => {
+const EnhancedTimeline: React.FC<EnhancedTimelineProps> = () => {
   // Get timeline and canvas context
   const { 
     currentPosition, 
@@ -34,36 +68,46 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     setPlaybackSpeed,
     addMarker,
     removeMarker,
-    setCurrentPosition,
-    play,
-    pause,
     seekToMarker
   } = useTimeline();
   
   const { canvas, selectedElement, updateElement } = useCanvas();
   
   // State for timeline interaction
-  const [isDragging, setIsDragging] = useState(false);
-  const [zoom, setZoom] = useState(1);
-  const [visibleRange, setVisibleRange] = useState({ start: 0, end: duration });
-  const [showMarkerForm, setShowMarkerForm] = useState(false);
-  const [markerForm, setMarkerForm] = useState({ name: '', color: '#3b82f6' });
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [zoom, setZoom] = useState<number>(1);
+  const [visibleRange, setVisibleRange] = useState<VisibleRange>({ 
+    start: 0, 
+    end: duration || 60 
+  });
+  const [showMarkerForm, setShowMarkerForm] = useState<boolean>(false);
+  const [markerForm, setMarkerForm] = useState<MarkerFormState>({ 
+    name: '', 
+    color: '#3b82f6' 
+  });
   
   // Refs for DOM elements
   const timelineRef = useRef<HTMLDivElement>(null);
-  const scrubberRef = useRef<HTMLDivElement>(null);
+  const playheadRef = useRef<HTMLDivElement>(null);
+  
+  // Update visible range when duration changes
+  useEffect(() => {
+    setVisibleRange({ 
+      start: 0, 
+      end: duration || 60 
+    });
+  }, [duration]);
   
   /**
-   * Format time as MM:SS.ms
+   * Format time as MM:SS
    * 
    * @param {number} seconds - Time in seconds
    * @returns {string} Formatted time string
    */
-  const formatTime = (seconds: number) => {
+  const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    const ms = Math.floor((seconds % 1) * 100);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
   /**
@@ -71,84 +115,89 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
    * 
    * @param {React.MouseEvent<HTMLDivElement>} e - Mouse event
    */
-  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isDragging) return;
+  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>): void => {
+    if (!timelineRef.current) return;
     
-    const timeline = e.currentTarget;
-    const rect = timeline.getBoundingClientRect();
+    const rect = timelineRef.current.getBoundingClientRect();
     const clickPosition = e.clientX - rect.left;
     const percentage = clickPosition / rect.width;
+    
+    // Calculate position based on visible range
     const visibleDuration = visibleRange.end - visibleRange.start;
-    const newPosition = visibleRange.start + percentage * visibleDuration;
+    const newPosition = visibleRange.start + (percentage * visibleDuration);
     
     setPosition(newPosition);
   };
   
   /**
-   * Handle mouse down on scrubber
-   * 
-   * @param {React.MouseEvent} e - Mouse event
+   * Handle mouse down on playhead for dragging
    */
-  const handleScrubberMouseDown = (e: React.MouseEvent) => {
+  const handlePlayheadMouseDown = (e: React.MouseEvent): void => {
     e.stopPropagation();
     setIsDragging(true);
     
-    // Add event listeners for dragging
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    // Pause playback while dragging
+    if (isPlaying) {
+      togglePlayback();
+    }
+    
+    // Add document-level event listeners for drag and release
+    document.addEventListener('mousemove', handlePlayheadDrag);
+    document.addEventListener('mouseup', handlePlayheadRelease);
   };
   
   /**
-   * Handle mouse move during scrubber drag
-   * 
-   * @param {MouseEvent} e - Mouse event
+   * Handle playhead drag
    */
-  const handleMouseMove = (e: MouseEvent) => {
+  const handlePlayheadDrag = (e: MouseEvent): void => {
     if (!isDragging || !timelineRef.current) return;
     
-    const timeline = timelineRef.current;
-    const rect = timeline.getBoundingClientRect();
-    const mousePosition = e.clientX - rect.left;
-    const percentage = Math.max(0, Math.min(1, mousePosition / rect.width));
+    const rect = timelineRef.current.getBoundingClientRect();
+    const dragPosition = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, dragPosition / rect.width));
+    
+    // Calculate position based on visible range
     const visibleDuration = visibleRange.end - visibleRange.start;
-    const newPosition = visibleRange.start + percentage * visibleDuration;
+    const newPosition = visibleRange.start + (percentage * visibleDuration);
     
     setPosition(newPosition);
   };
   
   /**
-   * Handle mouse up to end scrubber drag
+   * Handle playhead release
    */
-  const handleMouseUp = () => {
+  const handlePlayheadRelease = (): void => {
     setIsDragging(false);
     
-    // Remove event listeners
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
+    // Remove document-level event listeners
+    document.removeEventListener('mousemove', handlePlayheadDrag);
+    document.removeEventListener('mouseup', handlePlayheadRelease);
   };
   
   /**
    * Add a marker at the current position
    */
-  const handleAddMarker = () => {
-    if (markerForm.name.trim()) {
-      const newMarker: TimelineMarker = {
-        id: `marker-${Date.now()}`,
-        position: currentPosition,
-        name: markerForm.name.trim(),
-        color: markerForm.color
-      };
-      
-      addMarker(newMarker);
-      setMarkerForm({ name: '', color: '#3b82f6' });
-      setShowMarkerForm(false);
-    }
+  const handleAddMarker = (): void => {
+    if (!markerForm.name.trim()) return;
+    
+    const newMarker: TimelineMarker = {
+      id: `marker-${Date.now()}`,
+      position: currentPosition,
+      name: markerForm.name.trim(),
+      color: markerForm.color
+    };
+    
+    addMarker(newMarker);
+    
+    // Reset form
+    setMarkerForm({ name: '', color: '#3b82f6' });
+    setShowMarkerForm(false);
   };
   
   /**
-   * Add a keyframe for the selected element at the current position
+   * Add a keyframe at the current position for the selected element
    */
-  const handleAddKeyframe = () => {
+  const handleAddKeyframe = (): void => {
     if (!selectedElement) return;
     
     // Find the selected element
@@ -156,17 +205,23 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     if (!element) return;
     
     // Get current properties for the keyframe
-    const keyframeProperties = {
-      position: { ...element.position },
-      size: { ...element.size },
+    const keyframeProperties: KeyframeProperties = {
+      position: { 
+        x: element.position?.x || 0, 
+        y: element.position?.y || 0 
+      },
+      size: { 
+        width: element.size?.width || 100, 
+        height: element.size?.height || 100 
+      },
       rotation: element.rotation || 0,
       opacity: element.opacity !== undefined ? element.opacity : 1,
     };
     
     // Create or update timeline data with the new keyframe
-    const timelineData = element.timelineData || {
+    const timelineData: TimelineData = element.timelineData || {
       entryPoint: currentPosition,
-      exitPoint: currentPosition + 30,
+      exitPoint: undefined,
       persist: true,
       keyframes: [],
     };
@@ -194,7 +249,9 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     }
     
     // Sort keyframes by time
-    timelineData.keyframes.sort((a, b) => a.time - b.time);
+    if (timelineData.keyframes) {
+      timelineData.keyframes.sort((a, b) => a.time - b.time);
+    }
     
     // Update the element
     updateElement(selectedElement, { timelineData });
@@ -203,7 +260,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     const marker: TimelineMarker = {
       id: `keyframe-${selectedElement}-${Date.now()}`,
       position: currentPosition,
-      name: `${element.type} Keyframe`,
+      name: `${element.type || 'Element'} Keyframe`,
       color: '#3b82f6'
     };
     
@@ -215,18 +272,18 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
    * 
    * @param {number} factor - Zoom factor
    */
-  const handleZoom = (factor: number) => {
+  const handleZoom = (factor: number): void => {
     const newZoom = Math.max(0.5, Math.min(10, zoom * factor));
     setZoom(newZoom);
     
     // Adjust visible range based on zoom
-    const visibleDuration = duration / newZoom;
+    const visibleDuration = (duration || 60) / newZoom;
     const center = (visibleRange.start + visibleRange.end) / 2;
     const halfDuration = visibleDuration / 2;
     
     setVisibleRange({
       start: Math.max(0, center - halfDuration),
-      end: Math.min(duration, center + halfDuration),
+      end: Math.min(duration || 60, center + halfDuration),
     });
   };
   
@@ -235,228 +292,116 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
    * 
    * @param {number} direction - Direction to pan (-1 for left, 1 for right)
    */
-  const handlePan = (direction: number) => {
+  const handlePan = (direction: number): void => {
     const visibleDuration = visibleRange.end - visibleRange.start;
     const panAmount = visibleDuration * 0.2 * direction;
     
     let newStart = visibleRange.start + panAmount;
     let newEnd = visibleRange.end + panAmount;
     
-    // Ensure we don't go out of bounds
+    // Ensure we don't pan beyond the timeline bounds
     if (newStart < 0) {
       newStart = 0;
       newEnd = visibleDuration;
-    } else if (newEnd > duration) {
-      newEnd = duration;
-      newStart = Math.max(0, newEnd - visibleDuration);
+    } else if (newEnd > (duration || 60)) {
+      newEnd = duration || 60;
+      newStart = newEnd - visibleDuration;
     }
     
     setVisibleRange({ start: newStart, end: newEnd });
   };
   
-  /**
-   * Step the timeline position by a small increment
-   * 
-   * @param {number} direction - Direction to step (-1 for backward, 1 for forward)
-   */
-  const handleStep = (direction: number) => {
-    const stepSize = 0.5; // Half-second step
-    const newPosition = Math.max(0, Math.min(duration, currentPosition + (stepSize * direction)));
-    setPosition(newPosition);
-  };
-  
-  /**
-   * Center and fit all elements in the timeline view
-   */
-  const handleCenterAndFit = () => {
-    // Reset zoom to default
-    setZoom(1);
-    
-    // Find the earliest and latest points of interest
-    let earliestPoint = 0;
-    let latestPoint = duration;
-    
-    // Check markers
-    if (markers.length > 0) {
-      const markerTimes = markers.map(marker => marker.position);
-      earliestPoint = Math.min(earliestPoint, ...markerTimes);
-      latestPoint = Math.max(latestPoint, ...markerTimes);
-    }
-    
-    // Check elements with timeline data
-    canvas.elements.forEach(element => {
-      if (element.timelineData) {
-        if (element.timelineData.entryPoint !== undefined && element.timelineData.entryPoint !== null) {
-          earliestPoint = Math.min(earliestPoint, element.timelineData.entryPoint);
-        }
-        
-        if (element.timelineData.exitPoint !== undefined && element.timelineData.exitPoint !== null) {
-          latestPoint = Math.max(latestPoint, element.timelineData.exitPoint);
-        }
-        
-        // Check keyframes
-        if (element.timelineData.keyframes && element.timelineData.keyframes.length > 0) {
-          const keyframeTimes = element.timelineData.keyframes.map(kf => kf.time);
-          earliestPoint = Math.min(earliestPoint, ...keyframeTimes);
-          latestPoint = Math.max(latestPoint, ...keyframeTimes);
-        }
-      }
-    });
-    
-    // Add some padding
-    const padding = (latestPoint - earliestPoint) * 0.1;
-    earliestPoint = Math.max(0, earliestPoint - padding);
-    latestPoint = Math.min(duration, latestPoint + padding);
-    
-    // If there are no elements or markers, show the full timeline
-    if (earliestPoint === 0 && latestPoint === duration) {
-      setVisibleRange({ start: 0, end: duration });
-    } else {
-      // Set the visible range to include all points of interest
-      setVisibleRange({ start: earliestPoint, end: latestPoint });
-    }
-  };
-  
-  // Clean up event listeners on unmount
-  useEffect(() => {
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging]);
-  
-  // Update visible range when duration changes
-  useEffect(() => {
-    const visibleDuration = duration / zoom;
-    setVisibleRange({
-      start: 0,
-      end: Math.min(duration, visibleDuration),
-    });
-  }, [duration, zoom]);
-  
-  // Force selectedElement to be non-null for testing purposes
-  // This ensures the keyframe button is always enabled
-  const hasSelectedElement = true; // Changed from selectedElement to always true
+  // Calculate playhead position based on current position and visible range
+  const playheadPosition = (() => {
+    const visibleDuration = visibleRange.end - visibleRange.start;
+    const positionInRange = currentPosition - visibleRange.start;
+    return (positionInRange / visibleDuration) * 100;
+  })();
   
   return (
-    <div className="timeline-panel w-full bg-gray-800 border-t border-gray-700 p-4 text-white">
-      {/* Timeline header */}
+    <div className="w-full bg-gray-100 border-t border-gray-200 p-4">
+      {/* Timeline controls */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-4">
-          {/* Current time display */}
-          <div className="text-lg font-mono">
-            {formatTime(currentPosition)}
-          </div>
-          
-          {/* Playback controls */}
-          <div className="flex items-center space-x-2">
-            <button 
-              className="bg-indigo-600 hover:bg-indigo-700 rounded-full w-10 h-10 flex items-center justify-center"
-              onClick={togglePlayback}
-              aria-label={isPlaying ? "Pause" : "Play"}
-              data-testid="playback-toggle"
-            >
-              {isPlaying ? (
-                <i className="material-icons">pause</i>
-              ) : (
-                <i className="material-icons">play_arrow</i>
-              )}
-            </button>
-            
-            <button 
-              className="bg-gray-700 hover:bg-gray-600 rounded-full w-8 h-8 flex items-center justify-center"
-              onClick={() => setPosition(0)}
-              aria-label="Go to start"
-            >
-              <i className="material-icons">first_page</i>
-            </button>
-            
-            {/* Step backward button */}
-            <button 
-              className="bg-gray-700 hover:bg-gray-600 rounded-full w-8 h-8 flex items-center justify-center"
-              onClick={() => handleStep(-1)}
-              aria-label="Step backward"
-            >
-              <i className="material-icons">skip_previous</i>
-            </button>
-            
-            {/* Step forward button */}
-            <button 
-              className="bg-gray-700 hover:bg-gray-600 rounded-full w-8 h-8 flex items-center justify-center"
-              onClick={() => handleStep(1)}
-              aria-label="Step forward"
-            >
-              <i className="material-icons">skip_next</i>
-            </button>
-            
-            <button 
-              className="bg-gray-700 hover:bg-gray-600 rounded-full w-8 h-8 flex items-center justify-center"
-              onClick={() => setPosition(duration)}
-              aria-label="Go to end"
-            >
-              <i className="material-icons">last_page</i>
-            </button>
+        <div className="flex items-center space-x-2">
+          {/* Time display */}
+          <div className="text-sm font-mono">
+            {formatTime(currentPosition)} / {formatTime(duration || 60)}
           </div>
           
           {/* Playback speed */}
           <select 
-            className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm"
-            value={playbackSpeed}
+            className="ml-4 bg-white border border-gray-300 rounded px-2 py-1 text-sm"
+            value={playbackSpeed.toString()}
             onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
-            data-testid="playback-speed"
           >
-            <option value="0.25">0.25x</option>
             <option value="0.5">0.5x</option>
             <option value="1">1x</option>
             <option value="1.5">1.5x</option>
             <option value="2">2x</option>
-            <option value="4">4x</option>
           </select>
         </div>
         
         <div className="flex items-center space-x-2">
           {/* Zoom controls */}
           <button 
-            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm flex items-center justify-center"
-            onClick={() => handleZoom(1.2)}
-            aria-label="Zoom in"
-          >
-            <i className="material-icons">zoom_in</i>
-          </button>
-          
-          <button 
-            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm flex items-center justify-center"
+            className="bg-white border border-gray-300 rounded-full w-8 h-8 flex items-center justify-center"
             onClick={() => handleZoom(0.8)}
             aria-label="Zoom out"
           >
-            <i className="material-icons">zoom_out</i>
+            <span className="material-icons text-sm">zoom_out</span>
           </button>
-          
-          {/* Center and fit button */}
           <button 
-            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm flex items-center justify-center"
-            onClick={handleCenterAndFit}
-            aria-label="Center and fit all elements"
-            title="Center and fit all elements"
+            className="bg-white border border-gray-300 rounded-full w-8 h-8 flex items-center justify-center"
+            onClick={() => handleZoom(1.25)}
+            aria-label="Zoom in"
           >
-            <i className="material-icons">center_focus_strong</i>
+            <span className="material-icons text-sm">zoom_in</span>
           </button>
           
           {/* Pan controls */}
           <button 
-            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm flex items-center justify-center"
+            className="bg-white border border-gray-300 rounded-full w-8 h-8 flex items-center justify-center"
             onClick={() => handlePan(-1)}
             aria-label="Pan left"
           >
-            <i className="material-icons">chevron_left</i>
+            <span className="material-icons text-sm">chevron_left</span>
           </button>
-          
           <button 
-            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm flex items-center justify-center"
+            className="bg-white border border-gray-300 rounded-full w-8 h-8 flex items-center justify-center"
             onClick={() => handlePan(1)}
             aria-label="Pan right"
           >
-            <i className="material-icons">chevron_right</i>
+            <span className="material-icons text-sm">chevron_right</span>
+          </button>
+          
+          {/* Play/Pause button */}
+          <button 
+            className="bg-indigo-600 text-white rounded-full w-10 h-10 flex items-center justify-center"
+            onClick={togglePlayback}
+            aria-label={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? (
+              <span className="material-icons">pause</span>
+            ) : (
+              <span className="material-icons">play_arrow</span>
+            )}
+          </button>
+          
+          {/* Add marker button */}
+          <button 
+            className="bg-white border border-gray-300 rounded px-3 py-1 text-sm"
+            onClick={() => setShowMarkerForm(true)}
+          >
+            Add Marker
+          </button>
+          
+          {/* Add keyframe button */}
+          <button 
+            className={`bg-white border border-gray-300 rounded px-3 py-1 text-sm ${!selectedElement ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={handleAddKeyframe}
+            disabled={!selectedElement}
+          >
+            Add Keyframe
           </button>
         </div>
       </div>
@@ -464,169 +409,154 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
       {/* Timeline track */}
       <div 
         ref={timelineRef}
-        className="timeline-container w-full h-12 bg-gray-700 rounded-lg relative mb-4 cursor-pointer"
+        className="w-full h-12 bg-gray-200 rounded-lg relative mb-4 cursor-pointer"
         onClick={handleTimelineClick}
-        data-testid="timeline-track"
       >
         {/* Time markers */}
-        {Array.from({ length: Math.ceil((visibleRange.end - visibleRange.start) / 5) + 1 }).map((_, i) => {
-          const time = visibleRange.start + i * 5;
-          const position = ((time - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100;
+        {(() => {
+          const markers = [];
+          const visibleDuration = visibleRange.end - visibleRange.start;
+          const interval = visibleDuration > 60 ? 10 : visibleDuration > 30 ? 5 : 1;
           
-          if (time <= visibleRange.end) {
-            return (
+          for (let i = Math.ceil(visibleRange.start / interval) * interval; i <= visibleRange.end; i += interval) {
+            const position = ((i - visibleRange.start) / visibleDuration) * 100;
+            
+            markers.push(
               <div 
                 key={`time-${i}`}
-                className="absolute top-0 h-full w-px bg-gray-600"
+                className="absolute top-0 h-full border-l border-gray-400"
                 style={{ left: `${position}%` }}
               >
-                <div className="absolute -top-5 left-0 transform -translate-x-1/2 text-xs text-gray-400">
-                  {formatTime(time)}
+                <div className="absolute top-0 -ml-4 text-xs text-gray-600">
+                  {formatTime(i)}
                 </div>
               </div>
             );
           }
-          return null;
+          
+          return markers;
+        })()}
+        
+        {/* Element entry/exit points */}
+        {canvas.elements.map(element => {
+          if (!element.timelineData) return null;
+          
+          const entryPoint = element.timelineData.entryPoint;
+          const exitPoint = element.timelineData.exitPoint;
+          
+          if (entryPoint === undefined) return null;
+          
+          const entryPosition = ((entryPoint - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100;
+          
+          // Only render if within visible range
+          if (entryPosition < 0 || entryPosition > 100) return null;
+          
+          return (
+            <React.Fragment key={`entry-${element.id}`}>
+              <div 
+                className="absolute top-0 h-full border-l-2 border-green-500"
+                style={{ left: `${entryPosition}%` }}
+                title={`${element.type || 'Element'} Entry: ${formatTime(entryPoint)}`}
+              />
+              
+              {exitPoint !== undefined && (
+                <div 
+                  className="absolute top-0 h-full border-l-2 border-red-500"
+                  style={{ 
+                    left: `${((exitPoint - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100}%`,
+                    display: ((exitPoint - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100 < 0 || 
+                             ((exitPoint - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100 > 100 ? 'none' : 'block'
+                  }}
+                  title={`${element.type || 'Element'} Exit: ${formatTime(exitPoint)}`}
+                />
+              )}
+            </React.Fragment>
+          );
         })}
-        
-        {/* Timeline progress */}
-        <div 
-          className="h-full bg-indigo-900 rounded-lg opacity-50"
-          style={{ 
-            width: `${((currentPosition - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100}%`,
-            maxWidth: '100%'
-          }}
-        />
-        
-        {/* Current position indicator (scrubber) */}
-        <div 
-          ref={scrubberRef}
-          className="absolute top-0 w-4 h-12 bg-indigo-500 rounded-full -ml-2 cursor-grab"
-          style={{ 
-            left: `${((currentPosition - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100}%`,
-            zIndex: 10
-          }}
-          onMouseDown={handleScrubberMouseDown}
-          data-testid="timeline-scrubber"
-        />
         
         {/* Markers */}
-        {markers.map(marker => {
-          // Calculate position percentage
-          const position = ((marker.position - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100;
+        {markers.map((marker) => {
+          const markerPosition = ((marker.position - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100;
           
-          // Only render markers in the visible range
-          if (position >= 0 && position <= 100) {
-            return (
+          // Only render if within visible range
+          if (markerPosition < 0 || markerPosition > 100) return null;
+          
+          return (
+            <div 
+              key={marker.id}
+              className="absolute top-0 h-full"
+              style={{ left: `${markerPosition}%` }}
+              title={marker.name}
+              onClick={(e) => {
+                e.stopPropagation();
+                seekToMarker(marker.id);
+              }}
+            >
               <div 
-                key={marker.id}
-                className="absolute top-0 w-2 h-12 -ml-1 cursor-pointer"
-                style={{ 
-                  left: `${position}%`,
-                  backgroundColor: marker.color || '#3b82f6'
-                }}
+                className="absolute top-0 w-2 h-full -ml-1 cursor-pointer"
+                style={{ backgroundColor: marker.color || '#3b82f6' }}
+              />
+              <div className="absolute bottom-0 -ml-2 mb-2 w-4 h-4 rounded-full cursor-pointer"
+                style={{ backgroundColor: marker.color || '#3b82f6' }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  seekToMarker(marker.id);
+                  removeMarker(marker.id);
                 }}
-                title={marker.name}
-                data-testid={`marker-${marker.id}`}
               >
-                <div className="absolute -bottom-5 left-0 transform -translate-x-1/2 text-xs text-gray-400 whitespace-nowrap">
-                  {marker.name}
-                </div>
+                <span className="absolute top-0 left-0 w-full h-full flex items-center justify-center text-white text-xs">
+                  ×
+                </span>
               </div>
-            );
-          }
-          return null;
+            </div>
+          );
         })}
-      </div>
-      
-      <div className="flex items-center space-x-4 mt-4">
-        {/* Add marker button */}
-        <button 
-          className="bg-indigo-600 hover:bg-indigo-700 rounded px-3 py-1 text-sm flex items-center"
-          onClick={() => setShowMarkerForm(true)}
-          data-testid="add-marker-button"
-        >
-          <i className="material-icons mr-1">bookmark_add</i>
-          Add Marker
-        </button>
         
-        {/* Add keyframe button - always enabled now */}
-        <button 
-          className="bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm flex items-center"
-          onClick={handleAddKeyframe}
-          data-testid="add-keyframe-button"
+        {/* Playhead */}
+        <div 
+          ref={playheadRef}
+          className="absolute top-0 h-full"
+          style={{ left: `${playheadPosition}%` }}
         >
-          <i className="material-icons mr-1">add_circle</i>
-          Add Keyframe
-        </button>
-        
-        {/* Duration control */}
-        <div className="flex items-center space-x-2">
-          <span className="text-sm">Duration:</span>
-          <input 
-            type="number"
-            className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm w-16"
-            value={duration}
-            onChange={(e) => {
-              const newDuration = Math.max(1, parseInt(e.target.value) || 1);
-              // Update duration in timeline context
-              // This would require adding a setDuration function to the context
-              // For now, we'll just log it
-              console.log(`Setting duration to ${newDuration}`);
-            }}
-            min="1"
-            step="1"
+          <div 
+            className="absolute top-0 w-1 h-full bg-indigo-700"
+            onMouseDown={handlePlayheadMouseDown}
           />
-          <span className="text-sm">sec</span>
+          <div 
+            className="absolute top-0 w-4 h-4 bg-indigo-700 rounded-full -ml-2 -mt-2 cursor-move"
+            onMouseDown={handlePlayheadMouseDown}
+          />
         </div>
       </div>
       
-      {/* Marker form modal */}
+      {/* Add marker dialog */}
       {showMarkerForm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-xl max-w-md">
-            <h3 className="text-lg font-medium mb-4 text-white">Add Marker</h3>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Marker Name
-              </label>
-              <input 
-                type="text"
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                value={markerForm.name}
-                onChange={(e) => setMarkerForm({ ...markerForm, name: e.target.value })}
-                placeholder="Enter marker name"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Marker Color
-              </label>
-              <input 
-                type="color"
-                className="w-full h-10 bg-gray-700 border border-gray-600 rounded px-1"
-                value={markerForm.color}
-                onChange={(e) => setMarkerForm({ ...markerForm, color: e.target.value })}
-              />
-            </div>
-            <div className="flex justify-end space-x-3">
-              <button 
-                onClick={() => setShowMarkerForm(false)}
-                className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleAddMarker}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-                disabled={!markerForm.name.trim()}
-              >
-                Add Marker
-              </button>
-            </div>
+        <div className="mt-4 p-4 bg-white border border-gray-200 rounded">
+          <div className="flex items-center space-x-4">
+            <input 
+              type="text"
+              className="flex-1 border border-gray-300 rounded px-3 py-2"
+              placeholder="Marker name"
+              value={markerForm.name}
+              onChange={(e) => setMarkerForm({ ...markerForm, name: e.target.value })}
+            />
+            <input 
+              type="color"
+              className="w-10 h-10 border border-gray-300 rounded"
+              value={markerForm.color}
+              onChange={(e) => setMarkerForm({ ...markerForm, color: e.target.value })}
+            />
+            <button 
+              className="bg-indigo-600 text-white rounded px-4 py-2"
+              onClick={handleAddMarker}
+            >
+              Add
+            </button>
+            <button 
+              className="bg-gray-200 rounded px-4 py-2"
+              onClick={() => setShowMarkerForm(false)}
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
