@@ -311,84 +311,59 @@ const TravelStickers: React.FC<TravelStickersProps> = ({ onSelectSticker, search
         return acc;
       }, {} as StickerCategories)
     : travelStickers;
-
-  // Get categories to display
-  const categoriesToDisplay = searchQuery 
-    ? Object.keys(filteredStickers)
-    : Object.keys(travelStickers);
-
-  // Set active category if current one is not in filtered results
-  React.useEffect(() => {
-    if (searchQuery && categoriesToDisplay.length > 0 && !categoriesToDisplay.includes(activeCategory)) {
-      setActiveCategory(categoriesToDisplay[0]);
-    }
-  }, [searchQuery, categoriesToDisplay, activeCategory]);
-
-  /**
-   * Handle sticker click
-   * 
-   * @param {StickerItem} sticker - The clicked sticker
-   */
-  const handleStickerClick = (sticker: StickerItem) => {
-    if (onSelectSticker) {
-      onSelectSticker({
-        type: 'sticker',
-        stickerType: sticker.id,
-        emoji: sticker.emoji,
-        name: sticker.name,
-        color: sticker.color,
-        width: 100,
-        height: 100,
-        x: 100,
-        y: 100,
-        rotation: 0,
-        opacity: 1,
-        zIndex: 1,
-      });
-    }
+  
+  // Handle category change
+  const handleCategoryChange = (category: string): void => {
+    setActiveCategory(category);
   };
-
-  // If no categories to display, show message
-  if (categoriesToDisplay.length === 0) {
-    return (
-      <div className="travel-stickers-container">
-        <div className="no-results">
-          No stickers found matching "{searchQuery}"
-        </div>
-      </div>
-    );
-  }
-
-  // Get current stickers to display
-  const currentStickers = searchQuery 
-    ? filteredStickers[activeCategory] || []
-    : travelStickers[activeCategory];
-
+  
+  // Handle sticker click
+  const handleStickerClick = (sticker: StickerItem): void => {
+    // Create sticker data for parent component
+    const stickerData: StickerData = {
+      type: 'sticker',
+      stickerType: 'emoji',
+      emoji: sticker.emoji,
+      name: sticker.name,
+      color: sticker.color,
+      width: 100,
+      height: 100,
+      x: 100,
+      y: 100,
+      rotation: 0,
+      opacity: 1,
+      zIndex: 1,
+    };
+    
+    // Call parent callback
+    onSelectSticker(stickerData);
+  };
+  
   return (
     <div className="travel-stickers-container">
+      {/* Category buttons */}
       <div className="sticker-categories">
-        {categoriesToDisplay.map((category) => (
+        {Object.keys(filteredStickers).map(category => (
           <button
             key={category}
             className={`category-button ${activeCategory === category ? 'active' : ''}`}
-            onClick={() => setActiveCategory(category)}
+            onClick={() => handleCategoryChange(category)}
           >
             {category.charAt(0).toUpperCase() + category.slice(1)}
           </button>
         ))}
       </div>
       
+      {/* Stickers grid */}
       <div className="stickers-grid">
-        {currentStickers.map((sticker) => (
-          <div
-            key={sticker.id}
+        {filteredStickers[activeCategory]?.map(sticker => (
+          <div 
+            key={sticker.id} 
             className="sticker-item"
-            style={{ backgroundColor: sticker.color }}
             onClick={() => handleStickerClick(sticker)}
-            title={sticker.name}
           >
-            <span className="sticker-emoji">{sticker.emoji}</span>
-            <span className="sticker-name">{sticker.name}</span>
+            <div className="sticker-emoji">{sticker.emoji}</div>
+            {/* Removed text label below sticker as requested */}
           </div>
         ))}
       </div>
