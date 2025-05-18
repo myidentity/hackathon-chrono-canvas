@@ -112,9 +112,40 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const updateElement = useCallback((id: string, updates: Partial<CanvasElement>) => {
     setCanvas(prev => ({
       ...prev,
-      elements: prev.elements.map(element => 
-        element.id === id ? { ...element, ...updates } : element
-      ),
+      elements: prev.elements.map(element => {
+        if (element.id === id) {
+          // Create a deep copy of the element
+          const updatedElement = { ...element };
+          
+          // Process each update key
+          Object.keys(updates).forEach(key => {
+            if (key.includes('.')) {
+              // Handle nested properties (e.g., 'position.x')
+              const [parent, child] = key.split('.');
+              if (!updatedElement[parent]) {
+                updatedElement[parent] = {};
+              }
+              updatedElement[parent] = {
+                ...updatedElement[parent],
+                [child]: updates[key]
+              };
+            } else if (typeof updates[key] === 'object' && updates[key] !== null && !Array.isArray(updates[key])) {
+              // Handle object updates (deep merge)
+              updatedElement[key] = {
+                ...updatedElement[key],
+                ...updates[key]
+              };
+            } else {
+              // Handle primitive value updates
+              updatedElement[key] = updates[key];
+            }
+          });
+          
+          console.log('Updating element with:', updatedElement);
+          return updatedElement;
+        }
+        return element;
+      }),
     }));
   }, []);
   
