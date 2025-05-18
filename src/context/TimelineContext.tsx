@@ -224,6 +224,24 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [selectedKeyframe, setSelectedKeyframe] = useState<string | null>(null);
   const [showAllKeyframes, setShowAllKeyframes] = useState<boolean>(false);
   
+  // Refs to prevent dependency cycles
+  const keyframesRef = useRef<Keyframe[]>([]);
+  const elementsRef = useRef<CanvasElement[]>([]);
+  const currentPositionRef = useRef<number>(0);
+  
+  // Update refs when state changes
+  useEffect(() => {
+    keyframesRef.current = keyframes;
+  }, [keyframes]);
+  
+  useEffect(() => {
+    elementsRef.current = canvas.elements;
+  }, [canvas.elements]);
+  
+  useEffect(() => {
+    currentPositionRef.current = currentPosition;
+  }, [currentPosition]);
+  
   /**
    * Toggle playback state
    */
@@ -314,10 +332,10 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       time,
       properties,
       interpolationType: {
-        position: 'linear',
-        size: 'linear',
-        rotation: 'linear',
-        opacity: 'linear'
+        position: 'easeInOut', // Default to easeInOut for all properties
+        size: 'easeInOut',
+        rotation: 'easeInOut',
+        opacity: 'easeInOut'
       }
     };
     
@@ -362,6 +380,12 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     keyframeId: string, 
     updates: Partial<Keyframe>
   ): void => {
+    // Use the ref to avoid dependency on keyframes state
+    const currentKeyframes = keyframesRef.current;
+    const keyframe = currentKeyframes.find(k => k.id === keyframeId);
+    
+    if (!keyframe) return;
+    
     setKeyframes(prev => {
       const updatedKeyframes = prev.map(keyframe => {
         if (keyframe.id === keyframeId) {
@@ -383,11 +407,9 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
     
     // Update element timeline data
+    const elementId = keyframe.elementId;
+    
     setElementTimelineData(prev => {
-      const keyframe = keyframes.find(k => k.id === keyframeId);
-      if (!keyframe) return prev;
-      
-      const elementId = keyframe.elementId;
       const elementData = prev[elementId];
       
       if (elementData) {
@@ -416,7 +438,7 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       return prev;
     });
-  }, [keyframes]);
+  }, []);
   
   /**
    * Delete keyframe
@@ -424,7 +446,10 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
    * @param {string} keyframeId - Keyframe ID
    */
   const deleteKeyframe = useCallback((keyframeId: string): void => {
-    const keyframe = keyframes.find(k => k.id === keyframeId);
+    // Use the ref to avoid dependency on keyframes state
+    const currentKeyframes = keyframesRef.current;
+    const keyframe = currentKeyframes.find(k => k.id === keyframeId);
+    
     if (!keyframe) return;
     
     const elementId = keyframe.elementId;
@@ -460,7 +485,7 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (selectedKeyframe === keyframeId) {
       setSelectedKeyframe(null);
     }
-  }, [keyframes, selectedKeyframe]);
+  }, [selectedKeyframe]);
   
   /**
    * Select keyframe
@@ -472,12 +497,15 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     // If selecting a keyframe, move timeline to that position
     if (keyframeId) {
-      const keyframe = keyframes.find(k => k.id === keyframeId);
+      // Use the ref to avoid dependency on keyframes state
+      const currentKeyframes = keyframesRef.current;
+      const keyframe = currentKeyframes.find(k => k.id === keyframeId);
+      
       if (keyframe) {
         setCurrentPosition(keyframe.time);
       }
     }
-  }, [keyframes]);
+  }, []);
   
   /**
    * Navigate to next keyframe for an element
@@ -485,13 +513,17 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
    * @param {string} elementId - Element ID
    */
   const nextKeyframe = useCallback((elementId: string): void => {
-    const elementKeyframes = keyframes
+    // Use refs to avoid dependencies
+    const currentKeyframes = keyframesRef.current;
+    const position = currentPositionRef.current;
+    
+    const elementKeyframes = currentKeyframes
       .filter(k => k.elementId === elementId)
       .sort((a, b) => a.time - b.time);
     
     if (elementKeyframes.length === 0) return;
     
-    const nextKeyframe = elementKeyframes.find(k => k.time > currentPosition);
+    const nextKeyframe = elementKeyframes.find(k => k.time > position);
     
     if (nextKeyframe) {
       setCurrentPosition(nextKeyframe.time);
@@ -501,7 +533,7 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setCurrentPosition(elementKeyframes[0].time);
       setSelectedKeyframe(elementKeyframes[0].id);
     }
-  }, [keyframes, currentPosition]);
+  }, []);
   
   /**
    * Navigate to previous keyframe for an element
@@ -509,13 +541,17 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
    * @param {string} elementId - Element ID
    */
   const previousKeyframe = useCallback((elementId: string): void => {
-    const elementKeyframes = keyframes
+    // Use refs to avoid dependencies
+    const currentKeyframes = keyframesRef.current;
+    const position = currentPositionRef.current;
+    
+    const elementKeyframes = currentKeyframes
       .filter(k => k.elementId === elementId)
       .sort((a, b) => a.time - b.time);
     
     if (elementKeyframes.length === 0) return;
     
-    const prevKeyframes = elementKeyframes.filter(k => k.time < currentPosition);
+    const prevKeyframes = elementKeyframes.filter(k => k.time < position);
     
     if (prevKeyframes.length > 0) {
       const prevKeyframe = prevKeyframes[prevKeyframes.length - 1];
@@ -527,7 +563,7 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setCurrentPosition(lastKeyframe.time);
       setSelectedKeyframe(lastKeyframe.id);
     }
-  }, [keyframes, currentPosition]);
+  }, []);
   
   /**
    * Set interpolation type for a property
@@ -613,7 +649,7 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     start: number, 
     end: number, 
     progress: number, 
-    type: InterpolationType = 'linear',
+    type: InterpolationType = 'easeInOut',
     keyframe?: Keyframe
   ): number => {
     switch (type) {
@@ -655,7 +691,7 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const endX = nextKeyframe.properties.position?.x ?? 0;
     const endY = nextKeyframe.properties.position?.y ?? 0;
     
-    const type = nextKeyframe.interpolationType?.position ?? 'linear';
+    const type = nextKeyframe.interpolationType?.position ?? 'easeInOut';
     
     const x = interpolateNumeric(startX, endX, progress, type, nextKeyframe);
     const y = interpolateNumeric(startY, endY, progress, type, nextKeyframe);
@@ -681,7 +717,7 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const endWidth = nextKeyframe.properties.size?.width ?? 0;
     const endHeight = nextKeyframe.properties.size?.height ?? 0;
     
-    const type = nextKeyframe.interpolationType?.size ?? 'linear';
+    const type = nextKeyframe.interpolationType?.size ?? 'easeInOut';
     
     const width = interpolateNumeric(startWidth, endWidth, progress, type, nextKeyframe);
     const height = interpolateNumeric(startHeight, endHeight, progress, type, nextKeyframe);
@@ -703,7 +739,7 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     startColor: string,
     endColor: string,
     progress: number,
-    type: InterpolationType = 'linear',
+    type: InterpolationType = 'easeInOut',
     keyframe?: Keyframe
   ): string => {
     // Parse colors to RGB
@@ -784,7 +820,7 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         prevKeyframe.properties[prop] !== undefined && 
         nextKeyframe.properties[prop] !== undefined
       ) {
-        const type = nextKeyframe.interpolationType?.[prop] ?? 'linear';
+        const type = nextKeyframe.interpolationType?.[prop] ?? 'easeInOut';
         result[prop] = interpolateNumeric(
           prevKeyframe.properties[prop] as number,
           nextKeyframe.properties[prop] as number,
@@ -802,7 +838,7 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         prevKeyframe.properties[prop] !== undefined && 
         nextKeyframe.properties[prop] !== undefined
       ) {
-        const type = nextKeyframe.interpolationType?.[prop] ?? 'linear';
+        const type = nextKeyframe.interpolationType?.[prop] ?? 'easeInOut';
         result[prop] = interpolateColor(
           prevKeyframe.properties[prop] as string,
           nextKeyframe.properties[prop] as string,
@@ -820,10 +856,15 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
    * Update element visibility and properties based on current timeline position
    */
   const updateElementAtCurrentTime = useCallback((): void => {
+    // Use refs to avoid dependencies
+    const currentKeyframes = keyframesRef.current;
+    const elements = elementsRef.current;
+    const position = currentPositionRef.current;
+    
     // Group keyframes by element ID
     const keyframesByElement: Record<string, Keyframe[]> = {};
     
-    keyframes.forEach(keyframe => {
+    currentKeyframes.forEach(keyframe => {
       if (!keyframesByElement[keyframe.elementId]) {
         keyframesByElement[keyframe.elementId] = [];
       }
@@ -831,7 +872,7 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
     
     // Process each element
-    canvas.elements.forEach(element => {
+    elements.forEach(element => {
       const elementKeyframes = keyframesByElement[element.id];
       
       // Skip if element has no keyframes
@@ -843,13 +884,13 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const sortedKeyframes = [...elementKeyframes].sort((a, b) => a.time - b.time);
       
       // Find keyframes surrounding current time
-      const prevKeyframe = sortedKeyframes.filter(kf => kf.time <= currentPosition).pop();
-      const nextKeyframe = sortedKeyframes.filter(kf => kf.time > currentPosition)[0];
+      const prevKeyframe = sortedKeyframes.filter(kf => kf.time <= position).pop();
+      const nextKeyframe = sortedKeyframes.filter(kf => kf.time > position)[0];
       
       // Handle different cases
       if (prevKeyframe && nextKeyframe) {
         // Between two keyframes - interpolate
-        const interpolatedProps = interpolateKeyframes(prevKeyframe, nextKeyframe, currentPosition);
+        const interpolatedProps = interpolateKeyframes(prevKeyframe, nextKeyframe, position);
         updateElement(element.id, interpolatedProps);
       } else if (prevKeyframe) {
         // After last keyframe - use last keyframe properties
@@ -859,18 +900,10 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateElementVisibility(element.id, false);
       }
     });
-  }, [canvas.elements, keyframes, currentPosition, interpolateKeyframes, updateElement, updateElementVisibility]);
+  }, [interpolateKeyframes, updateElement, updateElementVisibility]);
   
   // Use a ref to track animation frame ID
   const animationFrameRef = useRef<number | null>(null);
-  
-  // Use a ref to track the last position to avoid dependency on currentPosition
-  const positionRef = useRef<number>(currentPosition);
-  
-  // Update the ref when currentPosition changes
-  useEffect(() => {
-    positionRef.current = currentPosition;
-  }, [currentPosition]);
   
   // Update timeline position during playback
   useEffect(() => {
@@ -939,9 +972,15 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setDuration(maxDuration);
   }, [keyframes]);
   
-  // Initialize keyframes for new elements
+  // Initialize keyframes for new elements - using a separate effect with stable dependencies
+  const processedElementsRef = useRef<Set<string>>(new Set());
+  
   useEffect(() => {
-    canvas.elements.forEach(element => {
+    const processedElements = processedElementsRef.current;
+    const newElements = canvas.elements.filter(element => !processedElements.has(element.id));
+    
+    // Process only new elements
+    newElements.forEach(element => {
       // Check if element already has keyframes
       const hasKeyframes = keyframes.some(k => k.elementId === element.id);
       
@@ -960,9 +999,25 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
         // Add initial keyframe
         addKeyframe(element.id, currentPosition, properties);
+        
+        // Mark as processed
+        processedElements.add(element.id);
       }
     });
-  }, [canvas.elements, keyframes, currentPosition, addKeyframe]);
+    
+    // Clean up processed elements that no longer exist
+    canvas.elements.forEach(element => {
+      processedElements.add(element.id);
+    });
+    
+    // Remove processed elements that no longer exist
+    const existingElementIds = new Set(canvas.elements.map(element => element.id));
+    Array.from(processedElements).forEach(id => {
+      if (!existingElementIds.has(id)) {
+        processedElements.delete(id);
+      }
+    });
+  }, [canvas.elements, addKeyframe, currentPosition, keyframes]);
   
   // Context value
   const contextValue: TimelineContextType = {
