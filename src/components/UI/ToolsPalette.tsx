@@ -21,16 +21,28 @@ interface ToolsPaletteProps {
 const ToolsPalette: React.FC<ToolsPaletteProps> = ({ className = '', searchQuery = '' }) => {
   const { addElement } = useCanvas();
   
-  // Shape definitions
+  // Shape definitions - expanded with more shapes
   const shapes = [
     { id: 'rectangle', name: 'Rectangle', shape: 'rectangle', color: '#6366F1' },
+    { id: 'square', name: 'Square', shape: 'square', color: '#8B5CF6' },
     { id: 'circle', name: 'Circle', shape: 'circle', color: '#EC4899' },
+    { id: 'oval', name: 'Oval', shape: 'oval', color: '#F472B6' },
     { id: 'triangle', name: 'Triangle', shape: 'triangle', color: '#10B981' },
+    { id: 'right-triangle', name: 'Right Triangle', shape: 'right-triangle', color: '#34D399' },
     { id: 'star', name: 'Star', shape: 'star', color: '#F59E0B' },
+    { id: 'star-4', name: '4-Point Star', shape: 'star-4', color: '#FBBF24' },
     { id: 'hexagon', name: 'Hexagon', shape: 'hexagon', color: '#8B5CF6' },
     { id: 'pentagon', name: 'Pentagon', shape: 'pentagon', color: '#EF4444' },
+    { id: 'octagon', name: 'Octagon', shape: 'octagon', color: '#A78BFA' },
     { id: 'diamond', name: 'Diamond', shape: 'diamond', color: '#3B82F6' },
+    { id: 'parallelogram', name: 'Parallelogram', shape: 'parallelogram', color: '#60A5FA' },
+    { id: 'trapezoid', name: 'Trapezoid', shape: 'trapezoid', color: '#93C5FD' },
     { id: 'arrow', name: 'Arrow', shape: 'arrow', color: '#14B8A6' },
+    { id: 'arrow-double', name: 'Double Arrow', shape: 'arrow-double', color: '#2DD4BF' },
+    { id: 'heart', name: 'Heart', shape: 'heart', color: '#FB7185' },
+    { id: 'cloud', name: 'Cloud', shape: 'cloud', color: '#38BDF8' },
+    { id: 'speech-bubble', name: 'Speech Bubble', shape: 'speech-bubble', color: '#818CF8' },
+    { id: 'lightning', name: 'Lightning', shape: 'lightning', color: '#FBBF24' },
   ];
   
   // Filter shapes based on search query
@@ -97,8 +109,14 @@ const ToolsPalette: React.FC<ToolsPaletteProps> = ({ className = '', searchQuery
             {shape.shape === 'rectangle' && (
               <div className="w-10 h-8 rounded" style={{ backgroundColor: shape.color }} />
             )}
+            {shape.shape === 'square' && (
+              <div className="w-10 h-10 rounded" style={{ backgroundColor: shape.color }} />
+            )}
             {shape.shape === 'circle' && (
               <div className="w-10 h-10 rounded-full" style={{ backgroundColor: shape.color }} />
+            )}
+            {shape.shape === 'oval' && (
+              <div className="w-12 h-8 rounded-full" style={{ backgroundColor: shape.color }} />
             )}
             {shape.shape === 'triangle' && (
               <div
@@ -110,14 +128,39 @@ const ToolsPalette: React.FC<ToolsPaletteProps> = ({ className = '', searchQuery
                 }}
               />
             )}
+            {shape.shape === 'right-triangle' && (
+              <div
+                className="relative"
+                style={{
+                  width: '30px',
+                  height: '30px',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    width: '0',
+                    height: '0',
+                    borderBottom: `30px solid ${shape.color}`,
+                    borderRight: '30px solid transparent',
+                  }}
+                />
+              </div>
+            )}
             {shape.shape === 'star' && (
               <span className="material-icons text-3xl">star</span>
+            )}
+            {shape.shape === 'star-4' && (
+              <span className="material-icons text-3xl">auto_awesome</span>
             )}
             {shape.shape === 'hexagon' && (
               <span className="material-icons text-3xl">hexagon</span>
             )}
             {shape.shape === 'pentagon' && (
               <span className="material-icons text-3xl">pentagon</span>
+            )}
+            {shape.shape === 'octagon' && (
+              <span className="material-icons text-3xl">stop</span>
             )}
             {shape.shape === 'diamond' && (
               <div
@@ -128,8 +171,45 @@ const ToolsPalette: React.FC<ToolsPaletteProps> = ({ className = '', searchQuery
                 }}
               />
             )}
+            {shape.shape === 'parallelogram' && (
+              <div
+                style={{
+                  width: '30px',
+                  height: '20px',
+                  backgroundColor: shape.color,
+                  transform: 'skew(-20deg)',
+                }}
+              />
+            )}
+            {shape.shape === 'trapezoid' && (
+              <div
+                style={{
+                  width: '30px',
+                  height: '20px',
+                  backgroundColor: 'transparent',
+                  borderBottom: `20px solid ${shape.color}`,
+                  borderLeft: '5px solid transparent',
+                  borderRight: '5px solid transparent',
+                }}
+              />
+            )}
             {shape.shape === 'arrow' && (
               <span className="material-icons text-3xl">arrow_forward</span>
+            )}
+            {shape.shape === 'arrow-double' && (
+              <span className="material-icons text-3xl">compare_arrows</span>
+            )}
+            {shape.shape === 'heart' && (
+              <span className="material-icons text-3xl">favorite</span>
+            )}
+            {shape.shape === 'cloud' && (
+              <span className="material-icons text-3xl">cloud</span>
+            )}
+            {shape.shape === 'speech-bubble' && (
+              <span className="material-icons text-3xl">chat_bubble</span>
+            )}
+            {shape.shape === 'lightning' && (
+              <span className="material-icons text-3xl">bolt</span>
             )}
           </div>
         </div>

@@ -1,9 +1,17 @@
 /* Timeline panel height consistency fix */
 .w-full.bg-gray-800.border-t.border-gray-700.p-4.text-white {
-  height: 180px; /* Fixed height for timeline panel */
-  min-height: 180px;
-  max-height: 180px;
+  height: 200px; /* Increased height for timeline panel */
+  min-height: 200px;
+  max-height: 200px;
   overflow-y: auto;
+  overflow-x: hidden; /* Hide horizontal scrollbar */
+}
+
+/* Timeline container to prevent horizontal scrolling */
+.timeline-container {
+  width: 100%;
+  overflow-x: auto; /* Allow horizontal scrolling only within the timeline */
+  overflow-y: hidden; /* Prevent vertical scrolling within the timeline */
 }
 
 /* Ensure timeline track has consistent height */
@@ -64,4 +72,22 @@
 
 .dark .timeline-element.selected {
   @apply bg-blue-600 border-blue-500;
+}
+
+/* Ensure proper spacing and prevent overflow */
+.timeline-panel {
+  padding-bottom: 10px;
+  box-sizing: border-box;
+}
+
+/* Ensure timeline controls are properly sized */
+.timeline-controls {
+  display: flex;
+  flex-wrap: nowrap;
+  margin-bottom: 10px;
+}
+
+/* Ensure buttons in timeline controls don't cause overflow */
+.timeline-controls button {
+  flex-shrink: 0;
 }

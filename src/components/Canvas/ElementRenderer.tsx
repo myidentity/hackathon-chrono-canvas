@@ -202,12 +202,11 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
     }
   };
   
-  // Handle mouse down for dragging
+  // Handle mouse down for dragging - improved for better drag detection
   const handleMouseDown = (e: React.MouseEvent) => {
     if (viewMode === 'editor') {
+      e.preventDefault(); // Prevent text selection during drag
       e.stopPropagation();
-      setIsDragging(true);
-      setDragStart({ x: e.clientX, y: e.clientY });
       
       // Select the element when starting to drag
       if (onSelect) {
@@ -216,15 +215,55 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
         selectElement(element.id);
       }
       
+      // Set dragging state and store initial mouse position
+      setIsDragging(true);
+      setDragStart({ x: e.clientX, y: e.clientY });
+      
       // Add event listeners to document for mouse move and up
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
+      
+      // Add touch event listeners for mobile support
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
+      document.addEventListener('touchcancel', handleTouchEnd);
     }
   };
   
-  // Handle mouse move for dragging
+  // Handle touch move for mobile dragging
+  const handleTouchMove = (e: TouchEvent) => {
+    if (isDragging && viewMode === 'editor' && e.touches.length > 0) {
+      e.preventDefault(); // Prevent scrolling while dragging
+      
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - dragStart.x;
+      const deltaY = touch.clientY - dragStart.y;
+      
+      // Update element position
+      updateElementPosition(element.id, deltaX, deltaY);
+      
+      // Update drag start position
+      setDragStart({ x: touch.clientX, y: touch.clientY });
+    }
+  };
+  
+  // Handle touch end for mobile dragging
+  const handleTouchEnd = () => {
+    if (isDragging) {
+      setIsDragging(false);
+      
+      // Remove touch event listeners
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchcancel', handleTouchEnd);
+    }
+  };
+  
+  // Handle mouse move for dragging - improved for smoother movement
   const handleMouseMove = (e: MouseEvent) => {
     if (isDragging && viewMode === 'editor') {
+      e.preventDefault(); // Prevent text selection during drag
+      
       const deltaX = e.clientX - dragStart.x;
       const deltaY = e.clientY - dragStart.y;
       
@@ -238,11 +277,13 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
   
   // Handle mouse up to end dragging
   const handleMouseUp = () => {
-    setIsDragging(false);
-    
-    // Remove event listeners
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
+    if (isDragging) {
+      setIsDragging(false);
+      
+      // Remove event listeners
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    }
   };
   
   // Clean up event listeners on unmount
@@ -250,6 +291,9 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchcancel', handleTouchEnd);
     };
   }, [isDragging]);
   
@@ -268,6 +312,7 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
               src={element.src || `/images/sample_image_${element.id.includes('1') ? '1' : '2'}.jpg`} 
               alt={element.alt || 'Image'} 
               className="max-w-full max-h-full object-contain"
+              draggable={false} // Prevent browser's native drag behavior
             />
           </div>
         );
@@ -279,6 +324,7 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
               fontWeight: element.fontWeight || 'normal',
               color: element.color || '#000',
               textAlign: element.textAlign || 'center',
+              userSelect: 'none', // Prevent text selection during drag
             }}>
               {element.content || 'Text Element'}
             </p>
@@ -294,7 +340,8 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
             <div 
               className="text-4xl"
               style={{
-                fontSize: Math.min(element.size.width, element.size.height) * 0.6 + 'px'
+                fontSize: Math.min(element.size.width, element.size.height) * 0.6 + 'px',
+                userSelect: 'none', // Prevent text selection during drag
               }}
             >
               {element.emoji || '🌟'}
@@ -531,6 +578,8 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
       opacity: element.opacity !== undefined ? element.opacity : 1,
       zIndex: element.zIndex || 0,
       cursor: viewMode === 'editor' ? 'move' : 'default',
+      touchAction: 'none', // Prevent browser handling of touch events
+      userSelect: 'none', // Prevent text selection during drag
     };
     
     // Base transform from element properties
@@ -588,6 +637,23 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
       style={getAnimationStyles()}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
+      onTouchStart={(e) => {
+        if (viewMode === 'editor') {
+          e.stopPropagation();
+          
+          // Select the element when starting to drag
+          if (onSelect) {
+            onSelect();
+          } else {
+            selectElement(element.id);
+          }
+          
+          // Set dragging state and store initial touch position
+          setIsDragging(true);
+          const touch = e.touches[0];
+          setDragStart({ x: touch.clientX, y: touch.clientY });
+        }
+      }}
       onMouseEnter={() => viewMode === 'editor' && setIsHovered(true)}
       onMouseLeave={() => viewMode === 'editor' && setIsHovered(false)}
       data-element-id={element.id}
@@ -595,8 +661,8 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
       {renderElement()}
       {debugInfo()}
       
-      {/* X button for removing elements - only visible on hover in editor mode */}
-      {viewMode === 'editor' && isHovered && (
+      {/* X button for removing elements - only visible in editor mode */}
+      {viewMode === 'editor' && (
         <button
           className="absolute -top-3 -right-3 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md z-50"
           onClick={handleRemove}

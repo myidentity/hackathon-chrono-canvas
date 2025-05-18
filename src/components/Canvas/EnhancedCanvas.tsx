@@ -58,6 +58,7 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
   // Refs for canvas container and content
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const zineContainerRef = useRef<HTMLDivElement>(null);
   
   // State for tracking mouse position and drag
   const [isDragging, setIsDragging] = useState(false);
@@ -182,13 +183,14 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
   
   // Handle scroll for zine mode
   useEffect(() => {
-    if (viewMode === 'zine') {
+    if (viewMode === 'zine' && zineContainerRef.current) {
       const handleScroll = () => {
-        setScrollPosition(window.scrollY);
+        setScrollPosition(zineContainerRef.current?.scrollTop || 0);
       };
       
-      window.addEventListener('scroll', handleScroll);
-      return () => window.removeEventListener('scroll', handleScroll);
+      const zineContainer = zineContainerRef.current;
+      zineContainer.addEventListener('scroll', handleScroll);
+      return () => zineContainer.removeEventListener('scroll', handleScroll);
     }
   }, [viewMode]);
   
@@ -317,6 +319,40 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
       </svg>
     );
   };
+  
+  // Render different container based on view mode
+  if (viewMode === 'zine') {
+    return (
+      <div 
+        ref={zineContainerRef}
+        className="relative w-full h-full overflow-y-auto bg-gray-50 dark:bg-gray-900"
+        data-testid="zine-container"
+      >
+        <div className="min-h-[200vh] p-8">
+          {/* Zine content */}
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-3xl font-bold mb-6 text-center dark:text-white">Zine View</h1>
+            
+            {/* Canvas elements arranged vertically */}
+            <div className="space-y-12">
+              {canvas.elements.map(element => (
+                <div key={element.id} className="relative">
+                  <ElementRenderer
+                    element={element}
+                    isSelected={false}
+                    onSelect={() => {}}
+                    viewMode={viewMode}
+                    currentPosition={currentPosition}
+                    scrollPosition={scrollPosition}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div 
