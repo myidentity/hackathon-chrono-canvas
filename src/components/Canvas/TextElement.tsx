@@ -80,4 +80,4 @@ const TextElement: React.FC<TextElementProps> = ({ element, isSelected, onClick 
   );
 };
 
-export default TextElement;t default TextElement;
+export default TextElement;
