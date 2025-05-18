@@ -243,10 +243,17 @@ chrono-canvas/
 
 ### Adding Your Own Images
 
-1. In **Editor Mode**, click the image upload button in the toolbar
-2. Select an image from your device
-3. The uploaded image will appear on your canvas
-4. Position and customize as needed
+1. **Using the Upload Button**:
+   - In **Editor Mode**, click the image upload button in the toolbar
+   - Select an image from your device
+   - The uploaded image will appear on your canvas
+   - Position and customize as needed
+
+2. **Using Drag and Drop**:
+   - In **Editor Mode**, simply drag an image file from your computer
+   - Drop it directly onto the canvas at your desired location
+   - The image will appear exactly where you dropped it
+   - Position and customize as needed
 
 ## Development Workflow
 

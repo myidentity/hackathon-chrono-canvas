@@ -185,6 +185,92 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
     }
   };
   
+  // Handle drag over for image drop
+  const handleDragOver = (e: React.DragEvent) => {
+    if (viewMode === 'editor') {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  };
+  
+  // Handle drop for image files
+  const handleDrop = (e: React.DragEvent) => {
+    if (viewMode === 'editor') {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Get the files from the drop event
+      const files = e.dataTransfer.files;
+      if (!files || files.length === 0) return;
+      
+      // Process only the first file
+      const file = files[0];
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        console.error('Please drop an image file');
+        return;
+      }
+      
+      // Create a URL for the dropped file
+      const imageUrl = URL.createObjectURL(file);
+      
+      // Calculate drop position relative to the canvas and accounting for zoom/pan
+      const rect = contentRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      
+      // Adjust coordinates based on current transform
+      const x = (e.clientX - rect.left) / transform.scale - transform.translateX;
+      const y = (e.clientY - rect.top) / transform.scale - transform.translateY;
+      
+      // Create a new image element
+      const newElement = {
+        id: `image-${Date.now()}`,
+        type: 'image',
+        src: imageUrl,
+        alt: 'Dropped image',
+        position: {
+          x,
+          y,
+        },
+        size: {
+          width: 200,
+          height: 200,
+        },
+        rotation: 0,
+        opacity: 1,
+        zIndex: canvas.elements.length + 1,
+        timelineData: {
+          entryPoint: 0,
+          exitPoint: null,
+          persist: true,
+          keyframes: [
+            {
+              time: 0,
+              properties: {
+                opacity: 0,
+                scale: 0.8,
+              },
+            },
+            {
+              time: 1,
+              properties: {
+                opacity: 1,
+                scale: 1,
+              },
+            },
+          ],
+        },
+      };
+      
+      // Add the new element to the canvas
+      if (addElement) {
+        addElement(newElement);
+      }
+    }
+  };
+  
   // Generate grid pattern
   const gridPattern = () => {
     const gridSize = 20;
@@ -215,6 +301,8 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onClick={handleCanvasClick}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
       data-testid="canvas-container"
     >
       {/* Canvas background */}
