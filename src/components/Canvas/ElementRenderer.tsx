@@ -1,3 +1,10 @@
+/**
+ * ElementRenderer component for ChronoCanvas
+ * 
+ * This component renders different types of elements based on their type
+ * and handles element selection and interaction.
+ */
+
 import React from 'react';
 import ImageElement from './ImageElement';
 import TextElement from './TextElement';
@@ -53,15 +60,25 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
 }) => {
   const isEditor = viewMode === 'editor';
 
+  // Debug log for element rendering
+  console.log('Rendering element:', element.id, element.type);
+
   /**
    * Handle element selection
    * 
    * @param {React.MouseEvent} e - Mouse event
    */
   const handleSelect = (e: React.MouseEvent): void => {
+    console.log('Element selected:', element.id);
     if (onSelect) {
       onSelect(e);
     }
+  };
+
+  // Add data-element-id attribute for element selection
+  const elementProps = {
+    'data-element-id': element.id,
+    onClick: handleSelect
   };
 
   switch (element.type) {
@@ -86,6 +103,7 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
       // Handle map elements similar to images but with the component rendering
       return (
         <div
+          {...elementProps}
           style={{
             position: 'absolute',
             left: element.position?.x || 0,
@@ -97,12 +115,12 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
             cursor: 'move',
             zIndex: element.zIndex || 1
           }}
-          onClick={handleSelect}
         >
           {element.component}
         </div>
       );
     default:
+      console.warn('Unknown element type:', element.type);
       return null;
   }
 };

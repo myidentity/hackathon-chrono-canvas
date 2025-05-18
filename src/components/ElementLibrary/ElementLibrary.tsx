@@ -1,12 +1,4 @@
-/**
- * ElementLibrary component for ChronoCanvas.
- * 
- * This component provides a library of elements that users can add to the canvas,
- * including images, text, shapes, stickers, and media.
- * 
- * @module ElementLibrary
- */
-
+// Add debugging to ElementLibrary.tsx
 import React, { useState } from 'react';
 import { useCanvas, TimelineData } from '../../context/CanvasContext';
 import { useImageLibrary } from '../../context/ImageLibraryContext';
@@ -38,7 +30,7 @@ interface LibraryElement {
  */
 const ElementLibrary = (): JSX.Element => {
   // Get canvas context
-  const { addElement, clearCanvas } = useCanvas();
+  const { addElement, clearCanvas, canvas } = useCanvas();
   
   // Get image library context
   const { images } = useImageLibrary();
@@ -89,6 +81,8 @@ const ElementLibrary = (): JSX.Element => {
    * @param {LibraryElement} element - The element to add
    */
   const handleAddElement = (element: LibraryElement): void => {
+    console.log('handleAddElement called with:', element);
+    
     // Create a new canvas element from the library element
     const newElement = {
       id: `${element.type}-${uuidv4().substring(0, 8)}`,
@@ -123,7 +117,9 @@ const ElementLibrary = (): JSX.Element => {
     };
     
     // Add the element to the canvas
-    addElement(newElement);
+    const elementId = addElement(newElement);
+    console.log('Element added with ID:', elementId);
+    console.log('Current canvas elements:', canvas.elements);
   };
 
   /**
@@ -132,6 +128,8 @@ const ElementLibrary = (): JSX.Element => {
    * @param {StickerData} stickerData - The sticker data to add
    */
   const handleAddSticker = (stickerData: StickerData): void => {
+    console.log('handleAddSticker called with:', stickerData);
+    
     // Create a new sticker element
     const newSticker = {
       id: `sticker-${uuidv4().substring(0, 8)}`,
@@ -169,7 +167,9 @@ const ElementLibrary = (): JSX.Element => {
     };
     
     // Add the sticker to the canvas
-    addElement(newSticker);
+    const stickerId = addElement(newSticker);
+    console.log('Sticker added with ID:', stickerId);
+    console.log('Current canvas elements:', canvas.elements);
   };
   
   /**
@@ -375,6 +375,11 @@ const ElementLibrary = (): JSX.Element => {
           </div>
         </div>
       )}
+      
+      {/* Debug info */}
+      <div className="p-2 bg-gray-100 dark:bg-gray-800 text-xs border-t border-gray-200 dark:border-gray-700">
+        Canvas elements: {canvas.elements.length}
+      </div>
     </div>
   );
 };

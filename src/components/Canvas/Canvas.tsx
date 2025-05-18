@@ -6,7 +6,7 @@
  * manipulation.
  */
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 import { useTimeline } from '../../context/TimelineContext';
 import ElementRenderer from './ElementRenderer';
@@ -33,6 +33,11 @@ const Canvas: React.FC<CanvasProps> = ({ mode = 'editor' }) => {
   const [startPanPosition, setStartPanPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState<number>(1);
   const [showGrid, setShowGrid] = useState<boolean>(true);
+  
+  // Debug log for canvas elements
+  useEffect(() => {
+    console.log('Canvas rendering with elements:', canvas.elements);
+  }, [canvas.elements]);
   
   /**
    * Handle mouse down for panning or element selection
@@ -145,6 +150,7 @@ const Canvas: React.FC<CanvasProps> = ({ mode = 'editor' }) => {
               isSelected={selectedElement === element.id}
               viewMode={mode}
               currentPosition={currentPosition}
+              onSelect={() => selectElement(element.id)}
             />
           ))}
           
