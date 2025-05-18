@@ -5,7 +5,7 @@
  * playback status, and speed.
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useCanvas } from './CanvasContext';
 
 // Type definitions
