@@ -1,180 +1,229 @@
 /**
- * Update EnhancedCanvas to fix TypeScript errors
+ * Enhanced Canvas component for ChronoCanvas
  * 
- * This component provides an enhanced canvas with additional features
- * like grid, snap-to-grid, and view mode indicators.
+ * This component extends the basic Canvas with additional features
+ * such as element selection, manipulation, and interaction with the timeline.
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 import { useTimeline } from '../../context/TimelineContext';
-import Canvas from './Canvas';
-import { ViewMode } from '../../types/ViewMode';
+import ElementRenderer from './ElementRenderer';
 
-// Type definitions
 interface EnhancedCanvasProps {
-  viewMode: ViewMode;
+  mode?: 'editor' | 'timeline' | 'zine' | 'presentation';
 }
 
 /**
  * EnhancedCanvas component
- * Provides a canvas with additional features like grid and snap-to-grid
+ * Renders the main canvas area with all elements and handles interactions
  */
-const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
-  // Get context from hooks
-  // Note: We're no longer using these values directly since we simplified the component
-  const { } = useCanvas();
-  const { } = useTimeline();
-  
-  // State for canvas features
-  const [showGrid, setShowGrid] = useState(true);
-  const [snapToGrid, setSnapToGrid] = useState(true);
-  const [gridSize, setGridSize] = useState(20);
-  const [currentViewMode, setCurrentViewMode] = useState<ViewMode>(viewMode);
-  
-  // Refs for canvas elements
+const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ mode = 'editor' }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
+  const { 
+    canvas, 
+    updateElementPosition, 
+    selectedElement, 
+    selectElement 
+  } = useCanvas();
   
-  // Update current view mode when prop changes
-  useEffect(() => {
-    setCurrentViewMode(viewMode);
-  }, [viewMode]);
+  const { 
+    currentPosition, 
+    isPlaying 
+  } = useTimeline();
   
-  // Handle grid toggle
-  const handleGridToggle = () => {
-    setShowGrid(!showGrid);
-  };
+  // State for canvas interaction
+  const [isPanning, setIsPanning] = useState(false);
+  const [startPanPosition, setStartPanPosition] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [showGrid, setShowGrid] = useState(true);
   
-  // Handle snap-to-grid toggle
-  const handleSnapToggle = () => {
-    setSnapToGrid(!snapToGrid);
-  };
+  // Debug state to track selection
+  const [lastClickedElement, setLastClickedElement] = useState<string | null>(null);
   
-  // Handle grid size change
-  const handleGridSizeChange = (size: number) => {
-    setGridSize(size);
-  };
-  
-  // Calculate grid lines
-  const calculateGridLines = useCallback(() => {
-    if (!canvasRef.current || !gridRef.current) return;
+  // Handle element selection
+  const handleElementSelect = useCallback((elementId: string) => {
+    console.log('EnhancedCanvas: handleElementSelect called with id:', elementId);
+    setLastClickedElement(elementId);
+    selectElement(elementId);
     
-    const canvasWidth = canvasRef.current.offsetWidth;
-    const canvasHeight = canvasRef.current.offsetHeight;
+    // Force a DOM update to ensure the selection is reflected in the UI
+    setTimeout(() => {
+      console.log('EnhancedCanvas: Selection state after timeout:', {
+        selectedElement,
+        lastClickedElement: elementId
+      });
+    }, 100);
+  }, [selectElement]);
+  
+  // Handle mouse down for panning or element selection
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (mode !== 'editor') return;
     
-    // Clear previous grid
-    const gridElement = gridRef.current;
-    gridElement.innerHTML = '';
+    // Check if clicking on an element
+    const target = e.target as HTMLElement;
+    const elementId = target.closest('[data-element-id]')?.getAttribute('data-element-id');
     
-    // Create horizontal lines
-    for (let y = 0; y < canvasHeight; y += gridSize) {
-      const line = document.createElement('div');
-      line.className = 'absolute border-t border-gray-300 dark:border-gray-700';
-      line.style.top = `${y}px`;
-      line.style.left = '0';
-      line.style.right = '0';
-      line.style.height = '1px';
-      gridElement.appendChild(line);
+    if (elementId) {
+      // Select the element
+      console.log('EnhancedCanvas: Element clicked:', elementId);
+      handleElementSelect(elementId);
+    } else {
+      // Start panning
+      setIsPanning(true);
+      setStartPanPosition({ x: e.clientX, y: e.clientY });
     }
+  };
+  
+  // Handle mouse move for panning or element dragging
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (mode !== 'editor') return;
     
-    // Create vertical lines
-    for (let x = 0; x < canvasWidth; x += gridSize) {
-      const line = document.createElement('div');
-      line.className = 'absolute border-l border-gray-300 dark:border-gray-700';
-      line.style.left = `${x}px`;
-      line.style.top = '0';
-      line.style.bottom = '0';
-      line.style.width = '1px';
-      gridElement.appendChild(line);
+    if (isPanning && canvasRef.current) {
+      // Pan the canvas
+      const dx = e.clientX - startPanPosition.x;
+      const dy = e.clientY - startPanPosition.y;
+      
+      canvasRef.current.scrollLeft -= dx;
+      canvasRef.current.scrollTop -= dy;
+      
+      setStartPanPosition({ x: e.clientX, y: e.clientY });
+    } else if (selectedElement) {
+      // Move the selected element
+      const dx = e.movementX / zoom;
+      const dy = e.movementY / zoom;
+      
+      updateElementPosition(selectedElement, dx, dy);
     }
-  }, [gridSize]);
+  };
   
-  // Update grid when canvas size or grid size changes
+  // Handle mouse up to end panning or element dragging
+  const handleMouseUp = () => {
+    if (mode !== 'editor') return;
+    
+    setIsPanning(false);
+  };
+  
+  // Handle zoom in/out
+  const handleZoom = (factor: number) => {
+    setZoom(prev => Math.max(0.25, Math.min(4, prev * factor)));
+  };
+  
+  // Toggle grid visibility
+  const toggleGrid = () => {
+    setShowGrid(prev => !prev);
+  };
+  
+  // Log current timeline position and selection state for debugging
   useEffect(() => {
-    calculateGridLines();
-    
-    // Add resize listener
-    const handleResize = () => {
-      calculateGridLines();
-    };
-    
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [calculateGridLines]);
+    console.log(`EnhancedCanvas: Timeline position ${currentPosition}, Playing: ${isPlaying}`);
+  }, [currentPosition, isPlaying]);
   
-  // Note: Element handling functions have been removed as they are no longer needed
-  // after updating the Canvas component props to use the shared ViewMode type.
+  // Log selection changes
+  useEffect(() => {
+    console.log('EnhancedCanvas: selectedElement changed to:', selectedElement);
+  }, [selectedElement]);
   
-  // Debug log for viewMode type
-  console.log('EnhancedCanvas viewMode:', viewMode, typeof viewMode);
-  console.log('EnhancedCanvas currentViewMode:', currentViewMode, typeof currentViewMode);
+  // Expose selection state to window for debugging
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).__canvasDebug = {
+        selectedElement,
+        lastClickedElement,
+        elements: canvas.elements
+      };
+    }
+  }, [selectedElement, lastClickedElement, canvas.elements]);
   
   return (
-    <div 
-      className="relative w-full h-full overflow-hidden bg-white dark:bg-gray-900"
-      ref={canvasRef}
-    >
-      {/* Grid */}
-      {showGrid && (
-        <div 
-          className="absolute inset-0 pointer-events-none"
-          ref={gridRef}
-        />
-      )}
-      
-      {/* Canvas */}
-      <Canvas 
-        mode={currentViewMode}
-      />
-      
-      {/* Controls (only in editor mode) */}
-      {currentViewMode === 'editor' && (
-        <div className="absolute top-4 right-4 flex space-x-2">
-          <button
-            className={`p-2 rounded-lg ${showGrid ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
-            onClick={handleGridToggle}
-            title="Toggle Grid"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h4v4H5V5zm0 6h4v4H5v-4zm6-6h4v4h-4V5zm0 6h4v4h-4v-4z" clipRule="evenodd" />
-            </svg>
-          </button>
-          <button
-            className={`p-2 rounded-lg ${snapToGrid ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
-            onClick={handleSnapToggle}
-            title="Toggle Snap to Grid"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-            </svg>
-          </button>
-          <select
-            className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-            value={gridSize}
-            onChange={(e) => handleGridSizeChange(parseInt(e.target.value))}
-            title="Grid Size"
-          >
-            <option value="10">10px</option>
-            <option value="20">20px</option>
-            <option value="50">50px</option>
-            <option value="100">100px</option>
-          </select>
-        </div>
-      )}
-      
-      {/* View mode indicator */}
+    <div className="relative flex-1 overflow-hidden">
       <div 
-        className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 text-sm font-medium"
-        data-testid="view-mode-indicator"
+        ref={canvasRef}
+        className={`w-full h-full overflow-auto ${showGrid ? 'bg-grid' : 'bg-white'}`}
+        style={{ 
+          cursor: isPanning ? 'grabbing' : 'default',
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
       >
-        {currentViewMode === 'editor' && 'Editor Mode'}
-        {currentViewMode === 'timeline' && 'Timeline Mode'}
-        {currentViewMode === 'zine' && 'Zine Mode'}
-        {currentViewMode === 'presentation' && 'Presentation Mode'}
+        <div 
+          className="relative"
+          style={{ 
+            width: '3000px', 
+            height: '3000px',
+            transform: `scale(${zoom})`,
+            transformOrigin: '0 0',
+          }}
+        >
+          {/* Render all elements */}
+          {canvas.elements.map(element => (
+            <div 
+              key={element.id}
+              data-element-id={element.id}
+              className="element-wrapper"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleElementSelect(element.id);
+              }}
+            >
+              <ElementRenderer 
+                element={element}
+                isSelected={selectedElement === element.id}
+                onSelect={() => handleElementSelect(element.id)}
+                viewMode={mode}
+                currentPosition={currentPosition}
+              />
+            </div>
+          ))}
+          
+          {/* Debug info */}
+          <div className="absolute bottom-4 left-4 bg-white bg-opacity-80 p-2 rounded text-sm">
+            {mode === 'editor' && 'Editor Mode'}
+            {mode === 'timeline' && 'Timeline Mode'}
+            {mode === 'zine' && 'Zine View'}
+            {mode === 'presentation' && 'Presentation Mode'}
+            <br />
+            Time: {currentPosition.toFixed(2)} / {isPlaying ? 'Playing' : 'Paused'}
+            <br />
+            Elements: {canvas.elements.length}
+            <br />
+            Selected: {selectedElement || 'None'}
+          </div>
+        </div>
+      </div>
+      
+      {/* Zoom controls */}
+      <div className="absolute bottom-4 right-4 flex flex-col gap-2">
+        <button 
+          className="bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+          onClick={() => handleZoom(1.2)}
+          title="Zoom In"
+        >
+          <span className="text-xl">+</span>
+        </button>
+        <button 
+          className="bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+          onClick={() => handleZoom(0.8)}
+          title="Zoom Out"
+        >
+          <span className="text-xl">-</span>
+        </button>
+        <button 
+          className="bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+          onClick={() => setZoom(1)}
+          title="Reset Zoom"
+        >
+          <span className="text-sm">100%</span>
+        </button>
+        <button 
+          className="bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+          onClick={toggleGrid}
+          title={showGrid ? "Hide Grid" : "Show Grid"}
+        >
+          <span className="text-sm">#</span>
+        </button>
       </div>
     </div>
   );
