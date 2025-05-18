@@ -926,7 +926,7 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       lastTime = now; // Update for next frame
       
       // Calculate new position based on current ref value
-      const newPosition = positionRef.current + (elapsed * playbackSpeed);
+      const newPosition = currentPositionRef.current + (elapsed * playbackSpeed);
       
       // Handle looping
       if (newPosition >= duration) {
