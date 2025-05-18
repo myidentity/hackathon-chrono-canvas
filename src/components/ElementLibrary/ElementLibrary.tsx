@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 import ToolsPalette from '../UI/ToolsPalette';
 import TravelStickers from '../Stickers/TravelStickers';
+import MaterialTabs from '../UI/MaterialTabs';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -235,22 +236,15 @@ function ElementLibrary(): JSX.Element {
         />
       </div>
       
-      {/* Category tabs - reordered as requested */}
-      <div className="flex border-b border-gray-200">
-        {(['stickers', 'shapes', 'text', 'media', 'images'] as ElementCategory[]).map(category => (
-          <button
-            key={category}
-            className={`flex-1 py-2 text-sm font-medium ${
-              activeCategory === category
-                ? 'text-blue-600 border-b-2 border-blue-500'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => handleCategoryChange(category)}
-          >
-            {category.charAt(0).toUpperCase() + category.slice(1)}
-          </button>
-        ))}
-      </div>
+      {/* Category tabs with Material Design - reordered as requested */}
+      <MaterialTabs
+        tabs={(['stickers', 'shapes', 'text', 'media', 'images'] as ElementCategory[]).map(category => ({
+          label: category.charAt(0).toUpperCase() + category.slice(1),
+          value: category
+        }))}
+        value={activeCategory}
+        onChange={handleCategoryChange}
+      />
       
       {/* Element grid, ToolsPalette, or TravelStickers */}
       {activeCategory === 'shapes' ? (
