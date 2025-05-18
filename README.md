@@ -161,7 +161,8 @@ The Presentation tab offers a clean, distraction-free view for showcasing your c
   - Scaling (scale, scaleX, scaleY)
   - Opacity changes
 - **Multiple Viewing Modes**: Timeline scrubbing, presentation mode, and scroll-triggered zine mode
-- **Image Upload**: Easily add your own images to the canvas
+- **Theme Switching**: Toggle between light, dark, and system themes for comfortable viewing
+- **Image Upload & Drag-and-Drop**: Easily add your own images to the canvas via upload or direct drag-and-drop
 - **Responsive Design**: Works on desktop, tablet, and mobile devices
 
 ## Technology Stack
