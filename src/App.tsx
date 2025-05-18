@@ -87,8 +87,10 @@ function App() {
             <div className="canvas-container">
               {/* Use EnhancedCanvas instead of Canvas for better selection handling */}
               <EnhancedCanvas mode={activeTab} />
-              {/* Add PopulateCanvas component for testing */}
-              <PopulateCanvas autoPopulate={true} />
+              {/* Add PopulateCanvas component as a button instead of auto-populating */}
+              <div className="absolute top-4 left-4">
+                <PopulateCanvas autoPopulate={false} />
+              </div>
             </div>
             
             <div className="properties-panel">
