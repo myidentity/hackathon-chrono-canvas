@@ -579,7 +579,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
           // Only render markers in the visible range
           if (position >= 0 && position <= 100) {
             // Check if this is a keyframe marker (by ID prefix)
-            const isKeyframe = marker.id.startsWith('keyframe-');
+            const isKeyframe = marker.id.indexOf('keyframe-') === 0;
             
             // For keyframe markers, only show them if they belong to the selected element
             // or if they are not keyframe markers (regular markers)
