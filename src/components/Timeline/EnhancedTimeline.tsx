@@ -6,7 +6,7 @@
  * It provides a more sophisticated interface for timeline manipulation.
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTimeline, TimelineMarker } from '../../context/TimelineContext';
 import { useCanvas } from '../../context/CanvasContext';
 
@@ -52,6 +52,16 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
   // Refs for DOM elements
   const timelineRef = useRef<HTMLDivElement>(null);
   const scrubberRef = useRef<HTMLDivElement>(null);
+  const keyframeButtonRef = useRef<HTMLButtonElement>(null);
+  
+  // Debug state to track selection
+  const [lastSelectedElement, setLastSelectedElement] = useState<string | null>(null);
+  
+  // Update lastSelectedElement when selectedElement changes
+  useEffect(() => {
+    console.log('EnhancedTimeline: selectedElement changed to:', selectedElement);
+    setLastSelectedElement(selectedElement);
+  }, [selectedElement]);
   
   /**
    * Format time as MM:SS.ms
@@ -148,19 +158,25 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
   /**
    * Add a keyframe for the selected element at the current position
    */
-  const handleAddKeyframe = () => {
+  const handleAddKeyframe = useCallback(() => {
     console.log('Add Keyframe button clicked');
     console.log('Selected element:', selectedElement);
+    console.log('Last selected element:', lastSelectedElement);
     
-    if (!selectedElement) {
+    // Use either the current selectedElement or the last known selected element
+    const elementId = selectedElement || lastSelectedElement;
+    
+    if (!elementId) {
       console.log('No element selected, cannot add keyframe');
+      alert('Please select an element first to add a keyframe');
       return;
     }
     
     // Find the selected element
-    const element = canvas.elements.find(el => el.id === selectedElement);
+    const element = canvas.elements.find(el => el.id === elementId);
     if (!element) {
       console.log('Selected element not found in canvas elements');
+      alert('Selected element not found in canvas');
       return;
     }
     
@@ -214,11 +230,11 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     console.log('Updated timeline data:', timelineData);
     
     // Update the element
-    updateElement(selectedElement, { timelineData });
+    updateElement(elementId, { timelineData });
     
     // Add a marker for this keyframe
     const marker: TimelineMarker = {
-      id: `keyframe-${selectedElement}-${Date.now()}`,
+      id: `keyframe-${elementId}-${Date.now()}`,
       position: currentPosition,
       name: `${element.type} Keyframe`,
       color: '#F26D5B' // Using coral accent color as requested
@@ -226,7 +242,17 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     
     console.log('Adding keyframe marker:', marker);
     addMarker(marker);
-  };
+    
+    // Visual feedback
+    if (keyframeButtonRef.current) {
+      keyframeButtonRef.current.classList.add('animate-pulse');
+      setTimeout(() => {
+        if (keyframeButtonRef.current) {
+          keyframeButtonRef.current.classList.remove('animate-pulse');
+        }
+      }, 500);
+    }
+  }, [selectedElement, lastSelectedElement, canvas.elements, currentPosition, updateElement, addMarker]);
   
   /**
    * Zoom the timeline in or out
@@ -352,9 +378,26 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     });
   }, [duration, zoom]);
   
+  // Add direct DOM event listener to keyframe button
+  useEffect(() => {
+    const keyframeBtn = keyframeButtonRef.current;
+    if (keyframeBtn) {
+      const clickHandler = () => {
+        console.log('Keyframe button clicked via direct DOM event');
+        handleAddKeyframe();
+      };
+      
+      keyframeBtn.addEventListener('click', clickHandler);
+      
+      return () => {
+        keyframeBtn.removeEventListener('click', clickHandler);
+      };
+    }
+  }, [handleAddKeyframe]);
+  
   // Force selectedElement to be non-null for testing purposes
   // This ensures the keyframe button is always enabled
-  const hasSelectedElement = true; // Changed from selectedElement to always true
+  const hasSelectedElement = Boolean(selectedElement || lastSelectedElement);
   
   return (
     <div className="timeline-panel w-full bg-gray-800 border-t border-gray-700 p-4 text-white">
@@ -575,14 +618,17 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
           Add Marker
         </button>
         
-        {/* Add keyframe button - always enabled now */}
+        {/* Add keyframe button - conditionally enabled based on selection */}
         <button 
-          className="bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm flex items-center"
+          ref={keyframeButtonRef}
+          className={`${hasSelectedElement ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 cursor-not-allowed'} rounded px-3 py-1 text-sm flex items-center transition-all duration-300`}
           onClick={handleAddKeyframe}
+          disabled={!hasSelectedElement}
           data-testid="add-keyframe-button"
         >
           <i className="material-icons mr-1">add_circle</i>
           Add Keyframe
+          {selectedElement && <span className="ml-1 text-xs">({selectedElement.substring(0, 8)}...)</span>}
         </button>
         
         {/* Duration control */}
@@ -651,6 +697,13 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
           </div>
         </div>
       )}
+      
+      {/* Debug info */}
+      <div className="mt-4 text-xs text-gray-400">
+        Selected Element: {selectedElement || 'None'} | 
+        Last Selected: {lastSelectedElement || 'None'} |
+        Elements: {canvas.elements.length}
+      </div>
     </div>
   );
 };
