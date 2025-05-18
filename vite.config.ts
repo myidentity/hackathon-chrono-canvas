@@ -22,7 +22,8 @@ export default defineConfig({
     allowedHosts: [
       '5173-iw87zc5lzo1ib6gdn4ug7-fb8a0aa4.manus.computer', 
       '5173-iyf1fwawe5nnmmqchhk9d-917f8d6c.manus.computer',
-      '5173-i20o77widgg4qfviq7m6o-917f8d6c.manus.computer'
+      '5173-i20o77widgg4qfviq7m6o-917f8d6c.manus.computer',
+      '5173-ipr5munl789bmosyzhpdu-917f8d6c.manus.computer'
     ],
   },
   preview: {
