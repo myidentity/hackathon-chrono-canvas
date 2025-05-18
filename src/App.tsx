@@ -6,6 +6,7 @@ import EnhancedCanvas from './components/Canvas/EnhancedCanvas';
 import EnhancedTimeline from './components/Timeline/EnhancedTimeline';
 import PropertyPanel from './components/PropertyPanel/PropertyPanel';
 import ElementLibrary from './components/ElementLibrary/ElementLibrary';
+import PopulateCanvas from './components/Canvas/PopulateCanvas';
 import './App.css';
 
 function App() {
@@ -86,6 +87,8 @@ function App() {
             <div className="canvas-container">
               {/* Use EnhancedCanvas instead of Canvas for better selection handling */}
               <EnhancedCanvas mode={activeTab} />
+              {/* Add PopulateCanvas component for testing */}
+              <PopulateCanvas autoPopulate={true} />
             </div>
             
             <div className="properties-panel">
