@@ -9,6 +9,7 @@
 
 import { useState } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
+import { useImageLibrary } from '../../context/ImageLibraryContext';
 import ToolsPalette from '../UI/ToolsPalette';
 import TravelStickers from '../Stickers/TravelStickers';
 import MaterialTabs from '../UI/MaterialTabs';
@@ -38,6 +39,9 @@ interface LibraryElement {
 function ElementLibrary(): JSX.Element {
   // Get canvas context
   const { addElement } = useCanvas();
+  
+  // Get image library context
+  const { images } = useImageLibrary();
   
   // State for active category - default to stickers as requested
   const [activeCategory, setActiveCategory] = useState<ElementCategory>('stickers');
@@ -162,6 +166,15 @@ function ElementLibrary(): JSX.Element {
     addElement(newSticker);
   };
   
+  // Convert images from ImageLibraryContext to LibraryElement format
+  const imageElements: LibraryElement[] = images.map(image => ({
+    id: image.id,
+    type: 'image',
+    name: image.name,
+    thumbnail: image.thumbnail,
+    properties: { src: image.src, alt: image.alt },
+  }));
+  
   // Mock library elements for each category
   const libraryElements: Record<ElementCategory, LibraryElement[]> = {
     stickers: [], // Will be replaced by TravelStickers
@@ -198,22 +211,7 @@ function ElementLibrary(): JSX.Element {
         properties: { media: 'map', location: 'New York' },
       },
     ],
-    images: [
-      {
-        id: 'img-1',
-        type: 'image',
-        name: 'Sample Image 1',
-        thumbnail: 'placeholder',
-        properties: { src: '/images/sample_image_1.jpg', alt: 'Sample Image 1' },
-      },
-      {
-        id: 'img-2',
-        type: 'image',
-        name: 'Sample Image 2',
-        thumbnail: 'placeholder',
-        properties: { src: '/images/sample_image_2.jpg', alt: 'Sample Image 2' },
-      },
-    ],
+    images: imageElements, // Use images from ImageLibraryContext
   };
   
   // Filter elements based on search query

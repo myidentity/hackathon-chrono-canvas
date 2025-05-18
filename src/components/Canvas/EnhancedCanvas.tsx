@@ -1,13 +1,14 @@
 /**
- * Integration of ImageUploader component into the EnhancedCanvas
+ * Update EnhancedCanvas to integrate with ImageLibraryContext
  * 
- * This update adds the image upload functionality to the canvas controls
- * allowing users to upload their own images.
+ * This update ensures that when images are uploaded or dropped onto the canvas,
+ * they are also added to the ImageLibraryContext for persistence in the image panel.
  */
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 import { useTimeline } from '../../context/TimelineContext';
+import { useImageLibrary } from '../../context/ImageLibraryContext';
 import ElementRenderer from './ElementRenderer';
 import ImageUploader from '../UI/ImageUploader';
 import PopulateCanvas from './PopulateCanvas';
@@ -30,6 +31,7 @@ interface Transform {
 const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
   const { canvas, selectedElement, selectElement, addElement } = useCanvas();
   const { currentPosition } = useTimeline();
+  const { addImage } = useImageLibrary();
   
   // Create a clearSelection function since it doesn't exist in the context
   const clearSelection = () => selectElement(null);
@@ -117,6 +119,18 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
   
   // Handle image upload
   const handleImageUploaded = (imageUrl: string) => {
+    // Add the image to the ImageLibraryContext for persistence
+    const fileName = imageUrl.split('/').pop() || 'Uploaded Image';
+    const imageName = `User Image ${new Date().toLocaleTimeString()}`;
+    
+    addImage({
+      name: imageName,
+      src: imageUrl,
+      alt: imageName,
+      thumbnail: imageUrl,
+      isUserUploaded: true,
+    });
+    
     // Create a new image element
     const newElement = {
       id: `image-${Date.now()}`,
@@ -215,6 +229,18 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ viewMode }) => {
       
       // Create a URL for the dropped file
       const imageUrl = URL.createObjectURL(file);
+      
+      // Add the image to the ImageLibraryContext for persistence
+      const fileName = file.name || 'Dropped Image';
+      const imageName = `${fileName} (${new Date().toLocaleTimeString()})`;
+      
+      addImage({
+        name: imageName,
+        src: imageUrl,
+        alt: imageName,
+        thumbnail: imageUrl,
+        isUserUploaded: true,
+      });
       
       // Calculate drop position relative to the canvas and accounting for zoom/pan
       const rect = contentRef.current?.getBoundingClientRect();

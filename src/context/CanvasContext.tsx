@@ -82,7 +82,7 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         type: 'image',
         position: { x: 100, y: 100 },
         size: { width: 200, height: 150 },
-        src: 'https://via.placeholder.com/200x150/8B5CF6/FFFFFF?text=Sample+Image+1',
+        src: '/images/sample_image_1.jpg',
         alt: 'Sample Image 1',
         timelineData: {
           entryPoint: 0,
@@ -125,7 +125,7 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         type: 'image',
         position: { x: 350, y: 100 },
         size: { width: 200, height: 150 },
-        src: 'https://via.placeholder.com/200x150/F59E0B/FFFFFF?text=Sample+Image+2',
+        src: '/images/sample_image_2.jpg',
         alt: 'Sample Image 2',
         timelineData: {
           entryPoint: 10,
