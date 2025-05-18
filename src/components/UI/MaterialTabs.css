@@ -1,0 +1,108 @@
+/* Material Design Tabs Styles */
+.material-tabs {
+  display: flex;
+  position: relative;
+  background-color: #fff;
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.material-tabs::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.material-tab {
+  flex: 0 0 auto;
+  min-width: 100px;
+  padding: 12px 8px;
+  text-align: center;
+  font-family: 'Roboto', 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: rgba(0, 0, 0, 0.6);
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.3s ease, background-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  outline: none;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.material-tab:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.material-tab.active {
+  color: #6200ee; /* Material Design primary color */
+}
+
+/* Indicator line for active tab */
+.material-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #6200ee; /* Material Design primary color */
+  transform-origin: bottom center;
+  transition: transform 0.3s ease;
+}
+
+/* Ripple effect */
+.material-tab .ripple {
+  position: absolute;
+  border-radius: 50%;
+  background-color: rgba(98, 0, 238, 0.1); /* Material Design primary color with opacity */
+  transform: scale(0);
+  animation: ripple 0.6s linear;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Dark mode support */
+.dark .material-tabs {
+  background-color: #121212;
+}
+
+.dark .material-tab {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dark .material-tab:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark .material-tab.active {
+  color: #bb86fc; /* Material Design dark theme primary color */
+}
+
+.dark .material-tab.active::after {
+  background-color: #bb86fc; /* Material Design dark theme primary color */
+}
+
+.dark .material-tab .ripple {
+  background-color: rgba(187, 134, 252, 0.2); /* Material Design dark theme primary color with opacity */
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .material-tab {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+}
