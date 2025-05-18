@@ -16,6 +16,12 @@ interface TextElementData {
   fontWeight?: string;
   textAlign?: string;
   content?: string;
+  fontFamily?: string;
+  textDecoration?: string;
+  lineHeight?: string;
+  letterSpacing?: string;
+  rotation?: number;
+  opacity?: number;
 }
 
 interface TextElementProps {
@@ -109,7 +115,11 @@ const TextElement: React.FC<TextElementProps> = ({ element, isSelected, onClick 
         backgroundColor: element.backgroundColor || 'transparent',
         fontSize: element.fontSize || '16px',
         fontWeight: element.fontWeight || 'normal',
+        fontFamily: element.fontFamily || 'Arial, sans-serif',
         textAlign: element.textAlign as React.CSSProperties['textAlign'] || 'left',
+        textDecoration: element.textDecoration || 'none',
+        lineHeight: element.lineHeight || 'normal',
+        letterSpacing: element.letterSpacing || 'normal',
         overflow: 'hidden',
         transform: `rotate(${element.rotation || 0}deg)`,
         opacity: element.opacity !== undefined ? element.opacity : 1

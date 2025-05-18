@@ -437,29 +437,91 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
       
       {elementProperties.type === 'image' && (
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Image Source
-          </label>
-          <input 
-            type="text"
-            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
-            value={elementProperties.src || ''}
-            onChange={(e) => handlePropertyChange('src', e.target.value)}
-          />
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mt-2 mb-1">
-            Alt Text
-          </label>
-          <input 
-            type="text"
-            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
-            value={elementProperties.alt || ''}
-            onChange={(e) => handlePropertyChange('alt', e.target.value)}
-          />
+          <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Image Properties
+          </h3>
+          
+          {/* Image Source */}
+          <div className="mb-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Image Source
+            </label>
+            <input 
+              type="text"
+              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
+              value={elementProperties.src || ''}
+              onChange={(e) => handlePropertyChange('src', e.target.value)}
+            />
+          </div>
+          
+          {/* Alt Text */}
+          <div className="mb-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Alt Text
+            </label>
+            <input 
+              type="text"
+              className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
+              value={elementProperties.alt || ''}
+              onChange={(e) => handlePropertyChange('alt', e.target.value)}
+            />
+          </div>
+          
+          {/* Border Properties */}
+          <div className="mt-3 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Border</label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Border Width</label>
+                <input 
+                  type="text"
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
+                  value={elementProperties.borderWidth || '0px'}
+                  onChange={(e) => handlePropertyChange('borderWidth', e.target.value)}
+                  placeholder="1px"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Border Style</label>
+                <select 
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
+                  value={elementProperties.borderStyle || 'none'}
+                  onChange={(e) => handlePropertyChange('borderStyle', e.target.value)}
+                >
+                  <option value="none">None</option>
+                  <option value="solid">Solid</option>
+                  <option value="dashed">Dashed</option>
+                  <option value="dotted">Dotted</option>
+                  <option value="double">Double</option>
+                </select>
+              </div>
+              <div>
+                <ColorPicker
+                  color={elementProperties.borderColor || '#000000'}
+                  onChange={(color) => handlePropertyChange('borderColor', color)}
+                  label="Border Color"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Border Radius</label>
+                <input 
+                  type="text"
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
+                  value={elementProperties.borderRadius || '0px'}
+                  onChange={(e) => handlePropertyChange('borderRadius', e.target.value)}
+                  placeholder="8px"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )}
       
       {elementProperties.type === 'text' && (
         <div className="mb-4">
+          <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Text Properties
+          </h3>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Text Content
           </label>
@@ -469,48 +531,110 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
             onChange={(e) => handlePropertyChange('content', e.target.value)}
             rows={3}
           />
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Font Size</label>
-              <input 
-                type="text"
-                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
-                value={elementProperties.fontSize || '16px'}
-                onChange={(e) => handlePropertyChange('fontSize', e.target.value)}
-              />
+          
+          {/* Font Properties */}
+          <div className="mt-3 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Font</label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Font Family</label>
+                <select 
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
+                  value={elementProperties.fontFamily || 'Arial, sans-serif'}
+                  onChange={(e) => handlePropertyChange('fontFamily', e.target.value)}
+                >
+                  <option value="Arial, sans-serif">Arial</option>
+                  <option value="'Times New Roman', serif">Times New Roman</option>
+                  <option value="'Courier New', monospace">Courier New</option>
+                  <option value="Georgia, serif">Georgia</option>
+                  <option value="Verdana, sans-serif">Verdana</option>
+                  <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                  <option value="Impact, sans-serif">Impact</option>
+                  <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Font Size</label>
+                <input 
+                  type="text"
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
+                  value={elementProperties.fontSize || '16px'}
+                  onChange={(e) => handlePropertyChange('fontSize', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Font Weight</label>
+                <select 
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
+                  value={elementProperties.fontWeight || 'normal'}
+                  onChange={(e) => handlePropertyChange('fontWeight', e.target.value)}
+                >
+                  <option value="normal">Normal</option>
+                  <option value="bold">Bold</option>
+                  <option value="lighter">Lighter</option>
+                  <option value="bolder">Bolder</option>
+                </select>
+              </div>
+              <div>
+                <ColorPicker
+                  color={elementProperties.color || '#000000'}
+                  onChange={(color) => handlePropertyChange('color', color)}
+                  label="Color"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Font Weight</label>
-              <select 
-                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
-                value={elementProperties.fontWeight || 'normal'}
-                onChange={(e) => handlePropertyChange('fontWeight', e.target.value)}
-              >
-                <option value="normal">Normal</option>
-                <option value="bold">Bold</option>
-                <option value="lighter">Lighter</option>
-                <option value="bolder">Bolder</option>
-              </select>
-            </div>
-            <div>
-              <ColorPicker
-                color={elementProperties.color || '#000000'}
-                onChange={(color) => handlePropertyChange('color', color)}
-                label="Color"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Text Align</label>
-              <select 
-                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
-                value={elementProperties.textAlign || 'left'}
-                onChange={(e) => handlePropertyChange('textAlign', e.target.value)}
-              >
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-                <option value="right">Right</option>
-                <option value="justify">Justify</option>
-              </select>
+          </div>
+          
+          {/* Text Layout */}
+          <div className="mt-3 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Layout</label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Text Align</label>
+                <select 
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
+                  value={elementProperties.textAlign || 'left'}
+                  onChange={(e) => handlePropertyChange('textAlign', e.target.value)}
+                >
+                  <option value="left">Left</option>
+                  <option value="center">Center</option>
+                  <option value="right">Right</option>
+                  <option value="justify">Justify</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Line Height</label>
+                <input 
+                  type="text"
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
+                  value={elementProperties.lineHeight || 'normal'}
+                  onChange={(e) => handlePropertyChange('lineHeight', e.target.value)}
+                  placeholder="1.5 or 24px"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Letter Spacing</label>
+                <input 
+                  type="text"
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
+                  value={elementProperties.letterSpacing || 'normal'}
+                  onChange={(e) => handlePropertyChange('letterSpacing', e.target.value)}
+                  placeholder="normal or 2px"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Text Decoration</label>
+                <select 
+                  className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded px-3 py-2 text-sm dark:text-gray-200"
+                  value={elementProperties.textDecoration || 'none'}
+                  onChange={(e) => handlePropertyChange('textDecoration', e.target.value)}
+                >
+                  <option value="none">None</option>
+                  <option value="underline">Underline</option>
+                  <option value="line-through">Strikethrough</option>
+                  <option value="overline">Overline</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
