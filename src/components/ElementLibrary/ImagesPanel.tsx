@@ -21,7 +21,16 @@ const ImagesPanel: React.FC<ImagesPanelProps> = ({ onSelectImage }) => {
   }, []);
 
   const handleImageClick = (image: any) => {
-    onSelectImage({ type: 'image', ...image });
+    // Ensure src is explicitly included in properties to prevent it from being lost
+    onSelectImage({ 
+      type: 'image', 
+      ...image,
+      properties: {
+        src: image.src,
+        alt: image.alt || '',
+        name: image.name || 'Image'
+      }
+    });
   };
 
   // Handle file drop for image upload
