@@ -47,7 +47,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
   const [zoom, setZoom] = useState(1);
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: duration });
   const [showMarkerForm, setShowMarkerForm] = useState(false);
-  const [markerForm, setMarkerForm] = useState({ name: '', color: '#3b82f6' });
+  const [markerForm, setMarkerForm] = useState({ name: '', color: '#F26D5B' });
   
   // Refs for DOM elements
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -140,7 +140,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
       };
       
       addMarker(newMarker);
-      setMarkerForm({ name: '', color: '#3b82f6' });
+      setMarkerForm({ name: '', color: '#F26D5B' });
       setShowMarkerForm(false);
     }
   };
@@ -352,19 +352,19 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
   const hasSelectedElement = true; // Changed from selectedElement to always true
   
   return (
-    <div className="timeline-panel w-full bg-gray-800 border-t border-gray-700 p-4 text-white">
+    <div className="timeline-panel w-full bg-surface-900 border-t border-surface-700 p-4 text-white">
       {/* Timeline header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-4">
           {/* Current time display */}
-          <div className="text-lg font-mono">
+          <div className="text-lg font-mono bg-surface-800 px-3 py-1 rounded-md-lg shadow-md-1">
             {formatTime(currentPosition)}
           </div>
           
           {/* Playback controls */}
           <div className="flex items-center space-x-2">
             <button 
-              className="bg-indigo-600 hover:bg-indigo-700 rounded-full w-10 h-10 flex items-center justify-center"
+              className="bg-primary-600 hover:bg-primary-700 rounded-full w-10 h-10 flex items-center justify-center shadow-md-2 transition-all duration-200"
               onClick={togglePlayback}
               aria-label={isPlaying ? "Pause" : "Play"}
               data-testid="playback-toggle"
@@ -377,7 +377,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
             </button>
             
             <button 
-              className="bg-gray-700 hover:bg-gray-600 rounded-full w-8 h-8 flex items-center justify-center"
+              className="bg-surface-700 hover:bg-surface-600 rounded-full w-8 h-8 flex items-center justify-center shadow-md-1 transition-all duration-200"
               onClick={() => setPosition(0)}
               aria-label="Go to start"
             >
@@ -386,7 +386,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
             
             {/* Step backward button */}
             <button 
-              className="bg-gray-700 hover:bg-gray-600 rounded-full w-8 h-8 flex items-center justify-center"
+              className="bg-surface-700 hover:bg-surface-600 rounded-full w-8 h-8 flex items-center justify-center shadow-md-1 transition-all duration-200"
               onClick={() => handleStep(-1)}
               aria-label="Step backward"
             >
@@ -395,7 +395,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
             
             {/* Step forward button */}
             <button 
-              className="bg-gray-700 hover:bg-gray-600 rounded-full w-8 h-8 flex items-center justify-center"
+              className="bg-surface-700 hover:bg-surface-600 rounded-full w-8 h-8 flex items-center justify-center shadow-md-1 transition-all duration-200"
               onClick={() => handleStep(1)}
               aria-label="Step forward"
             >
@@ -403,7 +403,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
             </button>
             
             <button 
-              className="bg-gray-700 hover:bg-gray-600 rounded-full w-8 h-8 flex items-center justify-center"
+              className="bg-surface-700 hover:bg-surface-600 rounded-full w-8 h-8 flex items-center justify-center shadow-md-1 transition-all duration-200"
               onClick={() => setPosition(duration)}
               aria-label="Go to end"
             >
@@ -413,7 +413,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
           
           {/* Playback speed */}
           <select 
-            className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm"
+            className="bg-surface-700 border border-surface-600 rounded-md-md px-2 py-1 text-sm shadow-md-1 focus:outline-none focus:ring-2 focus:ring-primary-500"
             value={playbackSpeed}
             onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
             data-testid="playback-speed"
@@ -430,7 +430,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
         <div className="flex items-center space-x-2">
           {/* Zoom controls */}
           <button 
-            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm flex items-center justify-center"
+            className="bg-surface-700 hover:bg-surface-600 rounded-md-md px-3 py-1 text-sm flex items-center justify-center shadow-md-1 transition-all duration-200"
             onClick={() => handleZoom(1.2)}
             aria-label="Zoom in"
           >
@@ -438,7 +438,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
           </button>
           
           <button 
-            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm flex items-center justify-center"
+            className="bg-surface-700 hover:bg-surface-600 rounded-md-md px-3 py-1 text-sm flex items-center justify-center shadow-md-1 transition-all duration-200"
             onClick={() => handleZoom(0.8)}
             aria-label="Zoom out"
           >
@@ -447,7 +447,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
           
           {/* Center and fit button */}
           <button 
-            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm flex items-center justify-center"
+            className="bg-surface-700 hover:bg-surface-600 rounded-md-md px-3 py-1 text-sm flex items-center justify-center shadow-md-1 transition-all duration-200"
             onClick={handleCenterAndFit}
             aria-label="Center and fit all elements"
             title="Center and fit all elements"
@@ -457,7 +457,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
           
           {/* Pan controls */}
           <button 
-            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm flex items-center justify-center"
+            className="bg-surface-700 hover:bg-surface-600 rounded-md-md px-3 py-1 text-sm flex items-center justify-center shadow-md-1 transition-all duration-200"
             onClick={() => handlePan(-1)}
             aria-label="Pan left"
           >
@@ -465,7 +465,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
           </button>
           
           <button 
-            className="bg-gray-700 hover:bg-gray-600 rounded px-3 py-1 text-sm flex items-center justify-center"
+            className="bg-surface-700 hover:bg-surface-600 rounded-md-md px-3 py-1 text-sm flex items-center justify-center shadow-md-1 transition-all duration-200"
             onClick={() => handlePan(1)}
             aria-label="Pan right"
           >
@@ -477,177 +477,231 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
       {/* Timeline track */}
       <div 
         ref={timelineRef}
-        className="timeline-container w-full h-12 bg-gray-700 rounded-lg relative mb-4 cursor-pointer"
+        className="relative h-12 bg-surface-800 rounded-md-lg shadow-md-1 mb-4 cursor-pointer overflow-hidden"
         onClick={handleTimelineClick}
         data-testid="timeline-track"
       >
         {/* Time markers */}
-        {Array.from({ length: Math.ceil((visibleRange.end - visibleRange.start) / 5) + 1 }).map((_, i) => {
-          const time = visibleRange.start + i * 5;
-          const position = ((time - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100;
-          
-          if (time <= visibleRange.end) {
-            return (
-              <div 
-                key={`time-${i}`}
-                className="absolute top-0 h-full w-px bg-gray-600"
-                style={{ left: `${position}%` }}
-              >
-                <div className="absolute -top-5 left-0 transform -translate-x-1/2 text-xs text-gray-400">
-                  {formatTime(time)}
-                </div>
-              </div>
-            );
-          }
-          return null;
-        })}
-        
-        {/* Timeline progress */}
-        <div 
-          className="h-full bg-indigo-900 rounded-lg opacity-50"
-          style={{ 
-            width: `${((currentPosition - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100}%`,
-            maxWidth: '100%'
-          }}
-        />
-        
-        {/* Current position indicator (scrubber) */}
-        <div 
-          ref={scrubberRef}
-          className="absolute top-0 w-4 h-12 bg-indigo-500 rounded-full -ml-2 cursor-grab"
-          style={{ 
-            left: `${((currentPosition - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100}%`,
-            zIndex: 10
-          }}
-          onMouseDown={handleScrubberMouseDown}
-          data-testid="timeline-scrubber"
-        />
-        
-        {/* Markers */}
-        {markers.map(marker => {
-          // Calculate position percentage
-          const position = ((marker.position - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100;
-          
-          // Only render markers in the visible range
-          if (position >= 0 && position <= 100) {
-            // Check if this is a keyframe marker (by ID prefix)
-            const isKeyframe = marker.id.indexOf('keyframe-') === 0;
-            
-            // For keyframe markers, only show if the associated element is selected
-            if (isKeyframe && selectedElement && marker.id.indexOf(selectedElement) === -1) {
+        <div className="absolute top-0 left-0 w-full h-full">
+          {/* Generate time markers every second */}
+          {Array.from({ length: Math.ceil(duration) + 1 }).map((_, i) => {
+            // Skip if outside visible range
+            if (i < Math.floor(visibleRange.start) || i > Math.ceil(visibleRange.end)) {
               return null;
             }
             
+            // Calculate position
+            const position = ((i - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100;
+            
             return (
               <div 
-                key={marker.id}
-                className="absolute top-0 w-2 h-12 -ml-1 cursor-pointer"
-                style={{ 
-                  left: `${position}%`,
-                  backgroundColor: marker.color || '#3b82f6'
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  seekToMarker(marker.id);
-                }}
-                title={marker.name}
-                data-testid={`marker-${marker.id}`}
+                key={`marker-${i}`}
+                className="absolute top-0 h-full border-l border-surface-600"
+                style={{ left: `${position}%` }}
               >
-                <div className="absolute -bottom-5 left-0 transform -translate-x-1/2 text-xs text-gray-400 whitespace-nowrap">
-                  {marker.name}
+                <div className="absolute -left-2 bottom-0 text-xs text-surface-400">
+                  {formatTime(i)}
                 </div>
               </div>
             );
+          })}
+        </div>
+        
+        {/* Keyframe markers */}
+        {markers.map(marker => {
+          // Skip if outside visible range
+          if (marker.position < visibleRange.start || marker.position > visibleRange.end) {
+            return null;
           }
-          return null;
+          
+          // Calculate position
+          const position = ((marker.position - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100;
+          
+          // Check if this is a keyframe marker
+          const isKeyframe = marker.id.startsWith('keyframe-');
+          
+          return (
+            <div 
+              key={marker.id}
+              className={`absolute transform -translate-x-1/2 cursor-pointer transition-transform duration-200 hover:scale-125 ${isKeyframe ? 'top-1' : 'bottom-1'}`}
+              style={{ 
+                left: `${position}%`,
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                seekToMarker(marker.id);
+              }}
+              title={marker.name}
+            >
+              {/* Diamond shape for keyframes, circle for regular markers */}
+              {isKeyframe ? (
+                <div 
+                  className="w-4 h-4 rotate-45 shadow-md-2 animate-md-scale"
+                  style={{ 
+                    backgroundColor: marker.color || '#F26D5B',
+                  }}
+                />
+              ) : (
+                <div 
+                  className="w-3 h-3 rounded-full shadow-md-1"
+                  style={{ 
+                    backgroundColor: marker.color || '#3b82f6',
+                  }}
+                />
+              )}
+            </div>
+          );
         })}
+        
+        {/* Keyframe connections */}
+        {canvas.elements.map(element => {
+          if (!element.timelineData?.keyframes || element.timelineData.keyframes.length < 2) {
+            return null;
+          }
+          
+          // Group keyframes by element
+          const keyframeMarkers = markers.filter(
+            marker => marker.id.startsWith(`keyframe-${element.id}`)
+          );
+          
+          if (keyframeMarkers.length < 2) {
+            return null;
+          }
+          
+          // Sort by position
+          keyframeMarkers.sort((a, b) => a.position - b.position);
+          
+          return keyframeMarkers.slice(0, -1).map((marker, index) => {
+            const nextMarker = keyframeMarkers[index + 1];
+            
+            // Skip if outside visible range
+            if (
+              (marker.position < visibleRange.start && nextMarker.position < visibleRange.start) ||
+              (marker.position > visibleRange.end && nextMarker.position > visibleRange.end)
+            ) {
+              return null;
+            }
+            
+            // Calculate positions
+            const startPos = Math.max(
+              0,
+              ((marker.position - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100
+            );
+            const endPos = Math.min(
+              100,
+              ((nextMarker.position - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100
+            );
+            
+            return (
+              <div 
+                key={`connection-${marker.id}-${nextMarker.id}`}
+                className="absolute top-3 h-0.5 opacity-70"
+                style={{ 
+                  left: `${startPos}%`,
+                  width: `${endPos - startPos}%`,
+                  backgroundColor: marker.color || '#F26D5B',
+                }}
+              />
+            );
+          });
+        })}
+        
+        {/* Current position scrubber */}
+        <div 
+          ref={scrubberRef}
+          className="absolute top-0 h-full w-1 bg-primary-500 cursor-ew-resize shadow-md-2"
+          style={{ 
+            left: `${((currentPosition - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100}%`,
+          }}
+          onMouseDown={handleScrubberMouseDown}
+          data-testid="timeline-scrubber"
+        >
+          {/* Scrubber handle */}
+          <div className="absolute -left-1.5 top-0 w-4 h-4 bg-primary-500 rounded-full shadow-md-2" />
+        </div>
       </div>
       
-      <div className="flex items-center space-x-4 mt-4">
+      {/* Timeline actions */}
+      <div className="flex items-center space-x-4">
         {/* Add marker button */}
         <button 
-          className="bg-indigo-600 hover:bg-indigo-700 rounded px-3 py-1 text-sm flex items-center"
-          onClick={() => setShowMarkerForm(true)}
-          data-testid="add-marker-button"
+          className="flex items-center px-4 py-2 bg-secondary-600 hover:bg-secondary-700 text-white rounded-md-md shadow-md-1 transition-all duration-200"
+          onClick={() => setShowMarkerForm(!showMarkerForm)}
+          aria-label="Add marker"
         >
           <i className="material-icons mr-1">bookmark_add</i>
           Add Marker
         </button>
         
-        {/* Add keyframe button - always enabled now */}
+        {/* Add keyframe button */}
         <button 
-          className="bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm flex items-center"
+          className={`flex items-center px-4 py-2 rounded-md-md shadow-md-1 transition-all duration-200 ${
+            hasSelectedElement 
+              ? 'bg-primary-600 hover:bg-primary-700 text-white' 
+              : 'bg-surface-600 text-surface-400 cursor-not-allowed'
+          }`}
           onClick={handleAddKeyframe}
-          data-testid="add-keyframe-button"
+          disabled={!hasSelectedElement}
+          aria-label="Add keyframe"
         >
           <i className="material-icons mr-1">add_circle</i>
           Add Keyframe
         </button>
         
-        {/* Duration control */}
-        <div className="flex items-center space-x-2">
-          <span className="text-sm">Duration:</span>
+        {/* Duration input */}
+        <div className="flex items-center">
+          <span className="mr-2 text-surface-300">Duration:</span>
           <input 
             type="number"
-            className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm w-16"
+            className="w-16 bg-surface-700 border border-surface-600 rounded-md-md px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
             value={duration}
             onChange={(e) => {
               const newDuration = Math.max(1, parseInt(e.target.value) || 1);
-              // Update duration in timeline context
-              // This would require adding a setDuration function to the context
-              // For now, we'll just log it
-              console.log(`Setting duration to ${newDuration}`);
+              // Update duration in context
             }}
             min="1"
             step="1"
           />
-          <span className="text-sm">sec</span>
+          <span className="ml-1 text-surface-300">sec</span>
         </div>
       </div>
       
-      {/* Marker form modal */}
+      {/* Marker form */}
       {showMarkerForm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-xl max-w-md">
-            <h3 className="text-lg font-medium mb-4 text-white">Add Marker</h3>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Marker Name
-              </label>
+        <div className="mt-4 p-4 bg-surface-800 rounded-md-lg shadow-md-2 animate-md-fade-in">
+          <h3 className="text-lg font-medium mb-3 text-surface-100">Add Marker</h3>
+          <div className="flex items-end space-x-4">
+            <div className="flex-1">
+              <label className="block text-sm text-surface-300 mb-1">Marker Name</label>
               <input 
                 type="text"
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                className="w-full bg-surface-700 border border-surface-600 rounded-md-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 value={markerForm.name}
                 onChange={(e) => setMarkerForm({ ...markerForm, name: e.target.value })}
                 placeholder="Enter marker name"
               />
             </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Marker Color
-              </label>
+            <div>
+              <label className="block text-sm text-surface-300 mb-1">Color</label>
               <input 
                 type="color"
-                className="w-full h-10 bg-gray-700 border border-gray-600 rounded px-1"
+                className="h-10 w-16 bg-surface-700 border border-surface-600 rounded-md-md cursor-pointer"
                 value={markerForm.color}
                 onChange={(e) => setMarkerForm({ ...markerForm, color: e.target.value })}
               />
             </div>
-            <div className="flex justify-end space-x-3">
-              <button 
-                onClick={() => setShowMarkerForm(false)}
-                className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleAddMarker}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-                disabled={!markerForm.name.trim()}
-              >
-                Add Marker
-              </button>
-            </div>
+            <button 
+              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-md-md shadow-md-1 transition-all duration-200"
+              onClick={handleAddMarker}
+            >
+              Add
+            </button>
+            <button 
+              className="px-4 py-2 bg-surface-600 hover:bg-surface-500 text-white rounded-md-md shadow-md-1 transition-all duration-200"
+              onClick={() => setShowMarkerForm(false)}
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
