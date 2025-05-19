@@ -24,37 +24,37 @@
   
   /* Material Design 3.0 Typography Scale */
   h1 {
-    @apply font-display text-4xl font-bold tracking-tight;
+    @apply text-4xl font-bold tracking-tight;
     line-height: 1.2;
     margin-bottom: 0.5em;
   }
   
   h2 {
-    @apply font-display text-3xl font-semibold tracking-tight;
+    @apply text-3xl font-semibold tracking-tight;
     line-height: 1.25;
     margin-bottom: 0.5em;
   }
   
   h3 {
-    @apply font-display text-2xl font-semibold tracking-normal;
+    @apply text-2xl font-semibold tracking-normal;
     line-height: 1.3;
     margin-bottom: 0.5em;
   }
   
   h4 {
-    @apply font-display text-xl font-medium tracking-normal;
+    @apply text-xl font-medium tracking-normal;
     line-height: 1.35;
     margin-bottom: 0.5em;
   }
   
   h5 {
-    @apply font-display text-lg font-medium tracking-normal;
+    @apply text-lg font-medium tracking-normal;
     line-height: 1.4;
     margin-bottom: 0.5em;
   }
   
   h6 {
-    @apply font-display text-base font-medium tracking-normal;
+    @apply text-base font-medium tracking-normal;
     line-height: 1.4;
     margin-bottom: 0.5em;
   }

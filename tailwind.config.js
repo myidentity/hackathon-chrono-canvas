@@ -6,6 +6,11 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        'sans': ['Roboto', 'sans-serif'],
+        'condensed': ['Roboto Condensed', 'sans-serif'],
+        'mono': ['Roboto Mono', 'monospace'],
+      },
       colors: {
         // Material Design 3.0 color system
         primary: {
