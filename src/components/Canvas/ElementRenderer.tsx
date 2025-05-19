@@ -32,6 +32,10 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
   // Local state to track animation frame for forced re-renders
   const [animationFrame, setAnimationFrame] = useState(0);
   
+  // Refs to track previous values to avoid infinite loops
+  const prevPropertiesRef = useRef(element.properties);
+  const prevPositionRef = useRef(currentPosition);
+  
   // Ensure element.properties exists to prevent errors
   const properties = element.properties || {};
   
@@ -62,8 +66,19 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
         el.style.opacity = properties.opacity.toString();
       }
       
-      // Force a re-render by incrementing animation frame
-      setAnimationFrame(prev => prev + 1);
+      // Only update animation frame if properties or position actually changed
+      // This prevents infinite update loops
+      const propertiesChanged = JSON.stringify(properties) !== JSON.stringify(prevPropertiesRef.current);
+      const positionChanged = currentPosition !== prevPositionRef.current;
+      
+      if (propertiesChanged || positionChanged) {
+        // Update refs with current values
+        prevPropertiesRef.current = properties;
+        prevPositionRef.current = currentPosition;
+        
+        // Force a re-render by incrementing animation frame
+        setAnimationFrame(prev => prev + 1);
+      }
     }
   }, [properties, currentPosition]);
   
