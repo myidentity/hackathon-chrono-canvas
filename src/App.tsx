@@ -9,6 +9,9 @@ import ElementLibrary from './components/ElementLibrary/ElementLibrary';
 import PopulateCanvas from './components/Canvas/PopulateCanvas';
 import './App.css';
 
+// Import version from package.json
+import packageInfo from '../package.json';
+
 function App() {
   const [activeTab, setActiveTab] = useState<'editor' | 'timeline' | 'zine' | 'presentation'>('editor');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -24,7 +27,7 @@ function App() {
           <header className="app-header">
             <div className="logo">
               <span className="material-icons text-indigo-600">dashboard</span>
-              <h1>ChronoCanvas <span className="version-number">0.1.2</span></h1>
+              <h1>ChronoCanvas <span className="version-number">{packageInfo.version}</span></h1>
             </div>
             
             <div className="tabs">
