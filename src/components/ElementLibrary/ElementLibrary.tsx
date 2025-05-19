@@ -1,10 +1,5 @@
 /**
- * ElementLibrary component for ChronoCanvas.
- * 
- * This component provides a library of elements that users can add to the canvas,
- * including images, text, shapes, stickers, and media.
- * 
- * @module ElementLibrary
+ * Updated ElementLibrary component with Material Design 3.0 layout
  */
 
 import React, { useState } from 'react';
@@ -12,8 +7,9 @@ import { useCanvas, TimelineData } from '../../context/CanvasContext';
 import { useImageLibrary } from '../../context/ImageLibraryContext';
 import ToolsPalette from '../UI/ToolsPalette';
 import TravelStickers, { StickerData } from '../Stickers/TravelStickers';
-import MaterialTabs from '../UI/MaterialTabs';
 import { v4 as uuidv4 } from 'uuid';
+import ElementLibraryHeader from './ElementLibraryHeader';
+import ElementTypeNav from './ElementTypeNav';
 
 /**
  * Type for element category
@@ -247,124 +243,115 @@ const ElementLibrary = (): JSX.Element => {
     : libraryElements[activeCategory];
   
   return (
-    <div className="h-full flex flex-col">
-      {/* Search input and Clear Canvas button */}
-      <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center">
-        <input
-          type="text"
-          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 dark:text-gray-200"
-          placeholder="Search elements..."
-          value={searchQuery}
-          onChange={handleSearchChange}
-        />
-        <button
-          onClick={handleClearCanvas}
-          className="ml-2 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center"
-          title="Clear Canvas"
-        >
-          <span className="material-icons text-sm mr-1">delete</span>
-          Clear
-        </button>
-      </div>
-      
-       {/* Category tabs with Material Design - reordered as requested */}
-      <MaterialTabs
-        tabs={[
-          { label: 'Stickers', value: 'stickers' },
-          { label: 'Shapes', value: 'shapes' },
-          { label: 'Text', value: 'text' },
-          { label: 'Images', value: 'images' }
-        ]}
-        value={activeCategory}
-        onChange={handleCategoryChange}
+    <div className="h-full flex">
+      {/* New Material Design 3.0 Navigation Rail */}
+      <ElementTypeNav 
+        activeCategory={activeCategory}
+        onCategoryChange={handleCategoryChange}
       />
       
-      {/* Element grid, ToolsPalette, or TravelStickers */}
-      {activeCategory === 'shapes' ? (
+      {/* Content Area with Header */}
+      <div className="flex-1 flex flex-col h-full">
+        {/* New Material Design 3.0 Header with Search and Clear */}
+        <ElementLibraryHeader 
+          searchQuery={searchQuery}
+          onSearchChange={handleSearchChange}
+          onClearCanvas={handleClearCanvas}
+        />
+        
+        {/* Element Content Area */}
         <div className="flex-1 overflow-y-auto">
-          <ToolsPalette className="m-3" searchQuery={searchQuery} />
-        </div>
-      ) : activeCategory === 'stickers' ? (
-        <div className="flex-1 overflow-y-auto">
-          <TravelStickers onSelectSticker={handleAddSticker} searchQuery={searchQuery} />
-        </div>
-      ) : activeCategory === 'images' ? (
-        <div className="flex-1 overflow-y-auto">
-          <React.Suspense fallback={<div>Loading Images Panel...</div>}>
-            <ImagesPanelComponent onSelectImage={handleAddElement} />
-          </React.Suspense>
-        </div>
-      ) : (
-        <div className="flex-1 overflow-y-auto p-3 grid grid-cols-2 gap-3">
-          {filteredElements.map(element => (
-            <div
-              key={element.id}
-              className="border border-gray-200 dark:border-gray-700 rounded-md p-2 cursor-grab hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-sm transition-all dark:bg-gray-800"
-              draggable
-              onDragStart={(e) => handleDragStart(e, element)}
-              onClick={() => handleAddElement(element)}
-            >
-              {/* Element thumbnail */}
-              <div className="bg-gray-100 dark:bg-gray-700 h-20 flex items-center justify-center rounded mb-2">
-                {element.type === 'text' && (
-                  <span style={{ 
-                    fontSize: element.properties.fontSize ? element.properties.fontSize.replace('px', '') / 2 + 'px' : '16px', 
-                    fontWeight: element.properties.fontWeight || 'normal'
-                  }} className="dark:text-gray-200">
-                    {element.properties.content || 'Text'}
-                  </span>
-                )}
-                {element.type === 'shape' && (
-                  <div
-                    className={`${element.properties.shape === 'circle' ? 'rounded-full' : 'rounded'}`}
-                    style={{ 
-                      backgroundColor: element.properties.backgroundColor || '#cccccc',
-                      width: '40px',
-                      height: '40px',
-                    }}
-                  />
-                )}
-                {element.type === 'image' && (
-                  <img 
-                    src={element.properties.src} 
-                    alt={element.properties.alt || ''} 
-                    className="max-h-full max-w-full object-contain"
-                  />
-                )}
-                {element.type === 'media' && (
-                  <div className="text-gray-400 dark:text-gray-300 text-xs">
+          {activeCategory === 'shapes' ? (
+            <div className="p-4">
+              <ToolsPalette className="m-0" searchQuery={searchQuery} />
+            </div>
+          ) : activeCategory === 'stickers' ? (
+            <div className="p-4">
+              <TravelStickers onSelectSticker={handleAddSticker} searchQuery={searchQuery} />
+            </div>
+          ) : activeCategory === 'images' ? (
+            <div className="p-4">
+              <React.Suspense fallback={<div className="p-4 text-center text-surface-500">Loading Images Panel...</div>}>
+                <ImagesPanelComponent onSelectImage={handleAddElement} />
+              </React.Suspense>
+            </div>
+          ) : (
+            <div className="p-4 grid grid-cols-2 gap-4">
+              {filteredElements.map(element => (
+                <div
+                  key={element.id}
+                  className="bg-surface-50 dark:bg-surface-800 rounded-lg p-3 cursor-grab 
+                           hover:bg-surface-100 dark:hover:bg-surface-700 
+                           shadow-md-1 hover:shadow-md-2 transition-all
+                           border border-surface-200 dark:border-surface-700"
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, element)}
+                  onClick={() => handleAddElement(element)}
+                >
+                  {/* Element thumbnail */}
+                  <div className="bg-white dark:bg-surface-900 h-24 flex items-center justify-center rounded-md mb-3">
+                    {element.type === 'text' && (
+                      <span style={{ 
+                        fontSize: element.properties.fontSize ? element.properties.fontSize.replace('px', '') / 2 + 'px' : '16px', 
+                        fontWeight: element.properties.fontWeight || 'normal'
+                      }} className="dark:text-gray-200">
+                        {element.properties.content || 'Text'}
+                      </span>
+                    )}
+                    {element.type === 'shape' && (
+                      <div
+                        className={`${element.properties.shape === 'circle' ? 'rounded-full' : 'rounded'}`}
+                        style={{ 
+                          backgroundColor: element.properties.backgroundColor || '#cccccc',
+                          width: '40px',
+                          height: '40px',
+                        }}
+                      />
+                    )}
+                    {element.type === 'image' && (
+                      <img 
+                        src={element.properties.src} 
+                        alt={element.properties.alt || ''} 
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    )}
+                  </div>
+                  
+                  {/* Element name */}
+                  <div className="text-sm font-medium text-surface-900 dark:text-surface-100 text-center">
                     {element.name}
                   </div>
-                )}
-              </div>
-              
-              {/* Element name */}
-              <div className="text-xs text-center text-gray-700 dark:text-gray-300 truncate">
-                {element.name}
-              </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
-      )}
+      </div>
       
-      {/* Clear Canvas confirmation modal */}
+      {/* Clear Canvas confirmation modal - Material Design 3.0 Dialog */}
       {showClearConfirm && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md">
-            <h3 className="text-lg font-medium mb-4 dark:text-white">Clear Canvas</h3>
-            <p className="mb-6 dark:text-gray-300">
-              Are you sure you want to clear the canvas? This will remove all elements and cannot be undone.
-            </p>
-            <div className="flex justify-end space-x-3">
+          <div className="bg-surface-50 dark:bg-surface-800 rounded-lg shadow-lg max-w-md w-full m-4 overflow-hidden">
+            <div className="p-6">
+              <h3 className="text-xl font-medium text-surface-900 dark:text-surface-50 mb-2">Clear Canvas</h3>
+              <p className="mb-6 text-surface-700 dark:text-surface-300">
+                Are you sure you want to clear the canvas? This will remove all elements and cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end p-4 bg-surface-100 dark:bg-surface-700 gap-3">
               <button 
                 onClick={cancelClearCanvas}
-                className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50"
+                className="px-4 py-2 rounded-full text-primary-600 dark:text-primary-300 font-medium
+                         hover:bg-surface-200 dark:hover:bg-surface-600 transition-colors
+                         focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 Cancel
               </button>
               <button 
                 onClick={confirmClearCanvas}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-50"
+                className="px-4 py-2 rounded-full bg-error-600 text-white font-medium
+                         hover:bg-error-700 transition-colors
+                         focus:outline-none focus:ring-2 focus:ring-error-500"
               >
                 Clear Canvas
               </button>
