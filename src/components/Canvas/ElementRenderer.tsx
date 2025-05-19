@@ -1,119 +1,130 @@
-import React, { useEffect, useState } from 'react';
-import ImageElement from './ImageElement';
-import TextElement from './TextElement';
+import React, { useEffect, useState, useRef } from 'react';
+import { CanvasElement } from '../../types/CanvasElement';
 import ShapeElement from './ShapeElement';
+import TextElement from './TextElement';
 import StickerElement from './StickerElement';
-import AudioElement from './AudioElement';
+import ImageElement from './ImageElement';
 import { ViewMode } from '../../types/ViewMode';
 
-// Define image element interface specifically for type checking
-interface ImageElementType {
-  id: string;
-  type: 'image';
-  position?: { x: number; y: number };
-  size?: { width: number; height: number };
-  zIndex?: number;
-  src: string; // Required for image elements
-  alt?: string;
-  [key: string]: any;
-}
-
-// Define base element interface
-interface BaseElement {
-  id: string;
-  type: 'image' | 'text' | 'shape' | 'sticker' | 'audio' | 'map' | 'media';
-  position?: { x: number; y: number };
-  size?: { width: number; height: number };
-  zIndex?: number;
-  src?: string;
-  [key: string]: any; // Allow for additional properties
-}
-
 interface ElementRendererProps {
-  element: BaseElement;
+  element: CanvasElement;
   isSelected: boolean;
-  onSelect?: (e: React.MouseEvent) => void; // Make optional
-  viewMode?: ViewMode;
-  currentPosition?: number;
-  scrollPosition?: number;
+  viewMode: ViewMode;
+  currentPosition: number;
 }
 
 /**
  * ElementRenderer component
- * Renders different types of elements based on their type
+ * Renders different types of canvas elements
  * 
  * @param {ElementRendererProps} props - Component properties
- * @returns {JSX.Element | null} Rendered element or null if type is not supported
+ * @returns {JSX.Element} Rendered component
  */
 const ElementRenderer: React.FC<ElementRendererProps> = ({ 
   element, 
   isSelected, 
-  onSelect,
-  viewMode = 'editor',
+  viewMode,
   currentPosition
 }) => {
-  const isEditor = viewMode === 'editor';
+  // Create a ref to directly access and update the DOM element
+  const elementRef = useRef<HTMLDivElement>(null);
   
-  // Force re-render when element or currentPosition changes
-  const [, forceUpdate] = useState({});
+  // Local state to track animation frame for forced re-renders
+  const [animationFrame, setAnimationFrame] = useState(0);
   
-  // Force component to re-render when element properties or currentPosition changes
+  // Direct DOM manipulation for animation, similar to the test page approach
   useEffect(() => {
-    forceUpdate({});
-  }, [element, element.position, element.size, element.rotation, element.opacity, currentPosition, element._lastUpdated]);
-
-  /**
-   * Handle element selection
-   * 
-   * @param {React.MouseEvent} e - Mouse event
-   */
-  const handleSelect = (e: React.MouseEvent): void => {
-    if (onSelect) {
-      onSelect(e);
+    if (elementRef.current) {
+      const el = elementRef.current;
+      
+      // Apply position directly to the DOM element
+      if (element.properties.position) {
+        el.style.left = `${element.properties.position.x}px`;
+        el.style.top = `${element.properties.position.y}px`;
+      }
+      
+      // Apply size directly to the DOM element
+      if (element.properties.size) {
+        el.style.width = `${element.properties.size.width}px`;
+        el.style.height = `${element.properties.size.height}px`;
+      }
+      
+      // Apply rotation directly to the DOM element
+      if (element.properties.rotation !== undefined) {
+        el.style.transform = `rotate(${element.properties.rotation}deg)`;
+      }
+      
+      // Apply opacity directly to the DOM element
+      if (element.properties.opacity !== undefined) {
+        el.style.opacity = element.properties.opacity.toString();
+      }
+      
+      // Force a re-render by incrementing animation frame
+      setAnimationFrame(prev => prev + 1);
+    }
+  }, [element.properties, currentPosition]);
+  
+  // Render the appropriate element type
+  const renderElement = () => {
+    switch (element.type) {
+      case 'shape':
+        return (
+          <ShapeElement 
+            element={element} 
+            isSelected={isSelected} 
+            viewMode={viewMode}
+          />
+        );
+      case 'text':
+        return (
+          <TextElement 
+            element={element} 
+            isSelected={isSelected} 
+            viewMode={viewMode}
+          />
+        );
+      case 'sticker':
+        return (
+          <StickerElement 
+            element={element} 
+            isSelected={isSelected} 
+            viewMode={viewMode}
+          />
+        );
+      case 'image':
+        return (
+          <ImageElement 
+            element={element} 
+            isSelected={isSelected} 
+            viewMode={viewMode}
+          />
+        );
+      default:
+        return null;
     }
   };
-
-  switch (element.type) {
-    case 'image':
-      // Ensure src is defined for image elements
-      if (!element.src) {
-        console.warn('Image element missing src property:', element.id);
-        return null;
-      }
-      // Type assertion to ensure element has required properties for ImageElement
-      const imageElement = element as ImageElementType;
-      return <ImageElement element={imageElement} isSelected={isSelected} onClick={handleSelect} />;
-    case 'text':
-      return <TextElement element={element} isSelected={isSelected} onClick={handleSelect} />;
-    case 'shape':
-      return <ShapeElement element={element} isSelected={isSelected} onClick={handleSelect} />;
-    case 'sticker':
-      return <StickerElement element={element} isSelected={isSelected} onClick={handleSelect} />;
-    case 'audio':
-      return <AudioElement element={element} isEditor={isEditor} />;
-    case 'map':
-      // Handle map elements similar to images but with the component rendering
-      return (
-        <div
-          style={{
-            position: 'absolute',
-            left: element.position?.x || 0,
-            top: element.position?.y || 0,
-            width: element.size?.width || 400,
-            height: element.size?.height || 600,
-            border: isSelected ? '2px dashed #1976d2' : 'none',
-            pointerEvents: 'all',
-            cursor: 'move',
-            zIndex: element.zIndex || 1
-          }}
-          onClick={handleSelect}
-        >
-          {element.component}
-        </div>
-      );
-    default:
-      return null;
-  }
+  
+  return (
+    <div 
+      ref={elementRef}
+      className={`absolute ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+      style={{ 
+        left: element.properties.position?.x,
+        top: element.properties.position?.y,
+        width: element.properties.size?.width,
+        height: element.properties.size?.height,
+        transform: element.properties.rotation !== undefined ? `rotate(${element.properties.rotation}deg)` : undefined,
+        opacity: element.properties.opacity,
+        zIndex: element.properties.zIndex || 0,
+        transition: 'none', // Disable CSS transitions to prevent interference with our animation
+        cursor: viewMode === 'editor' ? 'move' : 'default'
+      }}
+      data-element-id={element.id}
+      data-animation-frame={animationFrame} // Add animation frame to force re-renders
+    >
+      {renderElement()}
+    </div>
+  );
 };
 
 export default ElementRenderer;
