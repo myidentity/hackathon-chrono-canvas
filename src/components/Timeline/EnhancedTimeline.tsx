@@ -232,9 +232,9 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     const newZoom = Math.max(0.5, Math.min(10, zoom * factor));
     setZoom(newZoom);
     
-    // Adjust visible range based on zoom
+    // Adjust visible range based on zoom, keeping the current position centered
     const visibleDuration = duration / newZoom;
-    const center = (visibleRange.start + visibleRange.end) / 2;
+    const center = currentPosition; // Center on current position
     const halfDuration = visibleDuration / 2;
     
     setVisibleRange({
@@ -477,12 +477,12 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
       {/* Timeline scrubber */}
       <div 
         ref={timelineRef}
-        className="relative h-16 bg-surface-800 rounded-md-lg overflow-hidden cursor-pointer"
+        className="relative h-16 bg-surface-800 rounded-md-lg overflow-x-auto overflow-y-hidden cursor-pointer"
         onClick={handleTimelineClick}
         data-testid="timeline-scrubber"
       >
         {/* Timeline markers - Using thick strokes for minutes, regular for seconds, dots for microseconds */}
-        <div className="absolute top-0 left-0 w-full h-full">
+        <div className="absolute top-0 left-0 h-full" style={{ width: `${duration * 20}px`, minWidth: '100%' }}>
           {/* Generate time markers */}
           {Array.from({ length: Math.ceil(duration) + 1 }).map((_, index) => {
             const position = (index / duration) * 100;
@@ -492,7 +492,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
             return (
               <div 
                 key={`marker-${index}`}
-                className={`absolute top-0 h-${isMinute ? '3/4' : isSecond ? '1/2' : '1/4'} w-${isMinute ? '1' : '0.5'} bg-surface-600`}
+                className="absolute top-0 bg-surface-600"
                 style={{ 
                   left: `${position}%`,
                   height: isMinute ? '75%' : isSecond ? '50%' : '25%',
@@ -503,7 +503,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
             );
           })}
           
-          {/* Second markers with labels - Only show second labels */}
+          {/* Second markers with labels - Only show seconds */}
           {Array.from({ length: Math.ceil(duration) + 1 }).map((_, index) => {
             if (index % 5 === 0) { // Only show every 5 seconds for readability
               const position = (index / duration) * 100;
@@ -515,6 +515,25 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
                 >
                   {index}
                 </div>
+              );
+            }
+            return null;
+          })}
+          
+          {/* Millisecond dots */}
+          {Array.from({ length: Math.ceil(duration * 10) + 1 }).map((_, index) => {
+            if (index % 10 !== 0) { // Only show milliseconds (not on whole seconds)
+              const position = (index / (duration * 10)) * 100;
+              
+              return (
+                <div 
+                  key={`ms-dot-${index}`}
+                  className="absolute bottom-4 w-1 h-1 rounded-full bg-surface-500 transform -translate-x-1/2"
+                  style={{ 
+                    left: `${position}%`,
+                    opacity: 0.5
+                  }}
+                />
               );
             }
             return null;
@@ -560,7 +579,10 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
         <div 
           ref={scrubberRef}
           className="absolute top-0 h-full w-1 bg-primary-500 transform -translate-x-1/2 cursor-move"
-          style={{ left: `${(currentPosition / duration) * 100}%` }}
+          style={{ 
+            left: `${(currentPosition / duration) * 100}%`,
+            zIndex: 10 // Ensure scrubber is above other elements
+          }}
           onMouseDown={handleScrubberMouseDown}
         >
           {/* Scrubber handle */}
