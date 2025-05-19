@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ImageElement from './ImageElement';
 import TextElement from './TextElement';
 import ShapeElement from './ShapeElement';
@@ -49,9 +49,18 @@ const ElementRenderer: React.FC<ElementRendererProps> = ({
   element, 
   isSelected, 
   onSelect,
-  viewMode = 'editor'
+  viewMode = 'editor',
+  currentPosition
 }) => {
   const isEditor = viewMode === 'editor';
+  
+  // Force re-render when element or currentPosition changes
+  const [, forceUpdate] = useState({});
+  
+  // Force component to re-render when element properties or currentPosition changes
+  useEffect(() => {
+    forceUpdate({});
+  }, [element, element.position, element.size, element.rotation, element.opacity, currentPosition, element._lastUpdated]);
 
   /**
    * Handle element selection
