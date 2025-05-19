@@ -28,7 +28,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     isPlaying, 
     playbackSpeed, 
     duration, 
-    markers,
+    markers = [], // Default to empty array if undefined
     togglePlayback,
     setPosition,
     setPlaybackSpeed,
@@ -152,13 +152,13 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     if (!selectedElement) return;
     
     // Find the selected element
-    const element = canvas.elements.find(el => el.id === selectedElement);
+    const element = canvas?.elements?.find(el => el.id === selectedElement);
     if (!element) return;
     
     // Get current properties for the keyframe
     const keyframeProperties = {
-      position: { ...element.position },
-      size: { ...element.size },
+      position: { ...(element.position || { x: 0, y: 0 }) },
+      size: { ...(element.size || { width: 100, height: 100 }) },
       rotation: element.rotation || 0,
       opacity: element.opacity !== undefined ? element.opacity : 1,
     };
@@ -172,7 +172,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     };
     
     // Check if a keyframe already exists at this time
-    const existingKeyframeIndex = timelineData.keyframes?.findIndex(
+    const existingKeyframeIndex = (timelineData.keyframes || []).findIndex(
       kf => Math.abs(kf.time - currentPosition) < 0.1
     );
     
@@ -194,7 +194,9 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     }
     
     // Sort keyframes by time
-    timelineData.keyframes.sort((a, b) => a.time - b.time);
+    if (timelineData.keyframes) {
+      timelineData.keyframes.sort((a, b) => a.time - b.time);
+    }
     
     // Update the element
     updateElement(selectedElement, { timelineData });
@@ -211,7 +213,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     };
     
     // Check if a marker with this ID already exists
-    const existingMarker = markers.find(m => m.id === markerId);
+    const existingMarker = (markers || []).find(m => m.id === markerId);
     if (existingMarker) {
       // If it exists, remove it first to avoid duplicates
       removeMarker(markerId);
@@ -290,31 +292,33 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     let latestPoint = duration;
     
     // Check markers
-    if (markers.length > 0) {
+    if (markers && markers.length > 0) {
       const markerTimes = markers.map(marker => marker.position);
       earliestPoint = Math.min(earliestPoint, ...markerTimes);
       latestPoint = Math.max(latestPoint, ...markerTimes);
     }
     
     // Check elements with timeline data
-    canvas.elements.forEach(element => {
-      if (element.timelineData) {
-        if (element.timelineData.entryPoint !== undefined && element.timelineData.entryPoint !== null) {
-          earliestPoint = Math.min(earliestPoint, element.timelineData.entryPoint);
+    if (canvas && canvas.elements) {
+      canvas.elements.forEach(element => {
+        if (element.timelineData) {
+          if (element.timelineData.entryPoint !== undefined && element.timelineData.entryPoint !== null) {
+            earliestPoint = Math.min(earliestPoint, element.timelineData.entryPoint);
+          }
+          
+          if (element.timelineData.exitPoint !== undefined && element.timelineData.exitPoint !== null) {
+            latestPoint = Math.max(latestPoint, element.timelineData.exitPoint);
+          }
+          
+          // Check keyframes
+          if (element.timelineData.keyframes && element.timelineData.keyframes.length > 0) {
+            const keyframeTimes = element.timelineData.keyframes.map(kf => kf.time);
+            earliestPoint = Math.min(earliestPoint, ...keyframeTimes);
+            latestPoint = Math.max(latestPoint, ...keyframeTimes);
+          }
         }
-        
-        if (element.timelineData.exitPoint !== undefined && element.timelineData.exitPoint !== null) {
-          latestPoint = Math.max(latestPoint, element.timelineData.exitPoint);
-        }
-        
-        // Check keyframes
-        if (element.timelineData.keyframes && element.timelineData.keyframes.length > 0) {
-          const keyframeTimes = element.timelineData.keyframes.map(kf => kf.time);
-          earliestPoint = Math.min(earliestPoint, ...keyframeTimes);
-          latestPoint = Math.max(latestPoint, ...keyframeTimes);
-        }
-      }
-    });
+      });
+    }
     
     // Add some padding
     const padding = (latestPoint - earliestPoint) * 0.1;
@@ -477,24 +481,27 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
       {/* Timeline track */}
       <div 
         ref={timelineRef}
-        className="timeline-container w-full h-12 bg-gray-700 rounded-lg relative mb-4 cursor-pointer"
+        className="relative h-12 bg-gray-700 rounded-lg cursor-pointer mb-2"
         onClick={handleTimelineClick}
         data-testid="timeline-track"
       >
         {/* Time markers */}
-        {Array.from({ length: Math.ceil((visibleRange.end - visibleRange.start) / 5) + 1 }).map((_, i) => {
-          const time = visibleRange.start + i * 5;
-          const position = ((time - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100;
+        {Array.from({ length: Math.ceil(duration) + 1 }).map((_, i) => {
+          // Calculate position percentage
+          const position = ((i - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100;
           
-          if (time <= visibleRange.end) {
+          // Only render markers in the visible range
+          if (position >= 0 && position <= 100) {
             return (
               <div 
                 key={`time-${i}`}
-                className="absolute top-0 h-full w-px bg-gray-600"
-                style={{ left: `${position}%` }}
+                className="absolute top-0 h-2 border-l border-gray-500"
+                style={{ 
+                  left: `${position}%`,
+                }}
               >
-                <div className="absolute -top-5 left-0 transform -translate-x-1/2 text-xs text-gray-400">
-                  {formatTime(time)}
+                <div className="absolute top-3 left-0 transform -translate-x-1/2 text-xs text-gray-400">
+                  {formatTime(i)}
                 </div>
               </div>
             );
@@ -502,29 +509,8 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
           return null;
         })}
         
-        {/* Timeline progress */}
-        <div 
-          className="h-full bg-indigo-900 rounded-lg opacity-50"
-          style={{ 
-            width: `${((currentPosition - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100}%`,
-            maxWidth: '100%'
-          }}
-        />
-        
-        {/* Current position indicator (scrubber) */}
-        <div 
-          ref={scrubberRef}
-          className="absolute top-0 w-4 h-12 bg-indigo-500 rounded-full -ml-2 cursor-grab"
-          style={{ 
-            left: `${((currentPosition - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100}%`,
-            zIndex: 10
-          }}
-          onMouseDown={handleScrubberMouseDown}
-          data-testid="timeline-scrubber"
-        />
-        
         {/* Markers */}
-        {markers.map(marker => {
+        {(markers || []).map(marker => {
           // Calculate position percentage
           const position = ((marker.position - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100;
           
@@ -561,6 +547,27 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
           }
           return null;
         })}
+        
+        {/* Timeline progress */}
+        <div 
+          className="h-full bg-indigo-900 rounded-lg opacity-50"
+          style={{ 
+            width: `${((currentPosition - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100}%`,
+            maxWidth: '100%'
+          }}
+        />
+        
+        {/* Current position indicator (scrubber) */}
+        <div 
+          ref={scrubberRef}
+          className="absolute top-0 w-4 h-12 bg-indigo-500 rounded-full -ml-2 cursor-grab"
+          style={{ 
+            left: `${((currentPosition - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100}%`,
+            zIndex: 10
+          }}
+          onMouseDown={handleScrubberMouseDown}
+          data-testid="timeline-scrubber"
+        />
       </div>
       
       <div className="flex items-center space-x-4 mt-4">
