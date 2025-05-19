@@ -144,7 +144,7 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ mode = 'editor' }) => {
     <div className="relative flex-1 overflow-hidden">
       <div 
         ref={canvasRef}
-        className={`w-full h-full overflow-auto ${showGrid ? 'bg-grid' : 'bg-white'}`}
+        className={`w-full h-full overflow-auto ${showGrid ? 'bg-grid' : 'bg-white dark:bg-surface-900'}`}
         style={{ 
           cursor: isPanning ? 'grabbing' : isDragging ? 'grabbing' : 'default',
         }}
@@ -184,7 +184,7 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ mode = 'editor' }) => {
           ))}
           
           {/* Debug info */}
-          <div className="absolute bottom-4 left-4 bg-white bg-opacity-80 p-2 rounded text-sm">
+          <div className="absolute bottom-4 left-4 bg-white dark:bg-surface-800 bg-opacity-80 dark:bg-opacity-80 p-2 rounded text-sm text-surface-900 dark:text-surface-50">
             {mode === 'editor' && 'Editor Mode'}
             {mode === 'timeline' && 'Timeline Mode'}
             {mode === 'zine' && 'Zine View'}
@@ -202,28 +202,28 @@ const EnhancedCanvas: React.FC<EnhancedCanvasProps> = ({ mode = 'editor' }) => {
       {/* Zoom controls */}
       <div className="absolute bottom-4 right-4 flex flex-col gap-2">
         <button 
-          className="bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+          className="bg-white dark:bg-surface-800 rounded-full w-10 h-10 flex items-center justify-center shadow-md text-surface-900 dark:text-surface-50"
           onClick={() => handleZoom(1.2)}
           title="Zoom In"
         >
           <span className="text-xl">+</span>
         </button>
         <button 
-          className="bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+          className="bg-white dark:bg-surface-800 rounded-full w-10 h-10 flex items-center justify-center shadow-md text-surface-900 dark:text-surface-50"
           onClick={() => handleZoom(0.8)}
           title="Zoom Out"
         >
           <span className="text-xl">-</span>
         </button>
         <button 
-          className="bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+          className="bg-white dark:bg-surface-800 rounded-full w-10 h-10 flex items-center justify-center shadow-md text-surface-900 dark:text-surface-50"
           onClick={() => setZoom(1)}
           title="Reset Zoom"
         >
           <span className="text-sm">100%</span>
         </button>
         <button 
-          className="bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+          className="bg-white dark:bg-surface-800 rounded-full w-10 h-10 flex items-center justify-center shadow-md text-surface-900 dark:text-surface-50"
           onClick={toggleGrid}
           title={showGrid ? "Hide Grid" : "Show Grid"}
         >

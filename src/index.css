@@ -5,6 +5,7 @@
 @import url('./components/UI/IconFix.css');
 @import url('./components/UI/TimelineFix.css');
 @import url('./components/UI/MaterialTabs.css');
+@import url('./styles/theme.css');
 
 @tailwind base;
 @tailwind components;
@@ -12,14 +13,14 @@
 
 @layer base {
   html {
-    @apply text-surface-900;
+    @apply text-surface-900 dark:text-surface-50;
     font-size: 16px;
     line-height: 1.5;
     letter-spacing: 0.15px;
   }
   
   body {
-    @apply bg-surface-50 font-sans;
+    @apply bg-surface-50 dark:bg-surface-900 font-sans;
   }
   
   /* Material Design 3.0 Typography Scale */
@@ -99,6 +100,14 @@
     line-height: 1.25;
     letter-spacing: 0.5px;
   }
+  
+  .text-primary {
+    @apply text-primary-600 dark:text-primary-400;
+  }
+  
+  .text-secondary {
+    @apply text-secondary-600 dark:text-secondary-400;
+  }
 }
 
 @layer components {
@@ -130,20 +139,20 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-surface-100;
+  @apply bg-surface-100 dark:bg-surface-800;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-surface-400 rounded-full hover:bg-surface-500;
+  @apply bg-surface-400 dark:bg-surface-600 rounded-full hover:bg-surface-500 dark:hover:bg-surface-500;
 }
 
 /* Canvas specific styles */
 .canvas-container {
-  @apply relative overflow-hidden bg-white shadow-md-3;
+  @apply relative overflow-hidden bg-white dark:bg-surface-900 shadow-md-3;
 }
 
 .timeline-container {
-  @apply bg-surface-100 border-t border-surface-200;
+  @apply bg-surface-100 dark:bg-surface-800 border-t border-surface-200 dark:border-surface-700;
 }
 
 .timeline-scrubber {
@@ -151,11 +160,11 @@
 }
 
 .element-library {
-  @apply p-4 bg-white border-l border-surface-200 overflow-y-auto;
+  @apply p-4 bg-white dark:bg-surface-900 border-l border-surface-200 dark:border-surface-700 overflow-y-auto;
 }
 
 .property-panel {
-  @apply p-4 bg-white border-l border-surface-200 overflow-y-auto;
+  @apply p-4 bg-white dark:bg-surface-900 border-l border-surface-200 dark:border-surface-700 overflow-y-auto;
 }
 
 /* Animation utilities */
@@ -173,4 +182,18 @@
 
 .animate-infinite {
   animation-iteration-count: infinite;
+}
+
+/* Grid background for canvas */
+.bg-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+}
+
+.dark .bg-grid {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
 }
