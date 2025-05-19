@@ -566,7 +566,7 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
   
   /**
-   * Set interpolation type for a property
+   * Set interpolation type for a keyframe property
    * 
    * @param {string} keyframeId - Keyframe ID
    * @param {string} property - Property name
@@ -588,10 +588,10 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
    * Set custom bezier curve for a keyframe
    * 
    * @param {string} keyframeId - Keyframe ID
-   * @param {number} x1 - First control point X
-   * @param {number} y1 - First control point Y
-   * @param {number} x2 - Second control point X
-   * @param {number} y2 - Second control point Y
+   * @param {number} x1 - Control point 1 X
+   * @param {number} y1 - Control point 1 Y
+   * @param {number} x2 - Control point 2 X
+   * @param {number} y2 - Control point 2 Y
    */
   const setCustomCurve = useCallback((
     keyframeId: string, 
@@ -892,9 +892,11 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Between two keyframes - interpolate
         const interpolatedProps = interpolateKeyframes(prevKeyframe, nextKeyframe, position);
         updateElement(element.id, interpolatedProps);
+        updateElementVisibility(element.id, true);
       } else if (prevKeyframe) {
         // After last keyframe - use last keyframe properties
         updateElement(element.id, prevKeyframe.properties);
+        updateElementVisibility(element.id, true);
       } else if (nextKeyframe) {
         // Before first keyframe - element should be invisible
         updateElementVisibility(element.id, false);
@@ -954,10 +956,10 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   
   // Update elements when position changes manually
   useEffect(() => {
-    if (!isPlaying) {
-      updateElementAtCurrentTime();
-    }
-  }, [currentPosition, isPlaying, updateElementAtCurrentTime]);
+    // Force update elements at current time, regardless of playing state
+    // This ensures elements update when scrubbing the timeline
+    updateElementAtCurrentTime();
+  }, [currentPosition, updateElementAtCurrentTime]);
   
   // Calculate duration based on keyframes
   useEffect(() => {
@@ -1000,24 +1002,11 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Add initial keyframe
         addKeyframe(element.id, currentPosition, properties);
         
-        // Mark as processed
+        // Mark element as processed
         processedElements.add(element.id);
       }
     });
-    
-    // Clean up processed elements that no longer exist
-    canvas.elements.forEach(element => {
-      processedElements.add(element.id);
-    });
-    
-    // Remove processed elements that no longer exist
-    const existingElementIds = new Set(canvas.elements.map(element => element.id));
-    Array.from(processedElements).forEach(id => {
-      if (!existingElementIds.has(id)) {
-        processedElements.delete(id);
-      }
-    });
-  }, [canvas.elements, addKeyframe, currentPosition, keyframes]);
+  }, [canvas.elements, keyframes, addKeyframe, currentPosition]);
   
   // Context value
   const contextValue: TimelineContextType = {
@@ -1069,7 +1058,5 @@ export const TimelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
 /**
  * Hook to use timeline context
- * 
- * @returns {TimelineContextType} Timeline context
  */
-export const useTimeline = (): TimelineContextType => useContext(TimelineContext);
+export const useTimeline = () => useContext(TimelineContext);
