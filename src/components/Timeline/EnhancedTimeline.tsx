@@ -477,22 +477,27 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
       {/* Timeline scrubber */}
       <div 
         ref={timelineRef}
-        className="relative h-16 bg-surface-800 rounded-md-lg overflow-hidden cursor-pointer"
+        className="relative h-16 bg-surface-800 rounded-md-lg overflow-x-auto overflow-y-hidden cursor-pointer"
         onClick={handleTimelineClick}
         data-testid="timeline-scrubber"
       >
         {/* Timeline markers - Using thick strokes for minutes, regular for seconds, dots for microseconds */}
-        <div className="absolute top-0 left-0 w-full h-full">
+        <div className="absolute top-0 left-0 h-full" style={{ width: `${duration * 20}px`, minWidth: '100%' }}>
           {/* Generate time markers */}
           {Array.from({ length: Math.ceil(duration) + 1 }).map((_, index) => {
-            const position = (index / duration) * 100;
+            // Calculate position based on visible range
+            const absolutePosition = index;
+            const visibleDuration = visibleRange.end - visibleRange.start;
+            const visiblePercentage = (absolutePosition - visibleRange.start) / visibleDuration;
+            const position = (absolutePosition / duration) * 100;
+            
             const isMinute = index % 60 === 0;
             const isSecond = index % 1 === 0;
             
             return (
               <div 
                 key={`marker-${index}`}
-                className={`absolute top-0 h-${isMinute ? '3/4' : isSecond ? '1/2' : '1/4'} w-${isMinute ? '1' : '0.5'} bg-surface-600`}
+                className="absolute top-0 bg-surface-600"
                 style={{ 
                   left: `${position}%`,
                   height: isMinute ? '75%' : isSecond ? '50%' : '25%',
@@ -523,6 +528,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
         
         {/* Markers */}
         {markers.map(marker => {
+          // Calculate position based on visible range and duration
           const position = (marker.position / duration) * 100;
           const isKeyframe = marker.id.startsWith('keyframe-');
           
@@ -560,7 +566,10 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
         <div 
           ref={scrubberRef}
           className="absolute top-0 h-full w-1 bg-primary-500 transform -translate-x-1/2 cursor-move"
-          style={{ left: `${(currentPosition / duration) * 100}%` }}
+          style={{ 
+            left: `${(currentPosition / duration) * 100}%`,
+            zIndex: 10 // Ensure scrubber is above other elements
+          }}
           onMouseDown={handleScrubberMouseDown}
         >
           {/* Scrubber handle */}
