@@ -3,13 +3,15 @@
  * 
  * This component wraps canvas elements with animation capabilities,
  * handling both timeline-based and scroll-triggered animations.
+ * Updated with Material Design 3.0 motion patterns.
  * 
  * @module AnimatedElement
  */
 
 import { useState, useEffect, useRef, ReactNode } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTimeline } from '../../context/TimelineContext';
-import { interpolate, generateTransform, Easing } from './AnimationUtils';
+import { interpolate, generateTransform, Easing, AnimationDurations, generateTransition } from './AnimationUtils';
 import { ViewMode } from '../../types/ViewMode';
 
 /**
@@ -104,6 +106,7 @@ interface AnimatedElementProps {
 
 /**
  * AnimatedElement component that provides animation capabilities for canvas elements
+ * Enhanced with Material Design 3.0 motion patterns and Framer Motion
  * 
  * @param {AnimatedElementProps} props - The component props
  * @returns {JSX.Element | null} The rendered AnimatedElement component or null if not visible
@@ -116,10 +119,10 @@ function AnimatedElement({
   persist,
   entryAnimation = 'fade',
   exitAnimation = 'fade',
-  entryDuration = 0.5,
-  exitDuration = 0.5,
-  entryEasing = 'easeOutBack',
-  exitEasing = 'easeInOutCubic',
+  entryDuration = AnimationDurations.medium4,
+  exitDuration = AnimationDurations.medium3,
+  entryEasing = 'emphasized',
+  exitEasing = 'standard',
   viewMode,
   scrollPosition = 0,
   parallaxFactor = 0,
@@ -133,6 +136,7 @@ function AnimatedElement({
   // State for visibility and animation progress
   const [isVisible, setIsVisible] = useState<boolean>(false);
   const [animationProgress, setAnimationProgress] = useState<number>(0);
+  const [isAnimating, setIsAnimating] = useState<boolean>(false);
   
   // Reference to the element
   const elementRef = useRef<HTMLDivElement>(null);
@@ -162,13 +166,16 @@ function AnimatedElement({
           // Entry animation
           const progress = (mappedPosition - entryPoint) / entryDuration;
           setAnimationProgress(progress);
+          setIsAnimating(true);
         } else if (exitPoint !== null && mappedPosition >= exitPoint - exitDuration && mappedPosition <= exitPoint) {
           // Exit animation
           const progress = 1 - (exitPoint - mappedPosition) / exitDuration;
           setAnimationProgress(progress);
+          setIsAnimating(true);
         } else {
           // Fully visible
           setAnimationProgress(1);
+          setIsAnimating(false);
         }
       }
       
@@ -188,13 +195,16 @@ function AnimatedElement({
         // Entry animation
         const progress = (currentPosition - entryPoint) / entryDuration;
         setAnimationProgress(progress);
+        setIsAnimating(true);
       } else if (exitPoint !== null && currentPosition >= exitPoint - exitDuration && currentPosition <= exitPoint) {
         // Exit animation
         const progress = 1 - (exitPoint - currentPosition) / exitDuration;
         setAnimationProgress(progress);
+        setIsAnimating(true);
       } else {
         // Fully visible
         setAnimationProgress(1);
+        setIsAnimating(false);
       }
     }
   }, [currentPosition, entryPoint, exitPoint, persist, entryDuration, exitDuration, viewMode, scrollPosition]);
@@ -204,69 +214,145 @@ function AnimatedElement({
     return null;
   }
   
-  // Calculate animation styles based on animation type and progress
-  const getAnimationStyles = (): React.CSSProperties => {
+  // Get Framer Motion variants based on animation type
+  const getMotionVariants = () => {
     // In editor mode, no animations
     if (viewMode === 'editor') {
-      return {};
+      return {
+        initial: {},
+        animate: {},
+        exit: {}
+      };
     }
     
     // Determine if we're in entry or exit animation
     const isEntry = currentPosition <= entryPoint + entryDuration;
     const isExit = exitPoint !== null && currentPosition >= exitPoint - exitDuration;
     
-    // If neither entry nor exit, return normal styles
-    if (!isEntry && !isExit) {
-      return {};
-    }
-    
-    // Get the appropriate animation type and progress
+    // Get the appropriate animation type
     const animationType = isEntry ? entryAnimation : exitAnimation;
-    const progress = isEntry ? animationProgress : 1 - animationProgress;
-    const easingType = isEntry ? entryEasing : exitEasing;
     
-    // Calculate styles based on animation type
+    // Define variants based on animation type
     switch (animationType) {
       case 'fade':
         return {
-          opacity: interpolate(0, 1, progress, easingType),
+          initial: { opacity: 0 },
+          animate: { 
+            opacity: 1,
+            transition: { 
+              duration: entryDuration,
+              ease: [0.2, 0, 0, 1] // Material standard easing
+            }
+          },
+          exit: { 
+            opacity: 0,
+            transition: { 
+              duration: exitDuration,
+              ease: [0.2, 0, 0, 1] // Material standard easing
+            }
+          }
         };
       
       case 'slide':
         return {
-          opacity: interpolate(0, 1, progress, easingType),
-          transform: generateTransform({
-            translateY: interpolate(50, 0, progress, easingType),
-          }),
+          initial: { opacity: 0, y: 20 },
+          animate: { 
+            opacity: 1, 
+            y: 0,
+            transition: { 
+              duration: entryDuration,
+              ease: [0, 0, 0, 1], // Material emphasized decelerate
+              opacity: { duration: entryDuration * 0.75 }
+            }
+          },
+          exit: { 
+            opacity: 0, 
+            y: -20,
+            transition: { 
+              duration: exitDuration,
+              ease: [0.3, 0, 1, 1], // Material emphasized accelerate
+              opacity: { duration: exitDuration * 0.75 }
+            }
+          }
         };
       
       case 'scale':
         return {
-          opacity: interpolate(0, 1, progress, easingType),
-          transform: generateTransform({
-            scale: interpolate(0.5, 1, progress, easingType),
-          }),
+          initial: { opacity: 0, scale: 0.92 },
+          animate: { 
+            opacity: 1, 
+            scale: 1,
+            transition: { 
+              duration: entryDuration,
+              ease: [0.2, 0, 0, 1.2], // Material emphasized easing
+              opacity: { duration: entryDuration * 0.75 }
+            }
+          },
+          exit: { 
+            opacity: 0, 
+            scale: 0.92,
+            transition: { 
+              duration: exitDuration,
+              ease: [0.3, 0, 1, 1], // Material emphasized accelerate
+              opacity: { duration: exitDuration * 0.75 }
+            }
+          }
         };
       
       case 'bounce':
         return {
-          opacity: interpolate(0, 1, progress, 'linear'),
-          transform: generateTransform({
-            translateY: interpolate(100, 0, progress, 'easeOutBounce'),
-          }),
+          initial: { opacity: 0, y: -50 },
+          animate: { 
+            opacity: 1, 
+            y: 0,
+            transition: { 
+              duration: entryDuration,
+              type: "spring",
+              bounce: 0.4,
+              opacity: { duration: entryDuration * 0.5 }
+            }
+          },
+          exit: { 
+            opacity: 0, 
+            y: 50,
+            transition: { 
+              duration: exitDuration,
+              ease: [0.3, 0, 1, 1], // Material emphasized accelerate
+              opacity: { duration: exitDuration * 0.75 }
+            }
+          }
         };
       
       case 'flip':
         return {
-          opacity: interpolate(0, 1, progress, 'linear'),
-          transform: generateTransform({
-            rotateY: interpolate(90, 0, progress, 'easeOutBack'),
-          }),
+          initial: { opacity: 0, rotateY: 90 },
+          animate: { 
+            opacity: 1, 
+            rotateY: 0,
+            transition: { 
+              duration: entryDuration,
+              ease: [0.2, 0, 0, 1.2], // Material emphasized easing
+              opacity: { duration: entryDuration * 0.75 }
+            }
+          },
+          exit: { 
+            opacity: 0, 
+            rotateY: -90,
+            transition: { 
+              duration: exitDuration,
+              ease: [0.3, 0, 1, 1], // Material emphasized accelerate
+              opacity: { duration: exitDuration * 0.75 }
+            }
+          }
         };
       
       case 'none':
       default:
-        return {};
+        return {
+          initial: {},
+          animate: {},
+          exit: {}
+        };
     }
   };
   
@@ -285,19 +371,61 @@ function AnimatedElement({
     };
   };
   
+  // Get motion variants
+  const variants = getMotionVariants();
+  
   // Combine all styles
   const combinedStyles: React.CSSProperties = {
     ...style,
-    ...getAnimationStyles(),
     ...getParallaxStyles(),
-    transition: viewMode === 'editor' ? 'none' : 'all 0.2s',
   };
   
+  // Use Framer Motion for animations in timeline and presentation modes
+  if (viewMode !== 'editor' && (viewMode === 'timeline' || viewMode === 'presentation')) {
+    return (
+      <AnimatePresence>
+        {isVisible && (
+          <motion.div
+            ref={elementRef}
+            className={className}
+            style={combinedStyles}
+            onClick={onClick}
+            data-element-id={id}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            variants={variants}
+            layoutId={`element-${id}`}
+            whileHover={{ 
+              scale: viewMode === 'editor' ? 1.02 : 1,
+              boxShadow: viewMode === 'editor' ? "0 5px 15px rgba(0,0,0,0.1)" : "none",
+              transition: { duration: 0.2, ease: [0.2, 0, 0, 1] }
+            }}
+            whileTap={{ 
+              scale: viewMode === 'editor' ? 0.98 : 1,
+              transition: { duration: 0.1, ease: [0.3, 0, 1, 1] }
+            }}
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  }
+  
+  // For editor mode or zine mode, use CSS transitions
   return (
     <div
       ref={elementRef}
-      className={className}
-      style={combinedStyles}
+      className={`${className} ${isAnimating ? 'animating' : ''}`}
+      style={{
+        ...combinedStyles,
+        transition: viewMode === 'editor' ? 'none' : generateTransition(
+          ['opacity', 'transform'],
+          isAnimating ? (currentPosition <= entryPoint + entryDuration ? entryDuration : exitDuration) : 0.2,
+          isAnimating ? (currentPosition <= entryPoint + entryDuration ? entryEasing : exitEasing) : 'standard'
+        ),
+      }}
       onClick={onClick}
       data-element-id={id}
     >

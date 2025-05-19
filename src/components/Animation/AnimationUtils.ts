@@ -3,12 +3,34 @@
  * 
  * This file contains utility functions and constants for animations
  * throughout the application.
+ * Updated with Material Design 3.0 motion patterns.
  */
 
-// Easing functions for animations
+// Material Design 3.0 Easing functions for animations
 export const Easing = {
   // Linear easing (no acceleration or deceleration)
   linear: (t: number): number => t,
+  
+  // Standard Material Design 3.0 easing - acceleration and deceleration
+  standard: (t: number): number => 
+    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+  
+  // Material Design 3.0 emphasized easing - stronger overshoot
+  emphasized: (t: number): number => {
+    const c1 = 1.70158;
+    const c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+  },
+  
+  // Material Design 3.0 emphasized decelerate - for elements entering the screen
+  emphasizedDecelerate: (t: number): number => {
+    return 1 - Math.pow(1 - t, 2);
+  },
+  
+  // Material Design 3.0 emphasized accelerate - for elements leaving the screen
+  emphasizedAccelerate: (t: number): number => {
+    return t * t;
+  },
   
   // Cubic easing in/out - acceleration until halfway, then deceleration
   easeInOutCubic: (t: number): number => 
@@ -51,28 +73,48 @@ export const Easing = {
   }
 };
 
-// Animation presets for common animations
+// Material Design 3.0 Animation durations (in seconds)
+export const AnimationDurations = {
+  short1: 0.05,
+  short2: 0.1,
+  short3: 0.15,
+  short4: 0.2,
+  medium1: 0.25,
+  medium2: 0.3,
+  medium3: 0.35,
+  medium4: 0.4,
+  long1: 0.45,
+  long2: 0.5,
+  long3: 0.55,
+  long4: 0.6,
+  extraLong1: 0.7,
+  extraLong2: 0.8,
+  extraLong3: 0.9,
+  extraLong4: 1.0
+};
+
+// Animation presets for common animations based on Material Design 3.0
 export const AnimationPresets = {
   fadeIn: {
     type: 'fade',
-    duration: 0.5,
-    easing: 'easeInOutCubic',
+    duration: AnimationDurations.medium2,
+    easing: 'standard',
     properties: {
       opacity: { from: 0, to: 1 }
     }
   },
   fadeOut: {
     type: 'fade',
-    duration: 0.5,
-    easing: 'easeInOutCubic',
+    duration: AnimationDurations.medium2,
+    easing: 'standard',
     properties: {
       opacity: { from: 1, to: 0 }
     }
   },
   slideUp: {
     type: 'transform',
-    duration: 0.6,
-    easing: 'easeOutBack',
+    duration: AnimationDurations.medium4,
+    easing: 'emphasizedDecelerate',
     properties: {
       opacity: { from: 0, to: 1 },
       translateY: { from: 20, to: 0 }
@@ -80,8 +122,8 @@ export const AnimationPresets = {
   },
   slideDown: {
     type: 'transform',
-    duration: 0.6,
-    easing: 'easeOutBack',
+    duration: AnimationDurations.medium4,
+    easing: 'emphasizedDecelerate',
     properties: {
       opacity: { from: 0, to: 1 },
       translateY: { from: -20, to: 0 }
@@ -89,8 +131,8 @@ export const AnimationPresets = {
   },
   slideLeft: {
     type: 'transform',
-    duration: 0.6,
-    easing: 'easeOutBack',
+    duration: AnimationDurations.medium4,
+    easing: 'emphasizedDecelerate',
     properties: {
       opacity: { from: 0, to: 1 },
       translateX: { from: 20, to: 0 }
@@ -98,8 +140,8 @@ export const AnimationPresets = {
   },
   slideRight: {
     type: 'transform',
-    duration: 0.6,
-    easing: 'easeOutBack',
+    duration: AnimationDurations.medium4,
+    easing: 'emphasizedDecelerate',
     properties: {
       opacity: { from: 0, to: 1 },
       translateX: { from: -20, to: 0 }
@@ -107,25 +149,25 @@ export const AnimationPresets = {
   },
   zoomIn: {
     type: 'transform',
-    duration: 0.5,
-    easing: 'easeOutQuad',
+    duration: AnimationDurations.medium4,
+    easing: 'emphasized',
     properties: {
       opacity: { from: 0, to: 1 },
-      scale: { from: 0.8, to: 1 }
+      scale: { from: 0.92, to: 1 }
     }
   },
   zoomOut: {
     type: 'transform',
-    duration: 0.5,
-    easing: 'easeOutQuad',
+    duration: AnimationDurations.medium3,
+    easing: 'emphasizedAccelerate',
     properties: {
       opacity: { from: 1, to: 0 },
-      scale: { from: 1, to: 0.8 }
+      scale: { from: 1, to: 0.92 }
     }
   },
   bounce: {
     type: 'transform',
-    duration: 0.8,
+    duration: AnimationDurations.long4,
     easing: 'easeOutBounce',
     properties: {
       translateY: { from: -20, to: 0 }
@@ -133,10 +175,37 @@ export const AnimationPresets = {
   },
   pulse: {
     type: 'transform',
-    duration: 0.4,
-    easing: 'easeOutElastic',
+    duration: AnimationDurations.medium2,
+    easing: 'emphasized',
     properties: {
-      scale: { from: 1, to: 1.05 }
+      scale: { from: 1, to: 1.03 }
+    }
+  },
+  // Material Design 3.0 specific animations
+  container: {
+    type: 'transform',
+    duration: AnimationDurations.long2,
+    easing: 'standard',
+    properties: {
+      opacity: { from: 0, to: 1 },
+      scale: { from: 0.95, to: 1 }
+    }
+  },
+  ripple: {
+    type: 'transform',
+    duration: AnimationDurations.medium4,
+    easing: 'standard',
+    properties: {
+      scale: { from: 0, to: 1 },
+      opacity: { from: 0.5, to: 0 }
+    }
+  },
+  stateChange: {
+    type: 'transform',
+    duration: AnimationDurations.short4,
+    easing: 'standard',
+    properties: {
+      opacity: { from: 0.8, to: 1 }
     }
   }
 };
@@ -159,13 +228,13 @@ export const interpolate = (
   from: number,
   to: number,
   progress: number,
-  easingName: EasingType | string = 'linear'
+  easingName: EasingType | string = 'standard'
 ): number => {
   // Clamp progress between 0 and 1
   const clampedProgress = Math.max(0, Math.min(1, progress));
   
-  // Get easing function (default to linear if not found)
-  const easingFn = Easing[easingName as EasingType] || Easing.linear;
+  // Get easing function (default to standard if not found)
+  const easingFn = Easing[easingName as EasingType] || Easing.standard;
   
   // Apply easing to progress
   const easedProgress = easingFn(clampedProgress);
@@ -199,6 +268,14 @@ export const generateTransform = (transforms: Record<string, number>): string =>
     transformParts.push(`rotate(${transforms.rotate}deg)`);
   }
   
+  if (transforms.rotateX !== undefined) {
+    transformParts.push(`rotateX(${transforms.rotateX}deg)`);
+  }
+  
+  if (transforms.rotateY !== undefined) {
+    transformParts.push(`rotateY(${transforms.rotateY}deg)`);
+  }
+  
   return transformParts.join(' ');
 };
 
@@ -218,4 +295,35 @@ export const calculateParallax = (
   
   // Calculate parallax offset
   return -scrollPosition * clampedSpeedFactor * 0.5;
+};
+
+/**
+ * Generate CSS transition string based on Material Design 3.0 guidelines
+ * 
+ * @param properties - Array of CSS properties to transition
+ * @param duration - Duration in seconds
+ * @param easing - Easing function name
+ * @param delay - Delay in seconds
+ * @returns CSS transition string
+ */
+export const generateTransition = (
+  properties: string[] = ['all'],
+  duration: number = AnimationDurations.medium2,
+  easing: string = 'standard',
+  delay: number = 0
+): string => {
+  // Map easing name to CSS cubic-bezier
+  const easingMap: Record<string, string> = {
+    standard: 'cubic-bezier(0.2, 0, 0, 1)',
+    emphasized: 'cubic-bezier(0.2, 0, 0, 1.2)',
+    emphasizedDecelerate: 'cubic-bezier(0, 0, 0, 1)',
+    emphasizedAccelerate: 'cubic-bezier(0.3, 0, 1, 1)',
+    linear: 'linear'
+  };
+  
+  const easingValue = easingMap[easing] || easingMap.standard;
+  
+  return properties
+    .map(prop => `${prop} ${duration}s ${easingValue} ${delay}s`)
+    .join(', ');
 };
