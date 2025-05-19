@@ -106,6 +106,43 @@ const dispatchSyntheticEvents = (target: EventTarget) => {
 };
 
 /**
+ * Deep merge utility function for nested objects
+ * 
+ * @param target - Target object to merge into
+ * @param source - Source object to merge from
+ * @returns Merged object
+ */
+const deepMerge = (target: any, source: any): any => {
+  const output = { ...target };
+  
+  if (isObject(target) && isObject(source)) {
+    Object.keys(source).forEach(key => {
+      if (isObject(source[key])) {
+        if (!(key in target)) {
+          output[key] = source[key];
+        } else {
+          output[key] = deepMerge(target[key], source[key]);
+        }
+      } else {
+        output[key] = source[key];
+      }
+    });
+  }
+  
+  return output;
+};
+
+/**
+ * Check if value is an object
+ * 
+ * @param item - Value to check
+ * @returns True if object
+ */
+const isObject = (item: any): boolean => {
+  return (item && typeof item === 'object' && !Array.isArray(item));
+};
+
+/**
  * Canvas context provider component
  */
 export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -189,7 +226,9 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
    * Add a new element to the canvas
    */
   const addElement = useCallback((element: Partial<CanvasElement>) => {
-    const id = element.type === 'image' ? `image-${uuidv4().substring(0, 8)}` : `element-${uuidv4().substring(0, 8)}`;
+    const id = element.id || (element.type === 'shape' ? `shape-${uuidv4().substring(0, 8)}` : 
+                             element.type === 'image' ? `image-${uuidv4().substring(0, 8)}` : 
+                             `element-${uuidv4().substring(0, 8)}`);
     const newElement: CanvasElement = {
       id,
       type: element.type || 'shape',
@@ -213,41 +252,33 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [initializeEventSystem]);
   
   /**
-   * Update an existing element
+   * Update an existing element with improved deep merging
    */
   const updateElement = useCallback((id: string, updates: Partial<CanvasElement>) => {
     setCanvas(prev => ({
       ...prev,
       elements: prev.elements.map(element => {
         if (element.id === id) {
-          // Create a deep copy of the element
-          const updatedElement = { ...element } as CanvasElement;
+          // Use deep merge for all object properties
+          const updatedElement = deepMerge(element, updates);
           
-          // Process each update key
-          Object.keys(updates).forEach(key => {
-            if (key.includes('.')) {
-              // Handle nested properties (e.g., 'position.x')
-              const [parent, child] = key.split('.');
-              if (parent && child) {
-                if (!updatedElement[parent]) {
-                  updatedElement[parent] = {};
-                }
-                updatedElement[parent] = {
-                  ...updatedElement[parent],
-                  [child]: updates[key]
-                };
-              }
-            } else if (typeof updates[key] === 'object' && updates[key] !== null && !Array.isArray(updates[key])) {
-              // Handle object updates (deep merge)
-              updatedElement[key] = {
-                ...updatedElement[key],
-                ...updates[key]
-              };
-            } else {
-              // Handle primitive value updates
-              updatedElement[key] = updates[key];
-            }
-          });
+          // Ensure position and size are properly updated
+          if (updates.position) {
+            updatedElement.position = {
+              ...element.position,
+              ...updates.position
+            };
+          }
+          
+          if (updates.size) {
+            updatedElement.size = {
+              ...element.size,
+              ...updates.size
+            };
+          }
+          
+          // Force a re-render by adding a timestamp
+          updatedElement._lastUpdated = Date.now();
           
           return updatedElement;
         }
@@ -291,6 +322,7 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               x: element.position.x + dx,
               y: element.position.y + dy,
             },
+            _lastUpdated: Date.now(), // Force re-render
           };
         }
         return element;
@@ -309,6 +341,7 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           return {
             ...element,
             size: { width, height },
+            _lastUpdated: Date.now(), // Force re-render
           };
         }
         return element;
@@ -327,6 +360,7 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           return {
             ...element,
             rotation,
+            _lastUpdated: Date.now(), // Force re-render
           };
         }
         return element;
@@ -344,18 +378,38 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (element.id === id) {
           // If properties are provided, update them along with visibility
           if (properties) {
-            return {
-              ...element,
-              ...properties,
-              // Special handling for position if it's in the properties
-              position: properties.position ? properties.position : element.position,
-            };
+            // Use deep merge for all object properties
+            const updatedElement = deepMerge(element, properties);
+            
+            // Ensure position and size are properly updated
+            if (properties.position) {
+              updatedElement.position = {
+                ...element.position,
+                ...properties.position
+              };
+            }
+            
+            if (properties.size) {
+              updatedElement.size = {
+                ...element.size,
+                ...properties.size
+              };
+            }
+            
+            // Set visibility
+            updatedElement.opacity = isVisible ? (properties.opacity ?? 1) : 0;
+            
+            // Force a re-render
+            updatedElement._lastUpdated = Date.now();
+            
+            return updatedElement;
           }
           
           // Otherwise just update visibility via opacity
           return {
             ...element,
             opacity: isVisible ? 1 : 0,
+            _lastUpdated: Date.now(), // Force re-render
           };
         }
         return element;
