@@ -6,7 +6,7 @@
  * manipulation.
  */
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useCanvas } from '../../context/CanvasContext';
 import { useTimeline } from '../../context/TimelineContext';
 import ElementRenderer from './ElementRenderer';
@@ -26,13 +26,23 @@ interface CanvasProps {
 const Canvas: React.FC<CanvasProps> = ({ mode = 'editor' }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const { canvas, updateElementPosition, selectedElement, selectElement } = useCanvas();
-  const { currentPosition, isPlaying } = useTimeline();
+  const { currentPosition, isPlaying, updateElementAtCurrentTime } = useTimeline();
   
   // State for canvas interaction
   const [isPanning, setIsPanning] = useState<boolean>(false);
   const [startPanPosition, setStartPanPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState<number>(1);
   const [showGrid, setShowGrid] = useState<boolean>(true);
+  // Add a local state to force re-renders when timeline position changes
+  const [animationTrigger, setAnimationTrigger] = useState<number>(0);
+  
+  // Critical fix: Force animation updates when timeline position changes
+  useEffect(() => {
+    // Directly call updateElementAtCurrentTime to ensure elements are updated
+    updateElementAtCurrentTime();
+    // Force a re-render of the entire canvas
+    setAnimationTrigger(prev => prev + 1);
+  }, [currentPosition, updateElementAtCurrentTime]);
   
   /**
    * Handle mouse down for panning or element selection
@@ -137,10 +147,10 @@ const Canvas: React.FC<CanvasProps> = ({ mode = 'editor' }) => {
             left: 0
           }}
         >
-          {/* Render all elements */}
+          {/* Render all elements with animation trigger to force updates */}
           {canvas.elements.map(element => (
             <ElementRenderer 
-              key={element.id}
+              key={`${element.id}-${animationTrigger}`}
               element={element}
               isSelected={selectedElement === element.id}
               viewMode={mode}
@@ -158,6 +168,8 @@ const Canvas: React.FC<CanvasProps> = ({ mode = 'editor' }) => {
             Time: {currentPosition.toFixed(2)} / {isPlaying ? 'Playing' : 'Paused'}
             <br />
             Elements: {canvas.elements.length}
+            <br />
+            Animation Frame: {animationTrigger}
           </div>
         </div>
       </div>
