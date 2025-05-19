@@ -5,7 +5,6 @@
 @import url('./components/UI/IconFix.css');
 @import url('./components/UI/TimelineFix.css');
 @import url('./components/UI/MaterialTabs.css');
-@import url('./styles/theme.css');
 
 @tailwind base;
 @tailwind components;
