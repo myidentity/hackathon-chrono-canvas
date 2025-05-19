@@ -54,7 +54,8 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
   const scrubberRef = useRef<HTMLDivElement>(null);
   
   /**
-   * Format time as MM:SS.ms
+   * Format time as MM:SS
+   * Simplified time display showing only minutes and seconds
    * 
    * @param {number} seconds - Time in seconds
    * @returns {string} Formatted time string
@@ -62,8 +63,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    const ms = Math.floor((seconds % 1) * 100);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
   
   /**
@@ -356,7 +356,7 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
       {/* Timeline header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-4">
-          {/* Current time display */}
+          {/* Current time display - Simplified format */}
           <div className="text-lg font-mono bg-surface-800 px-3 py-1 rounded-md-lg shadow-md-1">
             {formatTime(currentPosition)}
           </div>
@@ -474,56 +474,62 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
         </div>
       </div>
       
-      {/* Timeline track */}
+      {/* Timeline scrubber */}
       <div 
         ref={timelineRef}
-        className="relative h-12 bg-surface-800 rounded-md-lg shadow-md-1 mb-4 cursor-pointer overflow-hidden"
+        className="relative h-16 bg-surface-800 rounded-md-lg overflow-hidden cursor-pointer"
         onClick={handleTimelineClick}
-        data-testid="timeline-track"
+        data-testid="timeline-scrubber"
       >
-        {/* Time markers */}
+        {/* Timeline markers - Using thick strokes for minutes, regular for seconds, dots for microseconds */}
         <div className="absolute top-0 left-0 w-full h-full">
-          {/* Generate time markers every second */}
-          {Array.from({ length: Math.ceil(duration) + 1 }).map((_, i) => {
-            // Skip if outside visible range
-            if (i < Math.floor(visibleRange.start) || i > Math.ceil(visibleRange.end)) {
-              return null;
-            }
-            
-            // Calculate position
-            const position = ((i - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100;
+          {/* Generate time markers */}
+          {Array.from({ length: Math.ceil(duration) + 1 }).map((_, index) => {
+            const position = (index / duration) * 100;
+            const isMinute = index % 60 === 0;
+            const isSecond = index % 1 === 0;
             
             return (
               <div 
-                key={`marker-${i}`}
-                className="absolute top-0 h-full border-l border-surface-600"
-                style={{ left: `${position}%` }}
-              >
-                <div className="absolute -left-2 bottom-0 text-xs text-surface-400">
-                  {formatTime(i)}
-                </div>
-              </div>
+                key={`marker-${index}`}
+                className={`absolute top-0 h-${isMinute ? '3/4' : isSecond ? '1/2' : '1/4'} w-${isMinute ? '1' : '0.5'} bg-surface-600`}
+                style={{ 
+                  left: `${position}%`,
+                  height: isMinute ? '75%' : isSecond ? '50%' : '25%',
+                  width: isMinute ? '2px' : '1px',
+                  opacity: isMinute ? 1 : isSecond ? 0.8 : 0.5
+                }}
+              />
             );
+          })}
+          
+          {/* Second markers with labels - Only show second labels */}
+          {Array.from({ length: Math.ceil(duration) + 1 }).map((_, index) => {
+            if (index % 5 === 0) { // Only show every 5 seconds for readability
+              const position = (index / duration) * 100;
+              return (
+                <div 
+                  key={`label-${index}`}
+                  className="absolute bottom-0 transform -translate-x-1/2 text-xs text-surface-400"
+                  style={{ left: `${position}%` }}
+                >
+                  {index}
+                </div>
+              );
+            }
+            return null;
           })}
         </div>
         
-        {/* Keyframe markers */}
+        {/* Markers */}
         {markers.map(marker => {
-          // Skip if outside visible range
-          if (marker.position < visibleRange.start || marker.position > visibleRange.end) {
-            return null;
-          }
-          
-          // Calculate position
-          const position = ((marker.position - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100;
-          
-          // Check if this is a keyframe marker
+          const position = (marker.position / duration) * 100;
           const isKeyframe = marker.id.startsWith('keyframe-');
           
           return (
             <div 
               key={marker.id}
-              className={`absolute transform -translate-x-1/2 cursor-pointer transition-transform duration-200 hover:scale-125 ${isKeyframe ? 'top-1' : 'bottom-1'}`}
+              className={`absolute top-1/4 transform -translate-x-1/2 ${isKeyframe ? 'cursor-pointer' : ''}`}
               style={{ 
                 left: `${position}%`,
               }}
@@ -533,171 +539,106 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
               }}
               title={marker.name}
             >
-              {/* Diamond shape for keyframes, circle for regular markers */}
               {isKeyframe ? (
+                // Diamond shape for keyframes
                 <div 
-                  className="w-4 h-4 rotate-45 shadow-md-2 animate-md-scale"
-                  style={{ 
-                    backgroundColor: marker.color || '#F26D5B',
-                  }}
+                  className="w-3 h-3 transform rotate-45 bg-primary-500 border border-white shadow-md-1"
+                  style={{ backgroundColor: marker.color }}
                 />
               ) : (
+                // Circle for regular markers
                 <div 
-                  className="w-3 h-3 rounded-full shadow-md-1"
-                  style={{ 
-                    backgroundColor: marker.color || '#3b82f6',
-                  }}
+                  className="w-3 h-3 rounded-full bg-secondary-500 border border-white shadow-md-1"
+                  style={{ backgroundColor: marker.color }}
                 />
               )}
             </div>
           );
         })}
         
-        {/* Keyframe connections */}
-        {canvas.elements.map(element => {
-          if (!element.timelineData?.keyframes || element.timelineData.keyframes.length < 2) {
-            return null;
-          }
-          
-          // Group keyframes by element
-          const keyframeMarkers = markers.filter(
-            marker => marker.id.startsWith(`keyframe-${element.id}`)
-          );
-          
-          if (keyframeMarkers.length < 2) {
-            return null;
-          }
-          
-          // Sort by position
-          keyframeMarkers.sort((a, b) => a.position - b.position);
-          
-          return keyframeMarkers.slice(0, -1).map((marker, index) => {
-            const nextMarker = keyframeMarkers[index + 1];
-            
-            // Skip if outside visible range
-            if (
-              (marker.position < visibleRange.start && nextMarker.position < visibleRange.start) ||
-              (marker.position > visibleRange.end && nextMarker.position > visibleRange.end)
-            ) {
-              return null;
-            }
-            
-            // Calculate positions
-            const startPos = Math.max(
-              0,
-              ((marker.position - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100
-            );
-            const endPos = Math.min(
-              100,
-              ((nextMarker.position - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100
-            );
-            
-            return (
-              <div 
-                key={`connection-${marker.id}-${nextMarker.id}`}
-                className="absolute top-3 h-0.5 opacity-70"
-                style={{ 
-                  left: `${startPos}%`,
-                  width: `${endPos - startPos}%`,
-                  backgroundColor: marker.color || '#F26D5B',
-                }}
-              />
-            );
-          });
-        })}
-        
-        {/* Current position scrubber */}
+        {/* Current position indicator */}
         <div 
           ref={scrubberRef}
-          className="absolute top-0 h-full w-1 bg-primary-500 cursor-ew-resize shadow-md-2"
-          style={{ 
-            left: `${((currentPosition - visibleRange.start) / (visibleRange.end - visibleRange.start)) * 100}%`,
-          }}
+          className="absolute top-0 h-full w-1 bg-primary-500 transform -translate-x-1/2 cursor-move"
+          style={{ left: `${(currentPosition / duration) * 100}%` }}
           onMouseDown={handleScrubberMouseDown}
-          data-testid="timeline-scrubber"
         >
           {/* Scrubber handle */}
-          <div className="absolute -left-1.5 top-0 w-4 h-4 bg-primary-500 rounded-full shadow-md-2" />
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full bg-primary-500 border-2 border-white shadow-md-2" />
         </div>
       </div>
       
-      {/* Timeline actions */}
-      <div className="flex items-center space-x-4">
-        {/* Add marker button */}
-        <button 
-          className="flex items-center px-4 py-2 bg-secondary-600 hover:bg-secondary-700 text-white rounded-md-md shadow-md-1 transition-all duration-200"
-          onClick={() => setShowMarkerForm(!showMarkerForm)}
-          aria-label="Add marker"
-        >
-          <i className="material-icons mr-1">bookmark_add</i>
-          Add Marker
-        </button>
+      {/* Timeline controls */}
+      <div className="flex items-center justify-between mt-4">
+        <div className="flex items-center space-x-2">
+          {/* Add marker button */}
+          <button 
+            className="bg-secondary-600 hover:bg-secondary-700 text-white px-3 py-1 rounded-md-md text-sm flex items-center space-x-1 shadow-md-1 transition-all duration-200"
+            onClick={() => setShowMarkerForm(!showMarkerForm)}
+            aria-label="Add marker"
+          >
+            <i className="material-icons text-sm">bookmark_add</i>
+            <span>Add Marker</span>
+          </button>
+          
+          {/* Add keyframe button */}
+          <button 
+            className={`${hasSelectedElement ? 'bg-primary-600 hover:bg-primary-700' : 'bg-surface-700 opacity-50 cursor-not-allowed'} text-white px-3 py-1 rounded-md-md text-sm flex items-center space-x-1 shadow-md-1 transition-all duration-200`}
+            onClick={handleAddKeyframe}
+            disabled={!hasSelectedElement}
+            aria-label="Add keyframe"
+          >
+            <i className="material-icons text-sm">add_circle</i>
+            <span>Add Keyframe</span>
+          </button>
+        </div>
         
-        {/* Add keyframe button */}
-        <button 
-          className={`flex items-center px-4 py-2 rounded-md-md shadow-md-1 transition-all duration-200 ${
-            hasSelectedElement 
-              ? 'bg-primary-600 hover:bg-primary-700 text-white' 
-              : 'bg-surface-600 text-surface-400 cursor-not-allowed'
-          }`}
-          onClick={handleAddKeyframe}
-          disabled={!hasSelectedElement}
-          aria-label="Add keyframe"
-        >
-          <i className="material-icons mr-1">add_circle</i>
-          Add Keyframe
-        </button>
-        
-        {/* Duration input */}
-        <div className="flex items-center">
-          <span className="mr-2 text-surface-300">Duration:</span>
+        {/* Duration control */}
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-surface-300">Duration:</span>
           <input 
-            type="number"
-            className="w-16 bg-surface-700 border border-surface-600 rounded-md-md px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            type="number" 
+            className="w-16 bg-surface-700 border border-surface-600 rounded-md-md px-2 py-1 text-sm text-white shadow-md-1 focus:outline-none focus:ring-2 focus:ring-primary-500"
             value={duration}
             onChange={(e) => {
-              const newDuration = Math.max(1, parseInt(e.target.value) || 1);
-              // Update duration in context
+              const value = parseInt(e.target.value);
+              if (!isNaN(value) && value > 0) {
+                // Update duration in context
+              }
             }}
             min="1"
-            step="1"
+            max="3600"
           />
-          <span className="ml-1 text-surface-300">sec</span>
+          <span className="text-sm text-surface-300">sec</span>
         </div>
       </div>
       
       {/* Marker form */}
       {showMarkerForm && (
-        <div className="mt-4 p-4 bg-surface-800 rounded-md-lg shadow-md-2 animate-md-fade-in">
-          <h3 className="text-lg font-medium mb-3 text-surface-100">Add Marker</h3>
-          <div className="flex items-end space-x-4">
-            <div className="flex-1">
-              <label className="block text-sm text-surface-300 mb-1">Marker Name</label>
-              <input 
-                type="text"
-                className="w-full bg-surface-700 border border-surface-600 rounded-md-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                value={markerForm.name}
-                onChange={(e) => setMarkerForm({ ...markerForm, name: e.target.value })}
-                placeholder="Enter marker name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-surface-300 mb-1">Color</label>
-              <input 
-                type="color"
-                className="h-10 w-16 bg-surface-700 border border-surface-600 rounded-md-md cursor-pointer"
-                value={markerForm.color}
-                onChange={(e) => setMarkerForm({ ...markerForm, color: e.target.value })}
-              />
-            </div>
+        <div className="mt-4 p-4 bg-surface-800 rounded-md-lg shadow-md-2">
+          <h3 className="text-sm font-medium mb-2">Add Marker</h3>
+          <div className="flex items-center space-x-2">
+            <input 
+              type="text"
+              className="flex-1 bg-surface-700 border border-surface-600 rounded-md-md px-2 py-1 text-sm text-white shadow-md-1 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="Marker name"
+              value={markerForm.name}
+              onChange={(e) => setMarkerForm({ ...markerForm, name: e.target.value })}
+            />
+            <input 
+              type="color"
+              className="w-8 h-8 rounded-md-md cursor-pointer border border-surface-600"
+              value={markerForm.color}
+              onChange={(e) => setMarkerForm({ ...markerForm, color: e.target.value })}
+            />
             <button 
-              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-md-md shadow-md-1 transition-all duration-200"
+              className="bg-primary-600 hover:bg-primary-700 text-white px-3 py-1 rounded-md-md text-sm shadow-md-1 transition-all duration-200"
               onClick={handleAddMarker}
             >
               Add
             </button>
             <button 
-              className="px-4 py-2 bg-surface-600 hover:bg-surface-500 text-white rounded-md-md shadow-md-1 transition-all duration-200"
+              className="bg-surface-700 hover:bg-surface-600 text-white px-3 py-1 rounded-md-md text-sm shadow-md-1 transition-all duration-200"
               onClick={() => setShowMarkerForm(false)}
             >
               Cancel
