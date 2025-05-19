@@ -237,10 +237,24 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
     const center = currentPosition; // Center on current position
     const halfDuration = visibleDuration / 2;
     
-    setVisibleRange({
+    const newVisibleRange = {
       start: Math.max(0, center - halfDuration),
       end: Math.min(duration, center + halfDuration),
-    });
+    };
+    
+    setVisibleRange(newVisibleRange);
+    
+    // Force a re-render to ensure zoom changes take effect
+    setTimeout(() => {
+      const timelineContainer = timelineRef.current;
+      if (timelineContainer) {
+        // Scroll to keep current position in view
+        const scrollPosition = (currentPosition - newVisibleRange.start) / 
+                              (newVisibleRange.end - newVisibleRange.start) * 
+                              timelineContainer.scrollWidth;
+        timelineContainer.scrollLeft = scrollPosition - (timelineContainer.clientWidth / 2);
+      }
+    }, 10);
   };
   
   /**
@@ -328,6 +342,12 @@ const EnhancedTimeline: React.FC<EnhancedTimelineProps> = ({ mode = 'timeline' }
       // Set the visible range to include all points of interest
       setVisibleRange({ start: earliestPoint, end: latestPoint });
     }
+    
+    // Force a re-render to ensure zoom changes take effect
+    setTimeout(() => {
+      setZoom(prevZoom => prevZoom * 1.001); // Tiny change to trigger re-render
+      setTimeout(() => setZoom(1), 50); // Reset to exactly 1 after re-render
+    }, 0);
   };
   
   // Clean up event listeners on unmount
